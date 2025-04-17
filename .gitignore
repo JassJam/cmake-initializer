@@ -385,3 +385,4 @@ FodyWeavers.xsd
 # Remove generated files
 *.generated.*
 /-/vsxmake2022
+Testing/*
