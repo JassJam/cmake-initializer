@@ -49,7 +49,7 @@ ctest --build-target "build"
 [ProjectOptions.cmake](./project/base/project_options/ProjectOptions.cmake) exposes these settings (modify before first configure)
 
 ### Customizing for Your Project
-[ProjectMetadata.cmake](./ProjectMetadata.cmake) exposes these configuration to specialize your project.
+[ProjectMetadata.cmake](./project/ProjectMetadata.cmake) exposes these configuration to specialize your project.
 
 ### Contributing
 
