@@ -9,7 +9,7 @@ namespace config
     namespace @THIS_PROJECT_NAMESPACE@
     {
         inline constexpr const char NAME[] = "@THIS_PROJECT_NAME@";
-        inline constexpr const char PRETTY_NAME[] = "@PROJECT_PRETTY_NAME@";
+        inline constexpr const char PRETTY_NAME[] = "@THIS_PROJECT_PRETTY_NAME@";
         inline constexpr const char DESCRIPTION[] = "@THIS_PROJECT_DESCRIPTION@";
         inline constexpr const char HOMEPAGE_URL[] = "@THIS_PROJECT_HOMEPAGE_URL@";
         inline constexpr const char LICENSE[] = "@THIS_PROJECT_LICENSE@";

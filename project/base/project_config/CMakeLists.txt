@@ -4,7 +4,7 @@ add_library(${THIS_PROJECT_NAMESPACE}::config ALIAS ${THIS_PROJECT_NAME}_config)
 include(./CreateConfigFile.cmake)
 
 # create the config file of the project
-_create_config_file(${PROJECT_VERSION})
+_create_config_file(${THIS_PROJECT_VERSION})
 
 # install the component
 install_component(

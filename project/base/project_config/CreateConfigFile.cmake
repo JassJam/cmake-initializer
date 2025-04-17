@@ -1,6 +1,6 @@
 # function used to create the config file of the project
 function(_create_config_file version)
-	# using PROJECT_VERSION, it can be "" or "1" or "1.0" or "1.0.0"
+	# using THIS_PROJECT_VERSION, it can be "" or "1" or "1.0" or "1.0.0"
 	# split the version string into major, minor, patch and tweak
 	string(REGEX MATCHALL "[0-9]+" version_parts ${version})
 	
