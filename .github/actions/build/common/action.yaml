@@ -1,0 +1,78 @@
+permissions:
+  contents: write
+
+inputs:
+  config-name:
+    description: 'Name of the configuration preset to use for the build'
+    required: true
+  config-os:
+    description: 'Operating system to use for the build'
+    required: true
+  config-preset:
+    description: 'Configuration preset to use for the build'
+    required: true
+  config-output:
+    description: 'Output directory for the build artifacts'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Install CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.30.0'
+
+    - name: Setup build environment
+      shell: pwsh
+      run: |
+        $BUILD_DIR="${{ runner.temp }}/${{ inputs.config-output }}/build"
+        $INSTALL_DIR="${{ runner.temp }}/${{ inputs.config-output }}/install"
+
+        # Create directory if it doesn't exist
+        New-Item -ItemType Directory -Force -Path $BUILD_DIR -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force -Path $INSTALL_DIR -ErrorAction SilentlyContinue
+
+        # Set environment variables for the build
+        Add-Content -Path $env:GITHUB_ENV -Value "INSTALL_DIR=$INSTALL_DIR"
+        Add-Content -Path $env:GITHUB_ENV -Value "BUILD_DIR=$BUILD_DIR"
+
+        # Get version (sanitize slashes)
+        $VERSION = $env:GITHUB_REF -replace 'refs/tags/', '' -replace '/', '-'
+        if (-not $VERSION) { $VERSION = "1.0.0-dev" }
+
+        # Unique artifact name
+        $ARTIFACT_NAME = "${{ inputs.config-output }}-$VERSION"
+        Add-Content -Path $env:GITHUB_ENV -Value "ARTIFACT_NAME=$ARTIFACT_NAME"
+
+    - name: Configure
+      shell: pwsh
+      run: |
+        cmake -S ./project -B "${{ env.BUILD_DIR }}" --preset ${{ inputs.config-preset }} -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_DIR }}"
+
+    - name: Build & Install
+      shell: pwsh
+      run: |
+        cmake --build "${{ env.BUILD_DIR }}" --target install
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ${{ env.INSTALL_DIR }}/
+        retention-days: 7
+
+    - name: Cleanup
+      if: always()
+      shell: pwsh
+      run: |
+        $BUILD_DIR="${{ env.BUILD_DIR }}"
+        $INSTALL_DIR="${{ env.INSTALL_DIR }}"
+
+        # Remove build and install directories
+        Remove-Item -Path $BUILD_DIR -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $INSTALL_DIR -Recurse -Force -ErrorAction SilentlyContinue
+        
+        Write-Host "Cleanup completed."
