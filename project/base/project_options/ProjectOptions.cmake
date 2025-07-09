@@ -1,91 +1,64 @@
 include(CheckSanitizerSupport)
 include(CMakeDependentOption)
 
-#
+# Check what sanitizers are supported
+check_sanitizers_support(SUPPORTS_UBSAN SUPPORTS_ASAN)
 
-check_sanitizers_support(
-    SUPPORTS_UBSAN
-    SUPPORTS_ASAN
+# === MAIN CONFIGURATION OPTIONS ===
+option(DEV_MODE "Enable development mode (all quality tools)" ON)
+option(RELEASE_MODE "Enable release optimizations" OFF)
+
+# === QUALITY TOOLS ===
+option(ENABLE_SANITIZERS "Enable address/undefined behavior sanitizers" ${DEV_MODE})
+option(ENABLE_STATIC_ANALYSIS "Enable clang-tidy and cppcheck" ${DEV_MODE})
+option(ENABLE_WARNINGS_AS_ERRORS "Treat warnings as errors" ${DEV_MODE})
+
+# === PERFORMANCE OPTIONS ===
+option(ENABLE_IPO "Enable link-time optimization (LTO)" ${RELEASE_MODE})
+option(ENABLE_UNITY_BUILD "Enable unity builds for faster compilation" OFF)
+option(ENABLE_PCH "Enable precompiled headers" OFF)
+
+# === SANITIZER OPTIONS ===
+if(DEV_MODE OR ENABLE_SANITIZERS)
+    set(DEFAULT_ASAN ${SUPPORTS_ASAN})
+    set(DEFAULT_UBSAN ${SUPPORTS_UBSAN})
+else()
+    set(DEFAULT_ASAN OFF)
+    set(DEFAULT_UBSAN OFF)
+endif()
+
+option(ENABLE_ASAN "Enable address sanitizer (detects memory errors)" ${DEFAULT_ASAN})
+option(ENABLE_LSAN "Enable leak sanitizer (detects memory leaks)" OFF)
+option(ENABLE_UBSAN "Enable undefined behavior sanitizer" ${DEFAULT_UBSAN})
+option(ENABLE_TSAN "Enable thread sanitizer (detects data races)" OFF)
+option(ENABLE_MSAN "Enable memory sanitizer (detects uninitialized reads)" OFF)
+
+# === STATIC ANALYSIS OPTIONS ===
+option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" ${ENABLE_STATIC_ANALYSIS})
+option(ENABLE_CPPCHECK "Enable cppcheck static analysis" ${ENABLE_STATIC_ANALYSIS})
+
+# Mark advanced options
+mark_as_advanced(
+    ENABLE_ASAN ENABLE_LSAN ENABLE_UBSAN ENABLE_TSAN ENABLE_MSAN
+    ENABLE_CLANG_TIDY ENABLE_CPPCHECK
+    ENABLE_UNITY_BUILD ENABLE_PCH
 )
 
-#
-
-#
-# - PROJECT_ENABLE_HARDENING [ON*/OFF]: Enable sanitizers and hardening options
-# - PROJECT_ENABLE_COVERAGE [ON/OFF*]: Enable coverage reporting
-# - PROJECT_ENABLE_GLOBAL_HARDENING [ON*/OFF]: Attempt to push hardening options to built dependencies
-# - PROJECT_PACKAGING_MAINTAINER_MODE [ON/OFF*]: Enable packaging maintainer mode (If enabled, ignores PROJECT_ENABLE_HARDENING)
-# - PROJECT_ENABLE_IPO [ON*/OFF]: Enable IPO/LTO (Interprocedural Optimization / Link Time Optimization)
-# - PROJECT_WARNINGS_AS_ERRORS [ON*/OFF]: Treat warnings as errors
-# - PROJECT_ENABLE_SANITIZER_ADDRESS [ON*/OFF]: Enable address sanitizer
-# - PROJECT_ENABLE_SANITIZER_LEAK [ON/OFF*]: Enable leak sanitizer
-# - ENABLE_SANITIZER_UNDEFINED_BEHAVIOR [ON*/OFF]: Enable ub sanitizer
-# - PROJECT_ENABLE_SANITIZER_THREAD [ON/OFF*]: Enable thread sanitizer
-# - PROJECT_ENABLE_SANITIZER_MEMORY [ON/OFF*]: Enable memory sanitizer
-# - PROJECT_ENABLE_UNITY_BUILD [ON/OFF*]: Enable unity builds
-# - PROJECT_ENABLE_CLANG_TIDY [ON*/OFF]: Enable clang-tidy
-# - PROJECT_ENABLE_CPPCHECK [ON*/OFF]: Enable cpp-check analysis
-# - PROJECT_ENABLE_PCH [ON/OFF*]: Enable precompiled headers
-# - PROJECT_ENABLE_CACHE [ON*/OFF]: Enable ccache
-# - PROJECT_BUILD_FUZZ_TESTS [ON*/OFF]: Enable fuzz testing executable
-#
-
-option(PROJECT_ENABLE_HARDENING "Enable hardening" ON)
-option(PROJECT_WARNINGS_AS_ERRORS "Treat Warnings As Errors" ON)
-option(PROJECT_BUILD_FUZZ_TESTS "Enable fuzz testing executable" ON)
-option(PROJECT_ENABLE_COVERAGE "Enable coverage reporting" OFF)
-
-if (NOT PROJECT_IS_TOP_LEVEL OR PROJECT_PACKAGING_MAINTAINER_MODE)
-    option(PROJECT_ENABLE_IPO "Enable IPO/LTO" OFF)
-    option(PROJECT_WARNINGS_AS_ERRORS "Treat Warnings As Errors" OFF)
-    option(PROJECT_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" OFF)
-    option(PROJECT_ENABLE_SANITIZER_LEAK "Enable leak sanitizer" OFF)
-    option(ENABLE_SANITIZER_UNDEFINED_BEHAVIOR "Enable undefined behaviour sanitizer" OFF)
-    option(PROJECT_ENABLE_SANITIZER_THREAD "Enable thread sanitizer" OFF)
-    option(PROJECT_ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" OFF)
-    option(PROJECT_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
-    option(PROJECT_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
-    option(PROJECT_ENABLE_CPPCHECK "Enable cpp-check analysis" OFF)
-    option(PROJECT_ENABLE_PCH "Enable precompiled headers" OFF)
-    option(PROJECT_ENABLE_CACHE "Enable ccache" OFF)
-else ()
-    option(PROJECT_ENABLE_IPO "Enable IPO/LTO" ON)
-    option(PROJECT_WARNINGS_AS_ERRORS "Treat Warnings As Errors" ON)
-    option(PROJECT_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" ${SUPPORTS_ASAN})
-    option(PROJECT_ENABLE_SANITIZER_LEAK "Enable leak sanitizer" OFF)
-    option(ENABLE_SANITIZER_UNDEFINED_BEHAVIOR "Enable undefined behaviour sanitizer" ${SUPPORTS_UBSAN})
-    option(PROJECT_ENABLE_SANITIZER_THREAD "Enable thread sanitizer" OFF)
-    option(PROJECT_ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" OFF)
-    option(PROJECT_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
-    option(PROJECT_ENABLE_CLANG_TIDY "Enable clang-tidy" ON)
-    option(PROJECT_ENABLE_CPPCHECK "Enable cpp-check analysis" ON)
-    option(PROJECT_ENABLE_PCH "Enable precompiled headers" OFF)
-    option(PROJECT_ENABLE_CACHE "Enable ccache" ON)
-endif ()
-
-if (NOT PROJECT_IS_TOP_LEVEL)
-    mark_as_advanced(
-        PROJECT_ENABLE_IPO
-        PROJECT_WARNINGS_AS_ERRORS
-        PROJECT_ENABLE_SANITIZER_ADDRESS
-        PROJECT_ENABLE_SANITIZER_LEAK
-        ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
-        PROJECT_ENABLE_SANITIZER_THREAD
-        PROJECT_ENABLE_SANITIZER_MEMORY
-        PROJECT_ENABLE_UNITY_BUILD
-        PROJECT_ENABLE_CLANG_TIDY
-        PROJECT_ENABLE_CPPCHECK
-        PROJECT_ENABLE_COVERAGE
-        PROJECT_ENABLE_PCH
-        PROJECT_ENABLE_CACHE)
-endif ()
-
-#
-
+# Set up global hardening based on sanitizer settings
 cmake_dependent_option(
-    PROJECT_ENABLE_GLOBAL_HARDENING
-    "Attempt to push hardening options to built dependencies"
-    ON
-    PROJECT_ENABLE_HARDENING
-    OFF
+    ENABLE_HARDENING
+    "Enable security hardening options (stack protection, etc.)"
+    ON "ENABLE_SANITIZERS OR DEV_MODE" OFF
 )
+
+# Print configuration summary
+message(STATUS "=== ${THIS_PROJECT_PRETTY_NAME} Configuration ===")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "DEV_MODE: ${DEV_MODE}")
+message(STATUS "RELEASE_MODE: ${RELEASE_MODE}")
+message(STATUS "Sanitizers: ${ENABLE_SANITIZERS} (ASan:${ENABLE_ASAN}, UBSan:${ENABLE_UBSAN})")
+message(STATUS "Static analysis: ${ENABLE_STATIC_ANALYSIS} (clang-tidy:${ENABLE_CLANG_TIDY}, cppcheck:${ENABLE_CPPCHECK})")
+message(STATUS "Hardening: ${ENABLE_HARDENING}")
+message(STATUS "IPO/LTO: ${ENABLE_IPO}")
+message(STATUS "========================================")

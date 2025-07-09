@@ -1,5 +1,9 @@
 # cmake-initializer
-A modern, cross-platform CMake project template designed to streamline C++ project setup. This boilerplate emphasizes best practices, modularity, and ease of use across Windows/Linux/macOS environments.
+A modern, cross-platform CMake project template designed to streamline C++ project setup. This boilerplate emphasizes **simplicity**, best practices, modularity, and ease of use across Windows/Linux/macOS environments.
+
+## Less boilerplate
+
+See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete usage guide.
 
 ## Features
 
@@ -46,10 +50,12 @@ ctest --build-target "build"
 ```
 
 ### Key Configuration Options
-[ProjectOptions.cmake](./project/base/project_options/ProjectOptions.cmake) exposes these settings (modify before first configure)
+- **Simple Mode**: `DEV_MODE=ON` (enables all dev tools), `RELEASE_MODE=ON` (optimizations)
+- **Advanced**: Fine-grained control over sanitizers, static analysis, warnings, etc.
+- See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete options
 
 ### Customizing for Your Project
-[ProjectMetadata.cmake](./project/ProjectMetadata.cmake) exposes these configuration to specialize your project.
+Edit [ProjectMetadata.cmake](./project/ProjectMetadata.cmake) to set your project name, version, and description.
 
 ### Contributing
 

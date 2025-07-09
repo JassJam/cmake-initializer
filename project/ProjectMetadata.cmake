@@ -1,11 +1,11 @@
 # Project name
-set(THIS_PROJECT_NAME "template")
+set(THIS_PROJECT_NAME "template_project")
 # Project pretty name
 set(THIS_PROJECT_PRETTY_NAME "CMake Initializer Template")
 # Project version
 set(THIS_PROJECT_VERSION "0.1.0")
 # Project namespace
-set(THIS_PROJECT_NAMESPACE "template")
+set(THIS_PROJECT_NAMESPACE "template_project")
 # Project description
 set(THIS_PROJECT_DESCRIPTION "CMake Initializer Template")
 # Project URL

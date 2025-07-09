@@ -6,12 +6,12 @@ include(GetCurrentCompiler)
 # - FOR_ALL_DEPENDENCIES[in], apply the hardening options to all dependencies of the target
 #
 # Example usage:
-# targets_enable_hardering(
+# targets_enable_hardening(
 # 	TARGETS Target1 Target2
 # 	FOR_ALL_DEPENDENCIES TRUE
 # )
 #
-function(targets_enable_hardering)
+function(targets_enable_hardening)
 	set(options
 		FOR_ALL_DEPENDENCIES
 	)

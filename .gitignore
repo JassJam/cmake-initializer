@@ -386,3 +386,20 @@ FodyWeavers.xsd
 *.generated.*
 /-/vsxmake2022
 Testing/*
+
+# Ignore build directories
+/build/
+/project/build/
+/obj/
+/project/obj/
+/out/
+/project/out/
+/bin/
+/project/bin/
+/install/
+/project/install/
+# Ignore CMake cache files
+CMakeCache.txt
+project/CMakeCache.txt
+CMakeFiles/
+project/CMakeFiles/
