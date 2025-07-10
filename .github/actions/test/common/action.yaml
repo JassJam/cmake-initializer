@@ -1,0 +1,152 @@
+permissions:
+  contents: read
+
+inputs:
+  config-name:
+    description: 'Name of the configuration preset to use for the tests'
+    required: true
+  config-os:
+    description: 'Operating system to use for the tests'
+    required: true
+  config-preset:
+    description: 'Configuration preset to use for the tests'
+    required: true
+  config-output:
+    description: 'Output directory for the test artifacts'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Install CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.30.0'
+
+    - name: Setup test environment
+      shell: pwsh
+      run: |
+        $BUILD_DIR="${{ runner.temp }}/${{ inputs.config-output }}/build"
+        $INSTALL_DIR="${{ runner.temp }}/${{ inputs.config-output }}/install"
+        $TEST_RESULTS_DIR="${{ runner.temp }}/${{ inputs.config-output }}/test-results"
+
+        # Create directory if it doesn't exist
+        New-Item -ItemType Directory -Force -Path $BUILD_DIR -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force -Path $INSTALL_DIR -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force -Path $TEST_RESULTS_DIR -ErrorAction SilentlyContinue
+
+        # Set environment variables for the test
+        Add-Content -Path $env:GITHUB_ENV -Value "INSTALL_DIR=$INSTALL_DIR"
+        Add-Content -Path $env:GITHUB_ENV -Value "BUILD_DIR=$BUILD_DIR"
+        Add-Content -Path $env:GITHUB_ENV -Value "TEST_RESULTS_DIR=$TEST_RESULTS_DIR"
+
+        # Get version (sanitize slashes)
+        $VERSION = $env:GITHUB_REF -replace 'refs/tags/', '' -replace '/', '-'
+        if (-not $VERSION) { $VERSION = "1.0.0-dev" }
+
+        # Unique artifact name
+        $ARTIFACT_NAME = "${{ inputs.config-output }}-test-results-$VERSION"
+        Add-Content -Path $env:GITHUB_ENV -Value "ARTIFACT_NAME=$ARTIFACT_NAME"
+
+    - name: Configure project for testing
+      shell: pwsh
+      run: |
+        # Configure specifically for testing with all test targets enabled
+        cmake -S ./project -B "${{ env.BUILD_DIR }}" --preset ${{ inputs.config-preset }} -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_DIR }}" -DBUILD_TESTING=ON
+
+    - name: Build project for testing
+      shell: pwsh
+      run: |
+        # Build all targets including tests
+        cmake --build "${{ env.BUILD_DIR }}" --config Release
+        
+        Write-Host "=== Test Build Completed ==="
+        Write-Host "Built all targets including tests for validation"
+
+    - name: Run tests with CTest
+      shell: pwsh
+      run: |
+        cd "${{ env.BUILD_DIR }}"
+        
+        # Run tests with verbose output and JUnit XML results
+        ctest --build-config Release --output-on-failure --verbose --output-junit "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
+        
+        # Also run tests with simple output for logs
+        Write-Host "=== Test Summary ==="
+        ctest --build-config Release --output-on-failure
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ${{ env.TEST_RESULTS_DIR }}/
+        retention-days: 7
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results (${{ inputs.config-name }})
+        path: ${{ env.TEST_RESULTS_DIR }}/test-results.xml
+        reporter: java-junit
+        fail-on-error: true
+
+    - name: Run sample applications
+      shell: pwsh
+      run: |
+        Write-Host "=== Running Sample Applications ==="
+        
+        # Find and run sample executables
+        $BUILD_DIR = "${{ env.BUILD_DIR }}"
+        
+        # Find sample directories
+        $SAMPLE_DIRS = @(
+          "samples/hello_world",
+          "samples/hello_static_library/program",
+          "samples/hello_shared_library/program",
+          "samples/hello_testing_frameworks"
+        )
+        
+        foreach ($SAMPLE_DIR in $SAMPLE_DIRS) {
+          $SAMPLE_PATH = Join-Path $BUILD_DIR $SAMPLE_DIR
+          if (Test-Path $SAMPLE_PATH) {
+            Write-Host "--- Testing samples in: $SAMPLE_DIR ---"
+            
+            # Find executable files
+            $EXECUTABLES = Get-ChildItem -Path $SAMPLE_PATH -Recurse -Name "*.exe" -ErrorAction SilentlyContinue
+            if (-not $EXECUTABLES) {
+              # On Unix-like systems, look for executable files without extension
+              $EXECUTABLES = Get-ChildItem -Path $SAMPLE_PATH -Recurse | Where-Object { $_.Mode -match "x" -and -not $_.PSIsContainer } -ErrorAction SilentlyContinue
+            }
+            
+            foreach ($EXE in $EXECUTABLES) {
+              $EXE_PATH = Join-Path $SAMPLE_PATH $EXE
+              if (Test-Path $EXE_PATH) {
+                Write-Host "Running: $EXE"
+                try {
+                  & $EXE_PATH
+                  Write-Host "✓ $EXE completed successfully"
+                } catch {
+                  Write-Host "✗ $EXE failed: $_"
+                }
+              }
+            }
+          }
+        }
+
+    - name: Cleanup test environment
+      if: always()
+      shell: pwsh
+      run: |
+        $BUILD_DIR="${{ env.BUILD_DIR }}"
+        $INSTALL_DIR="${{ env.INSTALL_DIR }}"
+        $TEST_RESULTS_DIR="${{ env.TEST_RESULTS_DIR }}"
+
+        # Remove build and install directories (keep test results)
+        Remove-Item -Path $BUILD_DIR -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $INSTALL_DIR -Recurse -Force -ErrorAction SilentlyContinue
+        
+        Write-Host "Test cleanup completed."

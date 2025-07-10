@@ -1,0 +1,36 @@
+inputs:
+  config-name:
+    description: 'Name of the configuration preset to use for the tests'
+    required: true
+  config-os:
+    description: 'Operating system to use for the tests'
+    required: true
+  config-preset:
+    description: 'Configuration preset to use for the tests'
+    required: true
+  config-output:
+    description: 'Output directory for the test artifacts'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSVC environment
+      uses: TheMrMilchmann/setup-msvc-dev@v3
+      with:
+        arch: x64
+
+    - name: Install LLVM/Clang
+      if: contains(inputs.config-preset, 'clang')
+      shell: pwsh
+      run: choco install llvm -y
+
+    - name: Run Tests
+      uses: ./.github/actions/test/common
+      with:
+        config-name: ${{ inputs.config-name }}
+        config-os: ${{ inputs.config-os }}
+        config-preset: ${{ inputs.config-preset }}
+        config-output: ${{ inputs.config-output }}

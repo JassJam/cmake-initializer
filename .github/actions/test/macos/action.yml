@@ -1,0 +1,38 @@
+inputs:
+  config-name:
+    description: 'Name of the configuration preset to use for the tests'
+    required: true
+  config-os:
+    description: 'Operating system to use for the tests'
+    required: true
+  config-preset:
+    description: 'Configuration preset to use for the tests'
+    required: true
+  config-output:
+    description: 'Output directory for the test artifacts'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        brew install ninja
+
+    - name: Install Clang
+      if: contains(inputs.config-preset, 'clang')
+      shell: bash
+      run: |
+        # Clang is usually pre-installed on macOS, but we can ensure it's available
+        xcode-select --install || true
+
+    - name: Run Tests
+      uses: ./.github/actions/test/common
+      with:
+        config-name: ${{ inputs.config-name }}
+        config-os: ${{ inputs.config-os }}
+        config-preset: ${{ inputs.config-preset }}
+        config-output: ${{ inputs.config-output }}

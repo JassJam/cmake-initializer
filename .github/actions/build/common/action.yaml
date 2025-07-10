@@ -47,15 +47,26 @@ runs:
         $ARTIFACT_NAME = "${{ inputs.config-output }}-$VERSION"
         Add-Content -Path $env:GITHUB_ENV -Value "ARTIFACT_NAME=$ARTIFACT_NAME"
 
-    - name: Configure
+    - name: Configure (Production Build)
       shell: pwsh
       run: |
-        cmake -S ./project -B "${{ env.BUILD_DIR }}" --preset ${{ inputs.config-preset }} -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_DIR }}"
+        # Configure for production build without tests
+        cmake -S ./project -B "${{ env.BUILD_DIR }}" --preset ${{ inputs.config-preset }} -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_DIR }}" -DBUILD_TESTING=OFF
 
-    - name: Build & Install
+    - name: Build & Install (Production Artifacts)
       shell: pwsh
       run: |
-        cmake --build "${{ env.BUILD_DIR }}" --target install
+        # Build only main targets, skip test targets
+        cmake --build "${{ env.BUILD_DIR }}" --target install --config Release
+        
+        Write-Host "=== Production Build Completed ==="
+        Write-Host "Built artifacts for distribution/release"
+        
+        # List installed files
+        if (Test-Path "${{ env.INSTALL_DIR }}") {
+          Write-Host "=== Installed Files ==="
+          Get-ChildItem -Path "${{ env.INSTALL_DIR }}" -Recurse | Format-Table Name, Length, LastWriteTime
+        }
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
