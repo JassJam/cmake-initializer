@@ -3,7 +3,8 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 
 ## Less boilerplate
 
-See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete usage guide.
+* [Simplified Usage Guide](./docs/SIMPLIFIED_USAGE.md)
+* [Testing Frameworks Integration](./docs/TESTING_SUMMARY.md)
 
 ## Features
 
@@ -23,6 +24,7 @@ See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete usage guide.
   - Hello World
   - Static/Shared Libraries
   - External Package Usage
+  - Testing Frameworks (doctest, Catch2, gtest, Boost.Test) 
 
 ## Quick Start
 
