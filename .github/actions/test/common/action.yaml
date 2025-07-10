@@ -71,11 +71,7 @@ runs:
         cd "${{ env.BUILD_DIR }}"
         
         # Run tests with verbose output and JUnit XML results
-        ctest --build-config Release --output-on-failure --verbose --output-junit "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
-        
-        # Also run tests with simple output for logs
-        Write-Host "=== Test Summary ==="
-        ctest --build-config Release --output-on-failure
+        ctest --build-config Release --output-on-failure --verbose --output-junit "${{ env.TEST_RESULTS_DIR }}/test-results.xml" 
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -94,56 +90,12 @@ runs:
         reporter: java-junit
         fail-on-error: true
 
-    - name: Run sample applications
-      shell: pwsh
-      run: |
-        Write-Host "=== Running Sample Applications ==="
-        
-        # Find and run sample executables
-        $BUILD_DIR = "${{ env.BUILD_DIR }}"
-        
-        # Find sample directories
-        $SAMPLE_DIRS = @(
-          "samples/hello_world",
-          "samples/hello_static_library/program",
-          "samples/hello_shared_library/program",
-          "samples/hello_testing_frameworks"
-        )
-        
-        foreach ($SAMPLE_DIR in $SAMPLE_DIRS) {
-          $SAMPLE_PATH = Join-Path $BUILD_DIR $SAMPLE_DIR
-          if (Test-Path $SAMPLE_PATH) {
-            Write-Host "--- Testing samples in: $SAMPLE_DIR ---"
-            
-            # Find executable files
-            $EXECUTABLES = Get-ChildItem -Path $SAMPLE_PATH -Recurse -Name "*.exe" -ErrorAction SilentlyContinue
-            if (-not $EXECUTABLES) {
-              # On Unix-like systems, look for executable files without extension
-              $EXECUTABLES = Get-ChildItem -Path $SAMPLE_PATH -Recurse | Where-Object { $_.Mode -match "x" -and -not $_.PSIsContainer } -ErrorAction SilentlyContinue
-            }
-            
-            foreach ($EXE in $EXECUTABLES) {
-              $EXE_PATH = Join-Path $SAMPLE_PATH $EXE
-              if (Test-Path $EXE_PATH) {
-                Write-Host "Running: $EXE"
-                try {
-                  & $EXE_PATH
-                  Write-Host "✓ $EXE completed successfully"
-                } catch {
-                  Write-Host "✗ $EXE failed: $_"
-                }
-              }
-            }
-          }
-        }
-
     - name: Cleanup test environment
       if: always()
       shell: pwsh
       run: |
         $BUILD_DIR="${{ env.BUILD_DIR }}"
         $INSTALL_DIR="${{ env.INSTALL_DIR }}"
-        $TEST_RESULTS_DIR="${{ env.TEST_RESULTS_DIR }}"
 
         # Remove build and install directories (keep test results)
         Remove-Item -Path $BUILD_DIR -Recurse -Force -ErrorAction SilentlyContinue
