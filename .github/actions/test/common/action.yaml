@@ -85,10 +85,17 @@ runs:
       shell: pwsh
       run: |
         # Print the contents of the temp directory for debugging
-        Get-ChildItem -Path "${{ runner.temp }}" -Recurse | Format-Table -AutoSize
+        Write-Host "=== Contents of the Build Directory ==="
+        Get-ChildItem -Path "${{ env.BUILD_DIR }}" -Recurse | Format-Table -AutoSize
+
+        Write-Host "=== Contents of the Install Directory ==="
+        Get-ChildItem -Path "${{ env.INSTALL_DIR }}" -Recurse | Format-Table -AutoSize
+
+        Write-Host "=== Contents of the Test Results Directory ==="
+        Get-ChildItem -Path "${{ env.TEST_RESULTS_DIR }}" -Recurse | Format-Table -AutoSize
 
     - name: Publish Test Results
-      uses: dorny/test-reporter@v1
+      uses: dorny/test-reporter@v2
       if: always()
       with:
         name: Test Results (${{ inputs.config-name }})
