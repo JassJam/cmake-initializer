@@ -1,29 +1,67 @@
-# Simplified CMake Usage Guide
+# CMake Boilerplate - Simplified Usage Guide
 
-This boilerplate now provides simplified functions to reduce verbosity while maintaining all functionality.
+This boilerplate provides powerful yet simple functions to reduce CMake verbosity while maintaining full modern CMake capabilities. All functions support comprehensive visibility control and auto-discovery features.
 
-## Quick Reference
+## Quick Start
 
-### Simple Executable
+### Basic Project Setup
 ```cmake
-# Basic executable (auto-discovers src/*.cpp and include/)
+# In your main CMakeLists.txt
+include(cmake/modules/ProjectBoilerplate.cmake)
+
+# Optional: Set up testing framework (call once)
+register_test_framework("doctest")  # or "catch2", "gtest", "boost"
+```
+
+## Core Functions
+
+### 1. Executables with `register_executable()`
+
+#### Basic Usage
+```cmake
+# Simple executable (auto-discovers src/*.cpp and include/)
 register_executable(MyApp INSTALL)
 
-# With external dependencies
-register_executable(MyApp DEPENDENCIES INSTALL)
-
-# With custom libraries
-register_executable(MyApp LIBRARIES MyLib SomeOtherLib INSTALL)
-
-# Custom source/include directories
+# With custom directories
 register_executable(MyApp 
     SOURCE_DIR custom_src 
-    INCLUDE_DIR custom_headers 
+    INCLUDE_DIR custom_headers
     INSTALL
 )
 ```
 
-### Simple Library
+#### Advanced Features
+```cmake
+# With comprehensive visibility control
+register_executable(MyApp
+    SOURCES 
+        PRIVATE "src/main.cpp" "src/internal.cpp"
+        PUBLIC "src/api.cpp"
+    INCLUDES 
+        PRIVATE "src/internal" 
+        PUBLIC "include"
+        INTERFACE "interface/headers"
+    LIBRARIES 
+        PRIVATE "internal_lib" 
+        PUBLIC "shared_lib"
+        INTERFACE "header_only_lib"
+    COMPILE_DEFINITIONS 
+        PRIVATE "INTERNAL_BUILD=1"
+        PUBLIC "API_VERSION=2"
+    COMPILE_OPTIONS 
+        PRIVATE "-fno-rtti"
+        PUBLIC "-fPIC"
+    COMPILE_FEATURES 
+        PRIVATE "cxx_std_17"
+        PUBLIC "cxx_std_20"
+    DEPENDENCIES  # Auto-loads Dependencies.cmake if available
+    INSTALL
+)
+```
+
+### 2. Libraries with `register_library()`
+
+#### Basic Usage
 ```cmake
 # Static library (default)
 register_library(MyLib INSTALL)
@@ -31,58 +69,315 @@ register_library(MyLib INSTALL)
 # Shared library
 register_library(MyLib SHARED INSTALL)
 
-# Interface library (header-only)
+# Header-only library
 register_library(MyLib INTERFACE INSTALL)
+```
 
-# With export macro for shared libraries
-register_library(MyLib SHARED 
-    EXPORT_MACRO MY_EXPORT
+#### Advanced Features
+```cmake
+# Comprehensive library with proper export handling
+register_library(MyLib SHARED
+    SOURCE_DIR "src"
+    INCLUDE_DIR "include"
+    SOURCES 
+        PRIVATE "src/impl.cpp" "src/internal.cpp"
+        PUBLIC "src/api.cpp"
+    INCLUDES 
+        PRIVATE "src/internal"
+        PUBLIC "include"
+        INTERFACE "interface"
+    LIBRARIES 
+        PRIVATE "boost::system" 
+        PUBLIC "fmt::fmt"
+        INTERFACE "header_only_dep"
+    COMPILE_DEFINITIONS 
+        PRIVATE "BUILDING_MYLIB"
+        PUBLIC "MYLIB_API=1"
+        INTERFACE "MYLIB_HEADER_ONLY"
+    EXPORT_MACRO "MYLIB_EXPORT"  # For shared libraries
+    PROPERTIES 
+        "VERSION" "1.0.0"
+        "SOVERSION" "1"
+    DEPENDENCIES
     INSTALL
 )
 ```
 
-### Simple Project Organization
+### 3. Project Organization with `register_project()`
+
+#### Batch Operations
 ```cmake
-# Add multiple subdirectories at once
-register_project(SUBDIRS subdir1 subdir2 subdir3)
+# Add multiple subdirectories
+register_project(SUBDIRS 
+    "core" 
+    "utilities" 
+    "plugins"
+)
 
 # Create multiple executables in current directory
-register_project(EXECUTABLES app1 app2 app3)
+register_project(EXECUTABLES 
+    "app1" 
+    "app2" 
+    "admin_tool"
+)
 
-# Create multiple libraries in current directory  
-register_project(LIBRARIES lib1 lib2 lib3)
+# Create multiple libraries
+register_project(LIBRARIES 
+    "core_lib" 
+    "util_lib" 
+    "plugin_interface"
+)
+
+# Combined operations
+register_project(
+    NAME "MyProject"
+    SUBDIRS "core" "utilities"
+    EXECUTABLES "main_app"
+    LIBRARIES "shared_lib"
+)
+```
+
+### 4. Testing with `register_test()`
+
+#### Basic Testing
+```cmake
+# First, register a test framework globally
+register_test_framework("doctest")
+
+# Simple test (auto-discovers test_*.cpp files)
+register_test(MyTests 
+    LIBRARIES PRIVATE MyLib
+)
+
+# Custom test with specific files
+register_test(UnitTests
+    SOURCES PRIVATE "test/unit_tests.cpp" "test/helpers.cpp"
+    LIBRARIES PRIVATE MyLib test_utils
+    INCLUDES PRIVATE "test/include"
+    INSTALL
+)
+```
+
+#### Advanced Testing
+```cmake
+# Test with comprehensive visibility control
+register_test(IntegrationTests
+    SOURCE_DIR "integration_tests"
+    SOURCES 
+        PRIVATE "test/integration_main.cpp"
+        PRIVATE "test/mock_services.cpp"
+    INCLUDES 
+        PRIVATE "test/mocks"
+        PRIVATE "test/fixtures"
+    LIBRARIES 
+        PRIVATE MyLib database_lib
+        INTERFACE test_framework_extensions
+    COMPILE_DEFINITIONS 
+        PRIVATE "TEST_MODE=1"
+        PRIVATE "MOCK_SERVICES=1"
+    COMPILE_OPTIONS 
+        PRIVATE "-g" "-O0"  # Debug info, no optimization
+    PROPERTIES 
+        "TIMEOUT" "30"
+        "WORKING_DIRECTORY" "${CMAKE_CURRENT_SOURCE_DIR}/test_data"
+    INSTALL
+)
+```
+
+## Visibility Control System
+
+### Understanding Visibility
+- **PRIVATE**: Only visible to this target, not propagated to dependents
+- **PUBLIC**: Visible to this target AND propagated to dependents
+- **INTERFACE**: Only propagated to dependents, not used by this target
+
+### Practical Examples
+
+#### Library Design Pattern
+```cmake
+# Well-designed library with proper visibility
+register_library(NetworkLib SHARED
+    SOURCES 
+        PRIVATE "src/internal_socket.cpp"    # Implementation details
+        PRIVATE "src/connection_pool.cpp"    # Internal functionality
+        PUBLIC "src/network_api.cpp"         # Public API implementation
+    INCLUDES 
+        PRIVATE "src/internal"               # Internal headers
+        PUBLIC "include"                     # Public API headers
+        INTERFACE "interface"                # Headers for dependents only
+    LIBRARIES 
+        PRIVATE "openssl"                    # Implementation dependency
+        PUBLIC "boost::system"               # Public API dependency
+        INTERFACE "header_only_protocol"     # Header-only protocol
+    COMPILE_DEFINITIONS 
+        PRIVATE "BUILDING_NETWORK_LIB"       # Build-time flag
+        PUBLIC "NETWORK_LIB_VERSION=2"       # API version
+        INTERFACE "USE_NETWORK_LIB"          # Flag for users
+    EXPORT_MACRO "NETWORK_API"
+    INSTALL
+)
+```
+
+#### Application Pattern
+```cmake
+# Application using the library
+register_executable(MyNetworkApp
+    SOURCES PRIVATE "src/main.cpp" "src/app_logic.cpp"
+    INCLUDES PRIVATE "src/internal"
+    LIBRARIES 
+        PRIVATE NetworkLib                   # Gets PUBLIC+INTERFACE from NetworkLib
+        PRIVATE "app_specific_lib"           # Only for this app
+    COMPILE_DEFINITIONS 
+        PRIVATE "APP_VERSION=1.0"
+    INSTALL
+)
 ```
 
 ## Configuration Options
 
-### Simple Mode (Recommended for most users)
-- `DEV_MODE=ON` (default) - Enables all development tools (sanitizers, static analysis, warnings as errors)
-- `RELEASE_MODE=ON` - Enables release optimizations (IPO/LTO)
-
-### Advanced Options (for fine-grained control)
-- `ENABLE_SANITIZERS` - Address/UB sanitizers
-- `ENABLE_STATIC_ANALYSIS` - clang-tidy and cppcheck  
-- `ENABLE_WARNINGS_AS_ERRORS` - Treat warnings as errors
-- `ENABLE_IPO` - Link-time optimization
-- `ENABLE_UNITY_BUILD` - Unity builds for faster compilation
-- `ENABLE_PCH` - Precompiled headers
-
-## Advanced Usage
-
-### Custom Sources and Headers
+### Development Mode (Default)
 ```cmake
-register_executable(MyApp
-    SOURCES custom/main.cpp custom/utils.cpp
-    INCLUDES custom/headers
-    LIBRARIES external::lib
+# Enable all development tools
+set(DEV_MODE ON)  # Enables sanitizers, static analysis, warnings as errors
+```
+
+### Release Mode
+```cmake
+# Enable optimizations
+set(RELEASE_MODE ON)  # Enables IPO/LTO, optimizations
+```
+
+### Fine-Grained Control
+```cmake
+# Individual feature control
+set(ENABLE_SANITIZERS ON)          # Address/UB sanitizers
+set(ENABLE_STATIC_ANALYSIS ON)     # clang-tidy and cppcheck
+set(ENABLE_WARNINGS_AS_ERRORS ON)  # Treat warnings as errors
+set(ENABLE_IPO ON)                 # Link-time optimization
+set(ENABLE_UNITY_BUILD ON)         # Unity builds
+set(ENABLE_PCH ON)                 # Precompiled headers
+```
+
+## Real-World Examples
+
+### Complete Project Structure
+```cmake
+# Main CMakeLists.txt
+cmake_minimum_required(VERSION 3.21)
+project(MyProject VERSION 1.0.0)
+
+include(cmake/modules/ProjectBoilerplate.cmake)
+
+# Set up testing
+register_test_framework("doctest")
+
+# Add subdirectories
+register_project(SUBDIRS
+    "core"
+    "utilities"
+    "applications"
+    "tests"
+)
+```
+
+### Core Library (core/CMakeLists.txt)
+```cmake
+register_library(MyCore SHARED
+    SOURCES 
+        PRIVATE "src/implementation.cpp"
+        PUBLIC "src/api.cpp"
+    INCLUDES 
+        PRIVATE "src/internal"
+        PUBLIC "include"
+    LIBRARIES 
+        PRIVATE "boost::filesystem"
+        PUBLIC "spdlog::spdlog"
+    COMPILE_DEFINITIONS 
+        PRIVATE "BUILDING_CORE"
+        PUBLIC "CORE_API_VERSION=1"
+    EXPORT_MACRO "CORE_EXPORT"
     INSTALL
 )
 ```
 
-### Library with Public Dependencies
+### Utility Library (utilities/CMakeLists.txt)
 ```cmake
-register_library(MyLib SHARED
-    PUBLIC_LIBRARIES fmt::fmt spdlog::spdlog
+register_library(MyUtilities STATIC
+    INCLUDES PUBLIC "include"
+    LIBRARIES 
+        PUBLIC MyCore
+        PRIVATE "internal_helpers"
+    INSTALL
+)
+```
+
+### Application (applications/CMakeLists.txt)
+```cmake
+register_executable(MyApp
+    SOURCES PRIVATE "src/main.cpp"
+    LIBRARIES 
+        PRIVATE MyCore
+        PRIVATE MyUtilities
+    INSTALL
+)
+```
+
+### Tests (tests/CMakeLists.txt)
+```cmake
+register_test(CoreTests
+    SOURCES PRIVATE "test_core.cpp"
+    LIBRARIES PRIVATE MyCore
+)
+
+register_test(UtilityTests
+    SOURCES PRIVATE "test_utilities.cpp"
+    LIBRARIES PRIVATE MyUtilities
+)
+
+register_test(IntegrationTests
+    SOURCES PRIVATE "test_integration.cpp"
+    LIBRARIES PRIVATE MyCore MyUtilities
+)
+```
+
+## Best Practices
+
+### 1. Library Design
+- Use `PRIVATE` for implementation details
+- Use `PUBLIC` for dependencies that appear in your public API
+- Use `INTERFACE` for header-only dependencies or flags for users
+
+### 2. Executable Design
+- Most dependencies should be `PRIVATE` for executables
+- Use `PUBLIC` only when the executable is meant to be linked to
+
+### 3. Testing
+- Always use `PRIVATE` for test dependencies
+- Link to the libraries you're testing as `PRIVATE`
+- Use test framework's recommended linking approach
+
+### 4. Project Organization
+- Keep related functionality in subdirectories
+- Use `register_project()` for batch operations
+- Maintain clear dependency hierarchies
+
+## Migration Guide
+
+### From Traditional CMake
+```cmake
+# Traditional CMake
+add_executable(MyApp src/main.cpp)
+target_include_directories(MyApp PRIVATE include)
+target_link_libraries(MyApp PRIVATE MyLib)
+target_compile_definitions(MyApp PRIVATE APP_VERSION=1)
+install(TARGETS MyApp DESTINATION bin)
+
+# With boilerplate
+register_executable(MyApp
+    SOURCES PRIVATE "src/main.cpp"
+    INCLUDES PRIVATE "include"
+    LIBRARIES PRIVATE MyLib
+    COMPILE_DEFINITIONS PRIVATE "APP_VERSION=1"
     INSTALL
 )
 ```

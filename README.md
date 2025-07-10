@@ -12,6 +12,11 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
   - Windows: MSVC & Clang-Cl (Debug/Release)
   - Unix-like: GCC & Clang (Debug/Release)
 - **Modern CMake**: Targets-based structure with `CMakePresets.json` configuration.
+- **Modular Architecture**: Clean separation of concerns with focused modules:
+  - `register_executable()`: Comprehensive executable creation with visibility control
+  - `register_library()`: Full library support (SHARED/STATIC/INTERFACE) with export handling
+  - `register_test()`: Integrated test framework support (doctest, Catch2, gtest, Boost.Test)
+  - `register_project()`: Simplified project setup and batch operations
 - **Built-in Quality Tools**:
   - `.clang-format` & `.clang-tidy` integration
   - Sanitizers support (ASan, UBSan, etc.)
@@ -54,7 +59,7 @@ ctest --build-target "build"
 ### Key Configuration Options
 - **Simple Mode**: `DEV_MODE=ON` (enables all dev tools), `RELEASE_MODE=ON` (optimizations)
 - **Advanced**: Fine-grained control over sanitizers, static analysis, warnings, etc.
-- See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete options
+- See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete options and examples
 
 ### Customizing for Your Project
 Edit [ProjectMetadata.cmake](./project/ProjectMetadata.cmake) to set your project name, version, and description.
