@@ -1,6 +1,6 @@
 # Simple executable with common defaults
 # usage:
-# simple_executable(MyExecutable
+# register_executable(MyExecutable
 #     SOURCE_DIR "src"
 #     INCLUDE_DIR "include"
 #     SOURCES "main.cpp" "utils.cpp"
@@ -9,7 +9,7 @@
 #     DEPENDENCIES "MyDependency"
 #     INSTALL
 # )
-function(simple_executable TARGET_NAME)
+function(register_executable TARGET_NAME)
     set(options INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES)
@@ -72,7 +72,7 @@ endfunction()
 
 # Simple library with common defaults
 # usage:
-# simple_library(MyLibrary
+# register_library(MyLibrary
 #     SOURCE_DIR "src"
 #     INCLUDE_DIR "include"
 #     SOURCES "mylib.cpp" "utils.cpp"
@@ -81,7 +81,7 @@ endfunction()
 #     DEPENDENCIES "MyDependency"
 #     INSTALL
 # )
-function(simple_library TARGET_NAME)
+function(register_library TARGET_NAME)
     set(options SHARED STATIC INTERFACE INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR EXPORT_MACRO)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES PUBLIC_LIBRARIES)
@@ -188,12 +188,12 @@ endfunction()
 
 # Simple project setup - reduces boilerplate in subdirectories
 # Usage:
-# simple_project(NAME "MyProject"
+# register_project(NAME "MyProject"
 #     SUBDIRS "subdir1" "subdir2"
 #     EXECUTABLES "MyApp1" "MyApp2"
 #     LIBRARIES "MyLib1" "MyLib2"
 # )
-function(simple_project)
+function(register_project)
     set(oneValueArgs NAME)
     set(multiValueArgs SUBDIRS EXECUTABLES LIBRARIES)
     cmake_parse_arguments(ARG "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -206,13 +206,13 @@ function(simple_project)
 
     if(ARG_EXECUTABLES)
         foreach(exe ${ARG_EXECUTABLES})
-            simple_executable(${exe} INSTALL)
+            register_executable(${exe} INSTALL)
         endforeach()
     endif()
 
     if(ARG_LIBRARIES)
         foreach(lib ${ARG_LIBRARIES})
-            simple_library(${lib} INSTALL)
+            register_library(${lib} INSTALL)
         endforeach()
     endif()
 endfunction()
@@ -281,13 +281,13 @@ endfunction()
 
 # Simple test creation function - uses the registered test framework
 # Usage:
-# simple_test(MyTest
+# register_test(MyTest
 #     SOURCE_DIR "tests"
 #     SOURCES "test_main.cpp" "test_utils.cpp"
 #     LIBRARIES "MyLib"
 #     INSTALL
 # )
-function(simple_test TARGET_NAME)
+function(register_test TARGET_NAME)
     set(options INSTALL)
     set(oneValueArgs SOURCE_DIR)
     set(multiValueArgs SOURCES LIBRARIES)

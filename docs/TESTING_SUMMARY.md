@@ -8,7 +8,7 @@ This CMake boilerplate provides an easy-to-use template for integrating testing 
 
 ### 🎯 **Simple API**
 - **One-time registration**: `register_test_framework(boost)` in main CMakeLists.txt
-- **Add tests anywhere**: `simple_test(MyTests)` in any subdirectory
+- **Add tests anywhere**: `register_test(MyTests)` in any subdirectory
 - **Auto-discovery**: Tests are automatically found and configured
 
 ### 🔧 **Supported Frameworks**
@@ -20,7 +20,7 @@ This CMake boilerplate provides an easy-to-use template for integrating testing 
 ## Key Files Modified
 
 ### Core Implementation
-- `project/cmake/modules/ProjectBoilerplate.cmake`: Uses `register_test_framework()` and `simple_test()` functions
+- `project/cmake/modules/ProjectBoilerplate.cmake`: Uses `register_test_framework()` and `register_test()` functions
 - [hello_testing_frameworks](project/samples/hello_testing_frameworks): Shows simple test usage
 
 ## Usage Examples
@@ -32,7 +32,7 @@ register_test_framework(doctest)  # or catch2, gtest, boost
 
 ### 2. Add Tests (anywhere in your project)
 ```cmake
-simple_test(MyAwesomeTests)  # Auto-discovers test_*.cpp files
+register_test(MyAwesomeTests)  # Auto-discovers test_*.cpp files
 ```
 
 ### 3. Build and Test

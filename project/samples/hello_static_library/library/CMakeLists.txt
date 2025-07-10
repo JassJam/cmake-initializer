@@ -1,1 +1,1 @@
-simple_library(HelloWorld_StaticLibrary_Library STATIC INSTALL)
+register_library(HelloWorld_StaticLibrary_Library STATIC INSTALL)

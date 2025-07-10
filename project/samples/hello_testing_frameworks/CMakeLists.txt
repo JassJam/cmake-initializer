@@ -10,10 +10,10 @@ message(STATUS "Using testing framework: ${TEST_FRAMEWORK}")
 register_test_framework(${TEST_FRAMEWORK})
 
 # Create library to test
-simple_library(MathUtils STATIC INSTALL)
+register_library(MathUtils STATIC INSTALL)
 
 # Create main executable  
-simple_executable(HelloTestingFrameworks LIBRARIES MathUtils INSTALL)
+register_executable(HelloTestingFrameworks LIBRARIES MathUtils INSTALL)
 
 # Add tests
 if(BUILD_TESTING)

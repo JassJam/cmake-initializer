@@ -7,16 +7,16 @@ This boilerplate now provides simplified functions to reduce verbosity while mai
 ### Simple Executable
 ```cmake
 # Basic executable (auto-discovers src/*.cpp and include/)
-simple_executable(MyApp INSTALL)
+register_executable(MyApp INSTALL)
 
 # With external dependencies
-simple_executable(MyApp DEPENDENCIES INSTALL)
+register_executable(MyApp DEPENDENCIES INSTALL)
 
 # With custom libraries
-simple_executable(MyApp LIBRARIES MyLib SomeOtherLib INSTALL)
+register_executable(MyApp LIBRARIES MyLib SomeOtherLib INSTALL)
 
 # Custom source/include directories
-simple_executable(MyApp 
+register_executable(MyApp 
     SOURCE_DIR custom_src 
     INCLUDE_DIR custom_headers 
     INSTALL
@@ -26,16 +26,16 @@ simple_executable(MyApp
 ### Simple Library
 ```cmake
 # Static library (default)
-simple_library(MyLib INSTALL)
+register_library(MyLib INSTALL)
 
 # Shared library
-simple_library(MyLib SHARED INSTALL)
+register_library(MyLib SHARED INSTALL)
 
 # Interface library (header-only)
-simple_library(MyLib INTERFACE INSTALL)
+register_library(MyLib INTERFACE INSTALL)
 
 # With export macro for shared libraries
-simple_library(MyLib SHARED 
+register_library(MyLib SHARED 
     EXPORT_MACRO MY_EXPORT
     INSTALL
 )
@@ -44,13 +44,13 @@ simple_library(MyLib SHARED
 ### Simple Project Organization
 ```cmake
 # Add multiple subdirectories at once
-simple_project(SUBDIRS subdir1 subdir2 subdir3)
+register_project(SUBDIRS subdir1 subdir2 subdir3)
 
 # Create multiple executables in current directory
-simple_project(EXECUTABLES app1 app2 app3)
+register_project(EXECUTABLES app1 app2 app3)
 
 # Create multiple libraries in current directory  
-simple_project(LIBRARIES lib1 lib2 lib3)
+register_project(LIBRARIES lib1 lib2 lib3)
 ```
 
 ## Configuration Options
@@ -71,7 +71,7 @@ simple_project(LIBRARIES lib1 lib2 lib3)
 
 ### Custom Sources and Headers
 ```cmake
-simple_executable(MyApp
+register_executable(MyApp
     SOURCES custom/main.cpp custom/utils.cpp
     INCLUDES custom/headers
     LIBRARIES external::lib
@@ -81,7 +81,7 @@ simple_executable(MyApp
 
 ### Library with Public Dependencies
 ```cmake
-simple_library(MyLib SHARED
+register_library(MyLib SHARED
     PUBLIC_LIBRARIES fmt::fmt spdlog::spdlog
     INSTALL
 )

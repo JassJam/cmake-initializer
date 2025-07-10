@@ -1,1 +1,1 @@
-simple_executable(HelloWorld INSTALL)
+register_executable(HelloWorld INSTALL)
