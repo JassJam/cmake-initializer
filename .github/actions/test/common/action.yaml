@@ -81,6 +81,12 @@ runs:
         path: ${{ env.TEST_RESULTS_DIR }}/
         retention-days: 7
 
+    - name: print "${{ runner.temp }}" Recurse
+      shell: pwsh
+      run: |
+        # Print the contents of the temp directory for debugging
+        Get-ChildItem -Path "${{ runner.temp }}" -Recurse | Format-Table -AutoSize
+
     - name: Publish Test Results
       uses: dorny/test-reporter@v1
       if: always()
