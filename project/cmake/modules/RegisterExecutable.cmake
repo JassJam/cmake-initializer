@@ -21,9 +21,9 @@
 #     INSTALL
 # )
 function(register_executable TARGET_NAME)
-    set(options INSTALL)
+    set(options INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR)
-    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCIES 
+    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
         COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 

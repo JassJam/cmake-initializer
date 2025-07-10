@@ -23,9 +23,9 @@
 #     INSTALL
 # )
 function(register_library TARGET_NAME)
-    set(options SHARED STATIC INTERFACE INSTALL)
+    set(options SHARED STATIC INTERFACE INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR EXPORT_MACRO)
-    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCIES 
+    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
         COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 

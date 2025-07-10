@@ -381,3 +381,114 @@ register_executable(MyApp
     INSTALL
 )
 ```
+
+## Dependency Management System
+
+### Using External Dependencies with CPM
+
+When you use the `DEPENDENCIES` flag with any register function, it automatically loads a `Dependencies.cmake` file from the current directory and calls `target_load_dependencies()` to handle external packages.
+
+#### Setting Up Dependencies
+Create a `Dependencies.cmake` file in your project directory:
+
+```cmake
+# Dependencies.cmake
+function(target_load_dependencies target)
+    target_add_dependency(${target}
+        PACKAGES
+            spdlog
+                URL         https://github.com/gabime/spdlog/archive/refs/tags/v1.15.2.zip
+                URL_HASH    SHA256=d91ab0e16964cedb826e65ba1bed5ed4851d15c7b9453609a52056a94068c020
+                OPTIONS     "SPDLOG_BUILD_SHARED ON"
+            
+            fmt
+                GIT_REPOSITORY  https://github.com/fmtlib/fmt.git
+                GIT_TAG         10.2.1
+                OPTIONS         "FMT_INSTALL ON"
+            
+            boost
+                VERSION         1.82.0
+                LINK_TARGETS    "Boost::system PRIVATE" "Boost::filesystem PUBLIC"
+    )
+endfunction()
+```
+
+#### Using Dependencies in Your Project
+```cmake
+# In your CMakeLists.txt
+register_executable(MyApp
+    SOURCES PRIVATE "src/main.cpp"
+    DEPENDENCIES  # This loads Dependencies.cmake and calls target_load_dependencies()
+    INSTALL
+)
+```
+
+### target_add_dependency() Function
+
+The `target_add_dependency()` function provides a unified interface for managing external dependencies using CPM (C++ Package Manager).
+
+#### Basic Package Options
+- **URL**: Direct download from archive URL
+- **GIT_REPOSITORY + GIT_TAG**: Git repository with specific tag/branch/commit
+- **GITHUB_REPOSITORY**: Shorthand for GitHub repositories (e.g., "owner/repo")
+- **VERSION**: Specific version to download
+- **URL_HASH**: SHA256 hash for URL downloads (recommended for security)
+
+#### Advanced Options
+- **OPTIONS**: CMake options to pass to the package build
+- **LINK_TARGETS**: Specific targets to link (overrides auto-detection)
+- **LINK_TYPE**: Default link type (PRIVATE, PUBLIC, INTERFACE)
+- **INSTALL_TYPE**: Installation behavior (NONE, SHARED, ALL)
+- **COMPONENT**: Installation component name
+- **DOWNLOAD_ONLY**: Only download, don't build or link
+
+#### Example with Advanced Options
+```cmake
+function(target_load_dependencies target)
+    target_add_dependency(${target}
+        PACKAGES
+            # Header-only library
+            nlohmann_json
+                VERSION         3.11.2
+                LINK_TYPE       INTERFACE
+                INSTALL_TYPE    NONE
+            
+            # Custom linking
+            opencv
+                VERSION         4.8.0
+                LINK_TARGETS    "opencv_core PRIVATE" "opencv_imgproc PRIVATE"
+                INSTALL_TYPE    ALL
+                COMPONENT       "opencv-runtime"
+            
+            # Build configuration
+            protobuf
+                VERSION         3.21.12
+                OPTIONS         "protobuf_BUILD_TESTS OFF" "protobuf_BUILD_EXAMPLES OFF"
+                LINK_TARGETS    "protobuf::libprotobuf PRIVATE"
+    )
+endfunction()
+```
+
+### Supported Package Patterns
+
+The system automatically detects common target naming patterns:
+- Direct target name (e.g., `spdlog`)
+- Namespaced targets (e.g., `spdlog::spdlog`)
+- Alternative naming (e.g., `spdlog_spdlog`)
+
+For packages with non-standard targets, use `LINK_TARGETS` to specify explicitly.
+
+### Integration with register_* Functions
+
+All register functions support the `DEPENDENCIES` flag:
+
+```cmake
+# Executable with dependencies
+register_executable(MyApp DEPENDENCIES INSTALL)
+
+# Library with dependencies  
+register_library(MyLib SHARED DEPENDENCIES INSTALL)
+
+# Test with dependencies
+register_test(MyTests DEPENDENCIES)
+```

@@ -11,6 +11,12 @@ set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "")
 # Usage:
 # register_test_framework("doctest") (or "catch2", "gtest", "boost")
 function(register_test_framework FRAMEWORK_NAME)
+    # Skip if testing is disabled
+    if(NOT BUILD_TESTING)
+        message(STATUS "Testing disabled, skipping test framework registration")
+        return()
+    endif()
+    
     get_property(already_registered GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED)
     if(already_registered)
         message(WARNING "Test framework already registered. Skipping duplicate registration.")
@@ -76,9 +82,15 @@ endfunction()
 #     INSTALL
 # )
 function(register_test TARGET_NAME)
-    set(options INSTALL)
+    # Skip if testing is disabled
+    if(NOT BUILD_TESTING)
+        message(STATUS "Testing disabled, skipping test registration for ${TARGET_NAME}")
+        return()
+    endif()
+    
+    set(options INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR)
-    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCIES 
+    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
         COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
