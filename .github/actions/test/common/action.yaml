@@ -60,7 +60,7 @@ runs:
       shell: pwsh
       run: |
         # Build all targets including tests
-        cmake --build "${{ env.BUILD_DIR }}" --config Release
+        cmake --build "${{ env.BUILD_DIR }}" --config Debug
         
         Write-Host "=== Test Build Completed ==="
         Write-Host "Built all targets including tests for validation"
@@ -71,7 +71,7 @@ runs:
         cd "${{ env.BUILD_DIR }}"
         
         # Run tests with verbose output and JUnit XML results
-        ctest --build-config Release --output-on-failure --verbose --output-junit "${{ env.TEST_RESULTS_DIR }}/test-results.xml" 
+        ctest --build-config Debug --output-on-failure --verbose --output-junit "${{ env.TEST_RESULTS_DIR }}/test-results.xml" 
 
     - name: Upload test results
       uses: actions/upload-artifact@v4

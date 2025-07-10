@@ -398,6 +398,8 @@ Testing/*
 /project/bin/
 /install/
 /project/install/
+/test-results/
+/project/test-results/
 # Ignore CMake cache files
 CMakeCache.txt
 project/CMakeCache.txt
