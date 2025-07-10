@@ -5,6 +5,7 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 
 * [Simplified Usage Guide](./docs/SIMPLIFIED_USAGE.md)
 * [Testing Frameworks Integration](./docs/TESTING_SUMMARY.md)
+* [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md)
 
 ## Features
 
@@ -63,6 +64,20 @@ ctest --build-target "build"
 
 ### Customizing for Your Project
 Edit [ProjectMetadata.cmake](./project/ProjectMetadata.cmake) to set your project name, version, and description.
+
+## CI/CD Pipeline
+
+This boilerplate includes a comprehensive GitHub Actions workflow with fail-fast testing strategy. The pipeline runs tests first for early failure detection, then builds clean production artifacts only if all tests pass.
+
+**Key Features:**
+- **Test → Build → Publish** workflow for optimal efficiency
+- **Fail-fast testing** across all platforms (Linux, macOS, Windows)
+- **Clean production artifacts** with `BUILD_TESTING=OFF` on release builds
+- **Automatic publishing** on tagged releases
+
+For detailed information, see the [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md).
+
+The pipeline automatically triggers on pushes to `main`/`dev` branches and pull requests, ensuring code quality with efficient resource usage.
 
 ### Contributing
 
