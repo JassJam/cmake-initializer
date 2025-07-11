@@ -64,6 +64,7 @@ jobs:
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
           ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD }}
+          ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/macos
@@ -78,6 +79,7 @@ jobs:
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
           ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD }}
+          ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/windows
@@ -92,6 +94,7 @@ jobs:
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
           ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD }}
+          ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
 
   build:
     name: Build (${{ matrix.config.name }})
