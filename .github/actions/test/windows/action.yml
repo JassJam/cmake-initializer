@@ -11,6 +11,12 @@ inputs:
   config-output:
     description: 'Output directory for the test artifacts'
     required: true
+  ctest-site:
+    description: 'CTest dashboard site URL (optional)'
+    required: false
+  ctest-location:
+    description: 'CTest dashboard location path (optional)'
+    required: false
 
 runs:
   using: "composite"
@@ -34,3 +40,5 @@ runs:
         config-os: ${{ inputs.config-os }}
         config-preset: ${{ inputs.config-preset }}
         config-output: ${{ inputs.config-output }}
+        ctest-site: ${{ inputs.ctest-site }}
+        ctest-location: ${{ inputs.ctest-location }}

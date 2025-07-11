@@ -14,6 +14,12 @@ inputs:
   config-output:
     description: 'Output directory for the test artifacts'
     required: true
+  ctest-site:
+    description: 'CTest dashboard site URL (optional)'
+    required: false
+  ctest-location:
+    description: 'CTest dashboard location path (optional)'
+    required: false
 
 runs:
   using: "composite"
@@ -55,7 +61,22 @@ runs:
       run: |
         Write-Host "=== Configuring ${{ inputs.config-name }} for testing ==="
         # Configure specifically for testing with all test targets enabled
-        cmake -S ./project -B "${{ env.BUILD_DIR }}" --preset ${{ inputs.config-preset }} -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_DIR }}" -DBUILD_TESTING=ON
+        $configArgs = @(
+          "-S", "./project",
+          "-B", "${{ env.BUILD_DIR }}",
+          "--preset", "${{ inputs.config-preset }}",
+          "-DCMAKE_INSTALL_PREFIX=${{ env.INSTALL_DIR }}",
+          "-DBUILD_TESTING=ON"
+        )
+        
+        # Add CTest upload configuration if secrets are provided
+        if ("${{ inputs.ctest-site }}" -ne "" -and "${{ inputs.ctest-location }}" -ne "") {
+          $configArgs += "-DCTEST_DROP_SITE_PRESET=${{ inputs.ctest-site }}"
+          $configArgs += "-DCTEST_DROP_LOCATION_PRESET=${{ inputs.ctest-location }}"
+          Write-Host "CTest upload configured for site: ${{ inputs.ctest-site }}"
+        }
+        
+        & cmake @configArgs
 
     - name: Build project for testing (${{ inputs.config-name }})
       shell: pwsh
@@ -74,6 +95,15 @@ runs:
         cd "${{ env.BUILD_DIR }}"
         # Run tests with verbose output and JUnit XML results
         ctest --build-config Debug --verbose --output-on-failure
+
+    - name: Upload test results to dashboard
+      if: inputs.ctest-site != '' && inputs.ctest-location != ''
+      shell: pwsh
+      run: |
+        Write-Host "=== Uploading test results to dashboard ==="
+        cd "${{ env.BUILD_DIR }}"
+        # Submit test results to dashboard
+        ctest -D Experimental
 
     - name: Cleanup test environment
       if: always()

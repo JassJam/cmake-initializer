@@ -59,6 +59,8 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
+          ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
+          ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/macos
@@ -68,6 +70,8 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
+          ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
+          ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/windows
@@ -77,6 +81,8 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
+          ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
+          ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
 
   build:
     name: Build (${{ matrix.config.name }})
