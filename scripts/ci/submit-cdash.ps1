@@ -14,7 +14,8 @@ param(
     [string]$CdashSite = $env:CTEST_DASHBOARD_SITE,
     [string]$CdashLocation = $env:CTEST_DASHBOARD_LOCATION,
     [string]$AuthToken = $env:CDASH_AUTH_TOKEN,
-    [string]$DropMethod = $env:CTEST_DROP_METHOD
+    [string]$DropMethod = $env:CTEST_DROP_METHOD,
+    [string]$DashboardModel = $env:CTEST_DASHBOARD_MODEL
 )
 
 # Validate required parameters
@@ -33,12 +34,17 @@ if ([string]::IsNullOrEmpty($DropMethod)) {
     $DropMethod = "https"
 }
 
+if ([string]::IsNullOrEmpty($DashboardModel)) {
+    $DashboardModel = "Continuous"
+}
+
 Write-Host "=== CI CDash Submission ==="
 Write-Host "Build Directory: $BuildDir"
 Write-Host "Source Directory: $SourceDir"
 Write-Host "Build Name: $BuildName"
 Write-Host "CDash Site: $CdashSite"
 Write-Host "CDash Location: $CdashLocation"
+Write-Host "Dashboard Model: $DashboardModel"
 Write-Host "Auth Token: $($AuthToken.Length -gt 0 ? 'Present' : 'Not provided')"
 
 # Validate directories exist
@@ -64,6 +70,7 @@ $env:CTEST_SITE = $env:RUNNER_NAME ?? $env:COMPUTERNAME ?? "CI"
 $env:CTEST_DROP_SITE = $CdashSite
 $env:CTEST_DROP_LOCATION = $CdashLocation
 $env:CTEST_DROP_METHOD = $DropMethod
+$env:CTEST_DASHBOARD_MODEL = $DashboardModel
 
 # Set auth token if provided
 if ($AuthToken.Length -gt 0) {
