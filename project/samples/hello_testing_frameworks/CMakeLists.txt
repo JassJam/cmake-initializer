@@ -7,6 +7,8 @@ set_property(CACHE TEST_FRAMEWORK PROPERTY STRINGS "doctest" "gtest" "catch2" "b
 message(STATUS "Using testing framework: ${TEST_FRAMEWORK}")
 
 # Register the test framework globally
+# NOTE: If DEFAULT_TEST_FRAMEWORK is defined in your preset, this registration
+# is automatic and this call can be omitted
 register_test_framework(${TEST_FRAMEWORK})
 
 # Create library to test

@@ -4,6 +4,7 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 ## Less boilerplate
 
 * [Simplified Usage Guide](./docs/SIMPLIFIED_USAGE.md)
+* [Preset-Based Configuration Features](./docs/PRESET_FEATURES.md)
 * [Testing Frameworks Integration](./docs/TESTING_SUMMARY.md)
 * [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md)
 
@@ -74,6 +75,11 @@ This boilerplate includes a comprehensive GitHub Actions workflow with fail-fast
 - **Fail-fast testing** across all platforms (Linux, macOS, Windows)
 - **Clean production artifacts** with `BUILD_TESTING=OFF` on release builds
 - **Automatic publishing** on tagged releases
+- **CTest Dashboard Integration**: Automatic test result uploads when configured with repository secrets:
+  - `CTEST_DASHBOARD_SITE`: Your dashboard hostname
+  - `CTEST_DASHBOARD_LOCATION`: Upload endpoint path
+  - `CTEST_SUBMIT_URL_PRESET`: Complete URL for CTest submission
+  - `CTEST_TEST_TIMEOUT_PRESET`: Test timeout in seconds
 
 For detailed information, see the [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md).
 
