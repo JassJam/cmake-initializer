@@ -28,11 +28,12 @@ runs:
     - name: Setup test environment
       shell: pwsh
       run: |
-        $BUILD_DIR="${{ runner.temp }}/${{ inputs.config-output }}/build"
-        $INSTALL_DIR="${{ runner.temp }}/${{ inputs.config-output }}/install"
-        $TEST_RESULTS_DIR="${{ runner.temp }}/${{ inputs.config-output }}/test-results"
+        # Use consistent path separators for Windows
+        $BUILD_DIR = Join-Path "${{ runner.temp }}" "${{ inputs.config-output }}" "build"
+        $INSTALL_DIR = Join-Path "${{ runner.temp }}" "${{ inputs.config-output }}" "install"
+        $TEST_RESULTS_DIR = Join-Path "${{ runner.temp }}" "${{ inputs.config-output }}" "test-results"
 
-        # Create directory if it doesn't exist
+        # Create directories if they don't exist
         New-Item -ItemType Directory -Force -Path $BUILD_DIR -ErrorAction SilentlyContinue
         New-Item -ItemType Directory -Force -Path $INSTALL_DIR -ErrorAction SilentlyContinue
         New-Item -ItemType Directory -Force -Path $TEST_RESULTS_DIR -ErrorAction SilentlyContinue
@@ -49,6 +50,10 @@ runs:
         # Unique artifact name
         $ARTIFACT_NAME = "${{ inputs.config-output }}-test-results-$VERSION"
         Add-Content -Path $env:GITHUB_ENV -Value "ARTIFACT_NAME=$ARTIFACT_NAME"
+
+        Write-Host "Build Dir: $BUILD_DIR"
+        Write-Host "Install Dir: $INSTALL_DIR"
+        Write-Host "Test Results Dir: $TEST_RESULTS_DIR"
 
     - name: Configure project for testing
       shell: pwsh
@@ -70,8 +75,34 @@ runs:
       run: |
         cd "${{ env.BUILD_DIR }}"
         
+        # Create the test results file path
+        $TEST_RESULTS_FILE = Join-Path "${{ env.TEST_RESULTS_DIR }}" "test-results.xml"
+        
         # Run tests with verbose output and JUnit XML results
-        ctest --build-config Debug --output-on-failure --verbose --output-junit "${{ env.TEST_RESULTS_DIR }}/test-results.xml" 
+        ctest --build-config Debug --output-on-failure --verbose --output-junit "$TEST_RESULTS_FILE"
+        
+        # Verify the file was created
+        if (Test-Path $TEST_RESULTS_FILE) {
+            Write-Host "Test results file created successfully at: $TEST_RESULTS_FILE"
+            Write-Host "File size: $((Get-Item $TEST_RESULTS_FILE).Length) bytes"
+        } else {
+            Write-Host "ERROR: Test results file was not created!"
+            exit 1
+        }
+
+    - name: Debug test results file
+      if: always()
+      shell: pwsh
+      run: |
+        $TEST_RESULTS_FILE = Join-Path "${{ env.TEST_RESULTS_DIR }}" "test-results.xml"
+        Write-Host "Looking for test results at: $TEST_RESULTS_FILE"
+        Write-Host "File exists: $(Test-Path $TEST_RESULTS_FILE)"
+        if (Test-Path $TEST_RESULTS_FILE) {
+          Write-Host "File content:"
+          Get-Content $TEST_RESULTS_FILE
+        }
+        Write-Host "All XML files in test results directory:"
+        Get-ChildItem -Path "${{ env.TEST_RESULTS_DIR }}" -Filter "*.xml" -Recurse
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
