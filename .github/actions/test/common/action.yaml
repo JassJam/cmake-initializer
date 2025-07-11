@@ -1,5 +1,9 @@
 permissions:
+  id-token: write
   contents: read
+  checks: write
+  pull-requests: write
+  actions: read
 
 inputs:
   config-name:
@@ -103,8 +107,9 @@ runs:
       if: always()
       with:
         name: Test Results (${{ inputs.config-name }})
-        path: ${{ env.TEST_RESULTS_DIR }}/*.xml
+        path: ${{ env.TEST_RESULTS_DIR }}/test-results.xml
         reporter: java-junit
+        fail-on-error: true
         path-replace-backslashes: 'false'
 
     - name: Cleanup test environment
