@@ -100,7 +100,7 @@ runs:
 
     - name: Publish Test Results (Linux)
       uses: EnricoMi/publish-unit-test-result-action@2
-      if:   if: (!cancelled())
+      if: (!cancelled())
       with:
         files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
         check_name: "Test Results (${{ inputs.config-name }})"
