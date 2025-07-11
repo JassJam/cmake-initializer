@@ -25,46 +25,6 @@ Define `DEFAULT_TEST_FRAMEWORK` in your CMake preset to automatically register a
 }
 ```
 
-## CTest Dashboard Upload
-
-### Overview
-Configure automatic test result uploads to CTest dashboards (CDash, etc.) directly from presets.
-
-### Configuration Methods
-```json
-{
-    "cacheVariables": {
-        "CTEST_DROP_SITE": "my.cdash.org",
-        "CTEST_DROP_LOCATION": "/submit.php?project=MyProject",
-        "CTEST_DROP_METHOD": "https"
-    }
-}
-```
-
-### Additional Configuration
-
-#### Test Timeout
-```json
-{
-    "cacheVariables": {
-        "CTEST_TEST_TIMEOUT_PRESET": "300"
-    }
-}
-```
-*Note: Defaults to "https" if not specified*
-
-### GitHub Actions Integration
-
-#### Repository Secrets
-Add these secrets to your GitHub repository (Settings → Secrets and variables → Actions):
-
-| Secret Name | Example Value | Description |
-|-------------|---------------|-------------|
-| `CTEST_DASHBOARD_SITE` | `my.cdash.org` | Dashboard hostname |
-| `CTEST_DASHBOARD_LOCATION` | `/submit.php?project=MyProject` | Upload endpoint path |
-| `CTEST_TEST_TIMEOUT_PRESET` | `300` | Test timeout in seconds |
-| `CTEST_DROP_METHOD` | `https` | HTTP protocol for uploads |
-
 ## Available Presets
 
 | Platform | Development | Testing | Production |
