@@ -67,7 +67,7 @@ Configure automatic test result uploads to CTest dashboards (CDash, etc.) direct
 ```json
 {
     "cacheVariables": {
-        "CTEST_DROP_METHOD": "http"
+        "CTEST_DROP_METHOD": "https"
     }
 }
 ```
@@ -84,6 +84,7 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 | `CTEST_DASHBOARD_LOCATION` | `/submit.php?project=MyProject` | Upload endpoint path |
 | `CTEST_SUBMIT_URL_PRESET` | `https://my.cdash.org/submit.php?project=MyProject` | Complete URL for CTest submission |
 | `CTEST_TEST_TIMEOUT_PRESET` | `300` | Test timeout in seconds |
+| `CTEST_DROP_METHOD` | `https` | HTTP protocol for uploads |
 
 ## Available Presets
 
