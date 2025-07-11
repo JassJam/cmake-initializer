@@ -11,11 +11,21 @@ inputs:
   config-output:
     description: 'Output directory for the test artifacts'
     required: true
+  config-test-preset:
+    description: 'Test preset to use for the tests'
+    required: true
+
   ctest-site:
     description: 'CTest dashboard site URL (optional)'
     required: false
   ctest-location:
     description: 'CTest dashboard location path (optional)'
+    required: false
+  ctest-submit-url:
+    description: 'Complete URL for CTest submission (optional)'
+    required: false
+  ctest-test-timeout:
+    description: 'Test timeout in seconds (optional)'
     required: false
 
 runs:
@@ -41,6 +51,7 @@ runs:
         config-name: ${{ inputs.config-name }}
         config-os: ${{ inputs.config-os }}
         config-preset: ${{ inputs.config-preset }}
+        config-test-preset: ${{ inputs.config-test-preset }}
         config-output: ${{ inputs.config-output }}
         ctest-site: ${{ inputs.ctest-site }}
         ctest-location: ${{ inputs.ctest-location }}

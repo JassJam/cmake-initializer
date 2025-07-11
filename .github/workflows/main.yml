@@ -20,29 +20,35 @@ jobs:
         config:
           - name: linux-x64-clang
             os: ubuntu-latest
-            preset: test-unixlike-clang-debug
+            preset: unixlike-clang-debug
+            test-preset: test-unixlike-clang-debug
             output: linux-x64-clang
           - name: linux-x64-gcc
             os: ubuntu-latest
-            preset: test-unixlike-gcc-debug
+            preset: unixlike-gcc-debug
+            test-preset: test-unixlike-gcc-debug
             output: linux-x64-gcc
 
           - name: macOS-x64-clang
             os: macos-latest
-            preset: test-unixlike-clang-debug
+            preset: unixlike-clang-debug
+            test-preset: test-unixlike-clang-debug
             output: macOS-x64-clang
           - name: macOS-x64-gcc
             os: macos-latest
-            preset: test-unixlike-gcc-debug
+            preset: unixlike-gcc-debug
+            test-preset: test-unixlike-gcc-debug
             output: macOS-x64-gcc
 
           - name: windows-x64-clang
             os: windows-latest
-            preset: test-windows-clang-debug
+            preset: windows-clang-debug
+            test-preset: test-windows-clang-debug
             output: windows-x64-clang
           - name: windows-x64-msvc
             os: windows-latest
-            preset: test-windows-msvc-debug
+            preset: windows-msvc-debug
+            test-preset: test-windows-msvc-debug
             output: windows-x64-msvc
 
     steps:
@@ -58,7 +64,9 @@ jobs:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
+          config-test-preset: ${{ matrix.config.test-preset }}
           config-output: ${{ matrix.config.output }}
+
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
@@ -71,7 +79,9 @@ jobs:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
+          config-test-preset: ${{ matrix.config.test-preset }}
           config-output: ${{ matrix.config.output }}
+          
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
@@ -84,7 +94,9 @@ jobs:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
+          config-test-preset: ${{ matrix.config.test-preset }}
           config-output: ${{ matrix.config.output }}
+
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}

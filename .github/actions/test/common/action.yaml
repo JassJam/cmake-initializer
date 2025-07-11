@@ -11,9 +11,13 @@ inputs:
   config-preset:
     description: 'Configuration preset to use for the tests'
     required: true
+  config-test-preset:
+    description: 'Test preset to use for the tests'
+    required: true
   config-output:
     description: 'Output directory for the test artifacts'
     required: true
+
   ctest-site:
     description: 'CTest dashboard site URL (optional)'
     required: false
@@ -79,6 +83,12 @@ runs:
         if ("${{ inputs.ctest-site }}" -ne "" -and "${{ inputs.ctest-location }}" -ne "") {
           $configArgs += "-DCTEST_DROP_SITE_PRESET=${{ inputs.ctest-site }}"
           $configArgs += "-DCTEST_DROP_LOCATION_PRESET=${{ inputs.ctest-location }}"
+          if ("${{ inputs.ctest-submit-url }}" -ne "") {
+            $configArgs += "-DCTEST_DROP_SITE_URL_PRESET=${{ inputs.ctest-submit-url }}"
+          }
+          if ("${{ inputs.ctest-test-timeout }}" -ne "") {
+            $configArgs += "-DCTEST_TEST_TIMEOUT_PRESET=${{ inputs.ctest-test-timeout }}"
+          }
           Write-Host "CTest upload configured for site: ${{ inputs.ctest-site }}"
         }
         
@@ -108,8 +118,15 @@ runs:
       run: |
         Write-Host "=== Uploading test results to dashboard ==="
         cd "${{ env.BUILD_DIR }}"
-        # Submit test results to dashboard
-        ctest -D Experimental
+
+        @configArgs = @(
+          "--output-on-failure",
+          "--build-config", "Debug",
+          "--preset", "${{ inputs.config-test-preset }}",
+          "-D", "Experimental",
+        )
+
+        & ctest @configArgs
 
     - name: Cleanup test environment
       if: always()
