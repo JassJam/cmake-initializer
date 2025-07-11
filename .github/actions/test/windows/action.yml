@@ -21,6 +21,7 @@ inputs:
   ctest-test-timeout:
     description: 'Test timeout in seconds (optional)'
     required: false
+    default: '300'
   ctest-drop-method:
     description: 'HTTP protocol for uploads (default: https)'
     required: false
@@ -28,6 +29,10 @@ inputs:
   ctest-auth-token:
     description: 'CDash authentication token (optional)'
     required: false
+  ctest-dashboard-model:
+    description: 'CDash dashboard model: Continuous, Nightly, or Experimental (default: Continuous)'
+    required: false
+    default: 'Continuous'
 
 runs:
   using: "composite"
@@ -56,3 +61,4 @@ runs:
         ctest-test-timeout: ${{ inputs.ctest-test-timeout }}
         ctest-drop-method: ${{ inputs.ctest-drop-method }}
         ctest-auth-token: ${{ inputs.ctest-auth-token }}
+        ctest-dashboard-model: ${{ inputs.ctest-dashboard-model }}

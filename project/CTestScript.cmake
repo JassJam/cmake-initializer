@@ -64,8 +64,15 @@ message(STATUS "  Binary: ${CTEST_BINARY_DIRECTORY}")
 message(STATUS "  Build Name: ${CTEST_BUILD_NAME}")
 message(STATUS "  Site: ${CTEST_SITE}")
 
+# Determine dashboard model from environment or default to Continuous
+set(DASHBOARD_MODEL "Continuous")
+if(DEFINED ENV{CTEST_DASHBOARD_MODEL})
+    set(DASHBOARD_MODEL "$ENV{CTEST_DASHBOARD_MODEL}")
+endif()
+
 # Initialize the test session
-ctest_start("Continuous")
+message(STATUS "Using dashboard model: ${DASHBOARD_MODEL}")
+ctest_start("${DASHBOARD_MODEL}")
 
 # Run the tests
 message(STATUS "Running tests...")

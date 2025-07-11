@@ -24,6 +24,7 @@ inputs:
   ctest-test-timeout:
     description: 'Test timeout in seconds (optional)'
     required: false
+    default: '300'
   ctest-drop-method:
     description: 'HTTP protocol for uploads (default: https)'
     required: false
@@ -31,6 +32,10 @@ inputs:
   ctest-auth-token:
     description: 'CDash authentication token (optional)'
     required: false
+  ctest-dashboard-model:
+    description: 'CDash dashboard model: Continuous, Nightly, or Experimental (default: Continuous)'
+    required: false
+    default: 'Continuous'
 
 runs:
   using: "composite"
@@ -113,7 +118,17 @@ runs:
           -CdashSite "${{ inputs.ctest-site }}" `
           -CdashLocation "${{ inputs.ctest-location }}" `
           -AuthToken "${{ inputs.ctest-auth-token }}" `
-          -DropMethod "${{ inputs.ctest-drop-method }}"
+          -DropMethod "${{ inputs.ctest-drop-method }}" `
+          -DashboardModel "${{ inputs.ctest-dashboard-model }}"
+
+    - name: Run local CTest dashboard (${{ inputs.config-name }})
+      if: success() && (inputs.ctest-site == '' || inputs.ctest-location == '')
+      shell: pwsh
+      run: |
+        Write-Host "=== Running local CTest dashboard (no CDash submission) ==="
+        Set-Location "${{ env.BUILD_DIR }}"
+        # Run CTest in Continuous mode locally without submission
+        ctest -D Continuous --build-config Debug --verbose
 
     - name: Cleanup test environment
       if: always()
