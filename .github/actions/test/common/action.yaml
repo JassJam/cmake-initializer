@@ -108,7 +108,7 @@ runs:
       shell: pwsh
       run: |
         Write-Host "=== Running tests for ${{ inputs.config-name }} on ${{ inputs.config-os }} ==="
-        cd "${{ env.BUILD_DIR }}"
+        Set-Location "${{ env.BUILD_DIR }}"
         # Run tests with verbose output and JUnit XML results
         ctest --build-config Debug --verbose --output-on-failure
 
@@ -117,13 +117,13 @@ runs:
       shell: pwsh
       run: |
         Write-Host "=== Uploading test results to dashboard ==="
-        cd "${{ env.BUILD_DIR }}"
+        Set-Location "${{ env.BUILD_DIR }}"
 
-        @configArgs = @(
+        $configArgs = @(
           "--output-on-failure",
           "--build-config", "Debug",
           "--preset", "${{ inputs.config-test-preset }}",
-          "-D", "Experimental",
+          "-D", "Experimental"
         )
 
         & ctest @configArgs
@@ -132,8 +132,8 @@ runs:
       if: always()
       shell: pwsh
       run: |
-        $BUILD_DIR="${{ env.BUILD_DIR }}"
-        $INSTALL_DIR="${{ env.INSTALL_DIR }}"
+        $BUILD_DIR = "${{ env.BUILD_DIR }}"
+        $INSTALL_DIR = "${{ env.INSTALL_DIR }}"
 
         # Remove build and install directories (keep test results)
         Remove-Item -Path $BUILD_DIR -Recurse -Force -ErrorAction SilentlyContinue
