@@ -99,26 +99,8 @@ runs:
         retention-days: 7
 
     - name: Publish Test Results (Linux)
-      uses: EnricoMi/publish-unit-test-result-action/linux@2
-      if: runner.os == 'Linux'
-      with:
-        files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
-        check_name: "Test Results (${{ inputs.config-name }})"
-        comment_mode: failures
-        fail_on: test failures
-
-    - name: Publish Test Results (macOS)
-      uses: EnricoMi/publish-unit-test-result-action/macos@2
-      if: runner.os == 'macOS'
-      with:
-        files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
-        check_name: "Test Results (${{ inputs.config-name }})"
-        comment_mode: failures
-        fail_on: test failures
-
-    - name: Publish Test Results (Windows)
-      uses: EnricoMi/publish-unit-test-result-action/windows/bash@2
-      if: runner.os == 'Windows'
+      uses: EnricoMi/publish-unit-test-result-action@2
+      if:   if: (!cancelled())
       with:
         files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
         check_name: "Test Results (${{ inputs.config-name }})"
