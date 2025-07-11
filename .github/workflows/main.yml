@@ -61,6 +61,8 @@ jobs:
           config-output: ${{ matrix.config.output }}
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
+          ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
+          ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/macos
@@ -72,6 +74,8 @@ jobs:
           config-output: ${{ matrix.config.output }}
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
+          ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
+          ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/windows
@@ -83,6 +87,8 @@ jobs:
           config-output: ${{ matrix.config.output }}
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
+          ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
+          ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
 
   build:
     name: Build (${{ matrix.config.name }})

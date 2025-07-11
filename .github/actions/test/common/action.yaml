@@ -20,6 +20,12 @@ inputs:
   ctest-location:
     description: 'CTest dashboard location path (optional)'
     required: false
+  ctest-submit-url:
+    description: 'Complete URL for CTest submission (optional)'
+    required: false
+  ctest-test-timeout:
+    description: 'Test timeout in seconds (optional)'
+    required: false
 
 runs:
   using: "composite"
