@@ -21,34 +21,28 @@ jobs:
           - name: linux-x64-clang
             os: ubuntu-latest
             preset: unixlike-clang-debug
-            test-preset: test-unixlike-clang-debug
             output: linux-x64-clang
           - name: linux-x64-gcc
             os: ubuntu-latest
             preset: unixlike-gcc-debug
-            test-preset: test-unixlike-gcc-debug
             output: linux-x64-gcc
 
           - name: macOS-x64-clang
             os: macos-latest
             preset: unixlike-clang-debug
-            test-preset: test-unixlike-clang-debug
             output: macOS-x64-clang
           - name: macOS-x64-gcc
             os: macos-latest
             preset: unixlike-gcc-debug
-            test-preset: test-unixlike-gcc-debug
             output: macOS-x64-gcc
 
           - name: windows-x64-clang
             os: windows-latest
             preset: windows-clang-debug
-            test-preset: test-windows-clang-debug
             output: windows-x64-clang
           - name: windows-x64-msvc
             os: windows-latest
             preset: windows-msvc-debug
-            test-preset: test-windows-msvc-debug
             output: windows-x64-msvc
 
     steps:
