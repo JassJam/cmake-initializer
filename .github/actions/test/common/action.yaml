@@ -103,9 +103,9 @@ runs:
       if: always()
       with:
         name: Test Results (${{ inputs.config-name }})
-        path: ${{ env.TEST_RESULTS_DIR }}/test-results.xml
+        path: ${{ env.TEST_RESULTS_DIR }}/*.xml
         reporter: java-junit
-        fail-on-error: true
+        path-replace-backslashes: 'false'
 
     - name: Cleanup test environment
       if: always()
