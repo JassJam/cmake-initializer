@@ -64,13 +64,12 @@ jobs:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
-          config-test-preset: ${{ matrix.config.test-preset }}
           config-output: ${{ matrix.config.output }}
 
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
-          ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
+          ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/macos
@@ -79,13 +78,12 @@ jobs:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
-          config-test-preset: ${{ matrix.config.test-preset }}
           config-output: ${{ matrix.config.output }}
           
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
-          ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
+          ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/windows
@@ -94,13 +92,12 @@ jobs:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
-          config-test-preset: ${{ matrix.config.test-preset }}
           config-output: ${{ matrix.config.output }}
 
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
-          ctest-submit-url: ${{ secrets.CTEST_SUBMIT_URL_PRESET }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET }}
+          ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD }}
 
   build:
     name: Build (${{ matrix.config.name }})

@@ -31,23 +31,12 @@ Define `DEFAULT_TEST_FRAMEWORK` in your CMake preset to automatically register a
 Configure automatic test result uploads to CTest dashboards (CDash, etc.) directly from presets.
 
 ### Configuration Methods
-
-#### Method 1: Separate Site and Location (Legacy Compatible)
 ```json
 {
     "cacheVariables": {
-        "CTEST_DROP_SITE_PRESET": "my.cdash.org",
-        "CTEST_DROP_LOCATION_PRESET": "/submit.php?project=MyProject",
+        "CTEST_DROP_SITE": "my.cdash.org",
+        "CTEST_DROP_LOCATION": "/submit.php?project=MyProject",
         "CTEST_DROP_METHOD": "https"
-    }
-}
-```
-
-#### Method 2: Complete URL (CMake 3.14+)
-```json
-{
-    "cacheVariables": {
-        "CTEST_SUBMIT_URL_PRESET": "https://my.cdash.org/submit.php?project=MyProject"
     }
 }
 ```
@@ -62,15 +51,6 @@ Configure automatic test result uploads to CTest dashboards (CDash, etc.) direct
     }
 }
 ```
-
-#### HTTP Protocol Selection
-```json
-{
-    "cacheVariables": {
-        "CTEST_DROP_METHOD": "https"
-    }
-}
-```
 *Note: Defaults to "https" if not specified*
 
 ### GitHub Actions Integration
@@ -82,7 +62,6 @@ Add these secrets to your GitHub repository (Settings → Secrets and variables 
 |-------------|---------------|-------------|
 | `CTEST_DASHBOARD_SITE` | `my.cdash.org` | Dashboard hostname |
 | `CTEST_DASHBOARD_LOCATION` | `/submit.php?project=MyProject` | Upload endpoint path |
-| `CTEST_SUBMIT_URL_PRESET` | `https://my.cdash.org/submit.php?project=MyProject` | Complete URL for CTest submission |
 | `CTEST_TEST_TIMEOUT_PRESET` | `300` | Test timeout in seconds |
 | `CTEST_DROP_METHOD` | `https` | HTTP protocol for uploads |
 
