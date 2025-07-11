@@ -90,20 +90,6 @@ runs:
             exit 1
         }
 
-    - name: Debug test results file
-      if: always()
-      shell: pwsh
-      run: |
-        $TEST_RESULTS_FILE = Join-Path "${{ env.TEST_RESULTS_DIR }}" "test-results.xml"
-        Write-Host "Looking for test results at: $TEST_RESULTS_FILE"
-        Write-Host "File exists: $(Test-Path $TEST_RESULTS_FILE)"
-        if (Test-Path $TEST_RESULTS_FILE) {
-          Write-Host "File content:"
-          Get-Content $TEST_RESULTS_FILE
-        }
-        Write-Host "All XML files in test results directory:"
-        Get-ChildItem -Path "${{ env.TEST_RESULTS_DIR }}" -Filter "*.xml" -Recurse
-
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
@@ -112,27 +98,32 @@ runs:
         path: ${{ env.TEST_RESULTS_DIR }}/
         retention-days: 7
 
-    - name: print "${{ runner.temp }}" Recurse
-      shell: pwsh
-      run: |
-        # Print the contents of the temp directory for debugging
-        Write-Host "=== Contents of the Build Directory ==="
-        Get-ChildItem -Path "${{ env.BUILD_DIR }}" -Recurse | Format-Table -AutoSize
-
-        Write-Host "=== Contents of the Install Directory ==="
-        Get-ChildItem -Path "${{ env.INSTALL_DIR }}" -Recurse | Format-Table -AutoSize
-
-        Write-Host "=== Contents of the Test Results Directory ==="
-        Get-ChildItem -Path "${{ env.TEST_RESULTS_DIR }}" -Recurse | Format-Table -AutoSize
-
-    - name: Publish Test Results
-      uses: dorny/test-reporter@v2
-      if: always()
+    - name: Publish Test Results (Linux)
+      uses: EnricoMi/publish-unit-test-result-action/linux@2
+      if: runner.os == 'Linux'
       with:
-        name: Test Results (${{ inputs.config-name }})
-        path: ${{ env.TEST_RESULTS_DIR }}/test-results.xml
-        reporter: java-junit
-        fail-on-error: true
+        files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
+        check_name: "Test Results (${{ inputs.config-name }})"
+        comment_mode: failures
+        fail_on: test failures
+
+    - name: Publish Test Results (macOS)
+      uses: EnricoMi/publish-unit-test-result-action/macos@2
+      if: runner.os == 'macOS'
+      with:
+        files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
+        check_name: "Test Results (${{ inputs.config-name }})"
+        comment_mode: failures
+        fail_on: test failures
+
+    - name: Publish Test Results (Windows)
+      uses: EnricoMi/publish-unit-test-result-action/windows/bash@2
+      if: runner.os == 'Windows'
+      with:
+        files: "${{ env.TEST_RESULTS_DIR }}/test-results.xml"
+        check_name: "Test Results (${{ inputs.config-name }})"
+        comment_mode: failures
+        fail_on: test failures
 
     - name: Cleanup test environment
       if: always()
