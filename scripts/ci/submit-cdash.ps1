@@ -90,7 +90,7 @@ if (-not (Test-Path $CTestScript)) {
 }
 
 Write-Host "`n=== Running CTest Submission ==="
-ctest -S $CTestScript -V
+ctest -S $CTestScript --build-config Debug --verbose --output-on-failure
 
 Push-Location -StackName "CDashSubmission"
 
