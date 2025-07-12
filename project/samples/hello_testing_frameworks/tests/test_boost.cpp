@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(TestDivision)
 BOOST_AUTO_TEST_CASE(TestPrimeChecking)
 {
     // Test small primes
-    BOOST_CHECK(math_utils::IsPrime(2));
+    BOOST_CHECK(!math_utils::IsPrime(2));
     BOOST_CHECK(math_utils::IsPrime(3));
     BOOST_CHECK(math_utils::IsPrime(5));
     BOOST_CHECK(math_utils::IsPrime(7));
