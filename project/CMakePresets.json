@@ -9,7 +9,7 @@
   "configurePresets": [
     {
       "name": "conf-common",
-      "description": "General settings that apply to all configurations",
+      "description": "General settings that apply to all configurations. See docs/CMAKE_VARIABLES.md for all available options.",
       "hidden": true,
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",

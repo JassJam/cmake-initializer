@@ -7,6 +7,7 @@ include(TargetAddCompilerWarnings)
 include(TargetHardening)
 include(TargetSanitizers)
 include(StaticAnalysis)
+include(StaticLinking)
 include(ProjectOptions.cmake)
 
 # enable IPO optimization if needed
@@ -35,6 +36,13 @@ targets_enable_sanitizers(
 )
 
 #
+
+# enable static linking if needed
+if (ENABLE_STATIC_RUNTIME)
+    targets_enable_static_linking(
+        TARGETS ${THIS_PROJECT_NAME}_options
+    )
+endif()
 
 # enable unity build if needed
 set_target_properties(

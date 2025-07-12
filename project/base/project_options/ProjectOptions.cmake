@@ -37,6 +37,9 @@ option(ENABLE_MSAN "Enable memory sanitizer (detects uninitialized reads)" OFF)
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" ${ENABLE_STATIC_ANALYSIS})
 option(ENABLE_CPPCHECK "Enable cppcheck static analysis" ${ENABLE_STATIC_ANALYSIS})
 
+# === LINKING OPTIONS ===
+option(ENABLE_STATIC_RUNTIME "Statically link runtime libraries for better portability" OFF)
+
 # Mark advanced options
 mark_as_advanced(
     ENABLE_ASAN ENABLE_LSAN ENABLE_UBSAN ENABLE_TSAN ENABLE_MSAN
@@ -59,6 +62,36 @@ message(STATUS "DEV_MODE: ${DEV_MODE}")
 message(STATUS "RELEASE_MODE: ${RELEASE_MODE}")
 message(STATUS "Sanitizers: ${ENABLE_SANITIZERS} (ASan:${ENABLE_ASAN}, UBSan:${ENABLE_UBSAN})")
 message(STATUS "Static analysis: ${ENABLE_STATIC_ANALYSIS} (clang-tidy:${ENABLE_CLANG_TIDY}, cppcheck:${ENABLE_CPPCHECK})")
-message(STATUS "Hardening: ${ENABLE_HARDENING}")
-message(STATUS "IPO/LTO: ${ENABLE_IPO}")
-message(STATUS "========================================")
+message(STATUS "Static linking: runtime:${ENABLE_STATIC_RUNTIME}")
+
+# Configure static linking flags with auto-detection
+if(ENABLE_STATIC_RUNTIME)
+    include(GetCurrentCompiler)
+    get_current_compiler(CURRENT_COMPILER)
+    
+    message(STATUS "Auto-enabling static linking of all runtime libraries for ${CURRENT_COMPILER}")
+    
+    set(STATIC_LINK_FLAGS "")
+    
+    # Apply compiler-specific static linking
+    if(CURRENT_COMPILER STREQUAL "GCC" OR CURRENT_COMPILER STREQUAL "CLANG")
+        list(APPEND STATIC_LINK_FLAGS "-static-libstdc++" "-static-libgcc")
+        message(STATUS "Enabling static linking of libstdc++ and libgcc for ${CURRENT_COMPILER}")
+    elseif(CURRENT_COMPILER STREQUAL "MSVC")
+        # For MSVC, use /MT instead of /MD for static runtime
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC runtime library" FORCE)
+        message(STATUS "Enabling static runtime linking for MSVC")
+    elseif(CURRENT_COMPILER STREQUAL "INTEL")
+        list(APPEND STATIC_LINK_FLAGS "-static-intel")
+        message(STATUS "Enabling static linking for Intel compiler")
+    else()
+        message(WARNING "Static linking configuration not defined for compiler: ${CURRENT_COMPILER}")
+    endif()
+    
+    # Apply flags globally if any were set
+    if(STATIC_LINK_FLAGS)
+        string(REPLACE ";" " " STATIC_LINK_FLAGS_STR "${STATIC_LINK_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${STATIC_LINK_FLAGS_STR}")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${STATIC_LINK_FLAGS_STR}")
+    endif()
+endif()
