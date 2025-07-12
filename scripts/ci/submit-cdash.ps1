@@ -91,13 +91,15 @@ if (-not (Test-Path $CTestScript)) {
 
 Write-Host "`n=== Running CTest Submission ==="
 ctest -S $CTestScript --build-config Debug --verbose --output-on-failure
+$ctestExitCode = $LASTEXITCODE
 
-Push-Location -StackName "CDashSubmission"
+Pop-Location -StackName "CDashSubmission"
 
-if ($LASTEXITCODE -eq 0) {
+if ($ctestExitCode -eq 0) {
     Write-Host "✅ CDash submission completed successfully"
-} else {
-    Write-Warning "CDash submission failed with exit code: $LASTEXITCODE"
-    # Don't fail the CI build for CDash submission failures
     exit 0
+} else {
+    Write-Error "❌ CTest execution failed with exit code: $ctestExitCode"
+    Write-Error "This indicates that tests failed or there was an issue with the test execution"
+    exit $ctestExitCode
 }

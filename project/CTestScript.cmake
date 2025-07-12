@@ -77,12 +77,26 @@ ctest_start("${DASHBOARD_MODEL}")
 # Run the tests
 message(STATUS "Running tests...")
 set(CTEST_CONFIGURATION_TYPE "Debug")
-ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}")
+ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" RETURN_VALUE TEST_RESULT)
+
+# Check test results
+if(TEST_RESULT EQUAL 0)
+    message(STATUS "✅ All tests passed successfully")
+else()
+    message(FATAL_ERROR "❌ One or more tests failed (return code: ${TEST_RESULT})")
+endif()
 
 # Submit results to CDash with authentication if token is available
 if(DEFINED ENV{CTEST_CDASH_AUTH_TOKEN} AND NOT "$ENV{CTEST_CDASH_AUTH_TOKEN}" STREQUAL "")
     message(STATUS "Submitting to CDash with authentication...")
-    ctest_submit(HTTPHEADER "Authorization: Bearer $ENV{CTEST_CDASH_AUTH_TOKEN}")
+    ctest_submit(HTTPHEADER "Authorization: Bearer $ENV{CTEST_CDASH_AUTH_TOKEN}" RETURN_VALUE SUBMIT_RESULT)
+    
+    if(SUBMIT_RESULT EQUAL 0)
+        message(STATUS "✅ CDash submission completed successfully")
+    else()
+        message(WARNING "⚠️ CDash submission failed (return code: ${SUBMIT_RESULT})")
+        # Don't fail the build for submission failures, but tests already validated above
+    endif()
 else()
     message(STATUS "CTEST_CDASH_AUTH_TOKEN not set, skipping upload to CDash")
 endif()

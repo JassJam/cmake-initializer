@@ -98,7 +98,7 @@ runs:
         Write-Host "Built all targets including tests for validation"
 
     - name: Submit to CDash (${{ inputs.config-name }})
-      if: success() && inputs.ctest-site != '' && inputs.ctest-location != ''
+      if: inputs.ctest-site != '' && inputs.ctest-location != ''
       shell: pwsh
       run: |
         Write-Host "=== Submitting test results to CDash ==="
@@ -112,15 +112,28 @@ runs:
           -AuthToken "${{ inputs.ctest-auth-token }}" `
           -DropMethod "${{ inputs.ctest-drop-method }}" `
           -DashboardModel "${{ inputs.ctest-dashboard-model }}"
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ CDash submission failed - this usually indicates test failures"
+            exit $LASTEXITCODE
+        }
 
     - name: Run local CTest (${{ inputs.config-name }})
-      if: success() && (inputs.ctest-site == '' || inputs.ctest-location == '')
+      if: inputs.ctest-site == '' || inputs.ctest-location == ''
       shell: pwsh
       run: |
         Write-Host "=== Running local CTest (no CDash submission) ==="
         Set-Location "${{ env.BUILD_DIR }}"
         # Run regular CTest without dashboard operations
         ctest --build-config Debug --verbose --output-on-failure
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ CTest execution failed with exit code: $LASTEXITCODE"
+            Write-Error "One or more tests failed. Check the output above for details."
+            exit $LASTEXITCODE
+        }
+        
+        Write-Host "✅ All tests passed successfully"
 
     - name: Cleanup test environment
       if: always()
