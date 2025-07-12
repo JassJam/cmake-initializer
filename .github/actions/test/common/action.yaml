@@ -97,14 +97,6 @@ runs:
         Write-Host "=== Test Build Completed for ${{ inputs.config-name }} ==="
         Write-Host "Built all targets including tests for validation"
 
-    - name: Run tests with CTest (${{ inputs.config-name }})
-      shell: pwsh
-      run: |
-        Write-Host "=== Running tests for ${{ inputs.config-name }} on ${{ inputs.config-os }} ==="
-        Set-Location "${{ env.BUILD_DIR }}"
-        # Run tests with verbose output
-        ctest --build-config Debug --verbose --output-on-failure
-
     - name: Submit to CDash (${{ inputs.config-name }})
       if: success() && inputs.ctest-site != '' && inputs.ctest-location != ''
       shell: pwsh
@@ -121,14 +113,14 @@ runs:
           -DropMethod "${{ inputs.ctest-drop-method }}" `
           -DashboardModel "${{ inputs.ctest-dashboard-model }}"
 
-    - name: Run local CTest dashboard (${{ inputs.config-name }})
+    - name: Run local CTest (${{ inputs.config-name }})
       if: success() && (inputs.ctest-site == '' || inputs.ctest-location == '')
       shell: pwsh
       run: |
-        Write-Host "=== Running local CTest dashboard (no CDash submission) ==="
+        Write-Host "=== Running local CTest (no CDash submission) ==="
         Set-Location "${{ env.BUILD_DIR }}"
-        # Run CTest in Continuous mode locally without submission
-        ctest -D Continuous --build-config Debug --verbose
+        # Run regular CTest without dashboard operations
+        ctest --build-config Debug --verbose --output-on-failure
 
     - name: Cleanup test environment
       if: always()
