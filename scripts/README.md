@@ -1,6 +1,6 @@
-# Build Scripts
+# Build & Test Scripts
 
-This directory contains cross-platform PowerShell scripts for building, cleaning, and installing cmake-initializer projects.
+This directory contains cross-platform PowerShell scripts for building, testing, cleaning, and installing cmake-initializer projects.
 
 ## Getting Help
 
@@ -9,18 +9,19 @@ All scripts include comprehensive built-in help documentation accessible through
 ```powershell
 # Show basic help and syntax
 Get-Help .\scripts\build.ps1
+Get-Help .\scripts\test.ps1
 
 # Show detailed help with parameter descriptions and examples
 Get-Help .\scripts\build.ps1 -Detailed
 
 # Show just the examples
-Get-Help .\scripts\build.ps1 -Examples
+Get-Help .\scripts\test.ps1 -Examples
 
 # Show complete help with technical details
-Get-Help .\scripts\build.ps1 -Full
+Get-Help .\scripts\clean.ps1 -Full
 ```
 
-This works for all three scripts: `build.ps1`, `clean.ps1`, and `install.ps1`.
+This works for all scripts: `build.ps1`, `test.ps1`, `clean.ps1`, and `install.ps1`.
 
 ## Scripts Overview
 
@@ -47,10 +48,39 @@ Cross-platform build script that works on Windows, Linux, and macOS.
 - `Config` - Build configuration: Debug or Release (default: Release)
 - `Compiler` - Specific compiler: msvc, clang, gcc (auto-detected by default)
 - `Static` - Enable static runtime linking for portable builds
-- `Clean` - Clean build directory before building
-- `Install` - Install the project after building
 - `Jobs` - Number of parallel build jobs (default: CPU cores)
 - `Verbose` - Enable verbose build output
+
+### `test.ps1` - Test Script
+Cross-platform test execution script with comprehensive testing features.
+
+**Basic Usage:**
+```powershell
+# Run all tests with default settings
+.\scripts\test.ps1
+
+# Run tests in Debug configuration with verbose output
+.\scripts\test.ps1 -Config Debug -Verbose
+
+# Run specific tests with coverage
+.\scripts\test.ps1 -Filter "Unit.*" -Coverage
+
+# Run tests with JUnit output for CI/CD
+.\scripts\test.ps1 -Output junit -Parallel 4
+```
+
+**Parameters:**
+- `Config` - Build configuration: Debug or Release (default: Release)
+- `Preset` - CMake test preset to use (auto-detected by default)
+- `Compiler` - Specific compiler: msvc, clang, gcc (auto-detected by default)
+- `Filter` - Regular expression pattern to filter tests
+- `Parallel` - Number of parallel test jobs (default: CPU cores)
+- `Output` - Output format: default, verbose, junit, json
+- `Coverage` - Enable code coverage reporting
+- `Repeat` - Number of times to repeat the test suite
+- `Timeout` - Maximum time per test in seconds (default: 300)
+- `Valgrind` - Run tests under Valgrind (Linux/macOS only)
+- `Verbose` - Enable verbose test output
 
 ### `clean.ps1` - Clean Script
 Removes build artifacts and generated files.
@@ -129,25 +159,40 @@ pwsh ./scripts/build.ps1 -Config Debug -Static
 
 ## Examples
 
-**Quick development build:**
+**Quick development workflow:**
 ```powershell
-.\scripts\build.ps1 -Config Debug -Clean
+# Build and test in Debug mode
+.\scripts\build.ps1 -Config Debug
+.\scripts\test.ps1 -Config Debug -Verbose
+```
+
+**Complete development cycle:**
+```powershell
+# Clean, build, and test
+.\scripts\clean.ps1 -All -Force
+.\scripts\build.ps1 -Config Release -Static
+.\scripts\test.ps1 -Config Release -Coverage
+```
+
+**CI/CD pipeline simulation:**
+```powershell
+# Test with JUnit output and coverage
+.\scripts\test.ps1 -Output junit -Coverage -Parallel 4
+```
+
+**Cross-compiler testing:**
+```powershell
+# Test with different compilers
+.\scripts\build.ps1 -Compiler gcc -Config Debug
+.\scripts\test.ps1 -Compiler gcc -Config Debug
+
+.\scripts\build.ps1 -Compiler clang -Config Debug  
+.\scripts\test.ps1 -Compiler clang -Config Debug
 ```
 
 **Release build for distribution:**
 ```powershell
-.\scripts\build.ps1 -Config Release -Static -Install
-```
-
-**Full clean and rebuild:**
-```powershell
-.\scripts\clean.ps1 -All -Force
 .\scripts\build.ps1 -Config Release -Static
-```
-
-**Test different compilers:**
-```powershell
-.\scripts\build.ps1 -Compiler gcc -Config Debug
-.\scripts\build.ps1 -Compiler clang -Config Debug
-.\scripts\build.ps1 -Compiler msvc -Config Debug
+.\scripts\test.ps1 -Config Release
+.\scripts\install.ps1 -Config Release
 ```
