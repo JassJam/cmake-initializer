@@ -140,18 +140,32 @@ Write-Host "📦 cmake-initializer Install Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 Write-Host "Configuration: $Config" -ForegroundColor Green
 
+# Determine preset based on platform and configuration
+$Preset = ""
+if ($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) {
+    $Preset = "windows-msvc-$($Config.ToLower())"
+} elseif ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT") {
+    $Preset = "windows-msvc-$($Config.ToLower())"
+} else {
+    $Preset = "unixlike-gcc-$($Config.ToLower())"
+}
+
+Write-Host "Using preset: $Preset" -ForegroundColor Green
+
 # Change to project directory
 Push-Location $ProjectDir
 
 try {
+    # Determine the actual build directory based on preset structure
+    $ActualBuildPath = Join-Path $ProjectDir "$BuildDir/build/$Preset"
+    
     # Verify build directory exists
-    $BuildPath = Join-Path $ProjectDir $BuildDir
-    if (-not (Test-Path $BuildPath)) {
-        throw "Build directory '$BuildDir' not found. Run build script first."
+    if (-not (Test-Path $ActualBuildPath)) {
+        throw "Build directory '$ActualBuildPath' not found. Run build script first."
     }
 
     # Check if project is configured
-    $CMakeCachePath = Join-Path $BuildPath "CMakeCache.txt"
+    $CMakeCachePath = Join-Path $ActualBuildPath "CMakeCache.txt"
     if (-not (Test-Path $CMakeCachePath)) {
         throw "Project not configured. Run build script first."
     }
@@ -168,7 +182,7 @@ try {
     Write-Host "Installation prefix: $Prefix" -ForegroundColor Green
 
     # Build install command
-    $InstallArgs = @("--install", $BuildPath, "--config", $Config)
+    $InstallArgs = @("--install", $ActualBuildPath, "--config", $Config)
 
     if ($Prefix) {
         $InstallArgs += "--prefix"
@@ -196,7 +210,7 @@ try {
         Write-Host "🔍 Dry run mode - showing what would be installed:" -ForegroundColor Yellow
         
         # Try to get install manifest
-        $ManifestPath = Join-Path $BuildPath "install_manifest.txt"
+        $ManifestPath = Join-Path $ActualBuildPath "install_manifest.txt"
         if (Test-Path $ManifestPath) {
             $Manifest = Get-Content $ManifestPath
             Write-Host "Files that would be installed:" -ForegroundColor Cyan
