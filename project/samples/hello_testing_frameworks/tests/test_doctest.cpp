@@ -4,7 +4,7 @@
 
 TEST_CASE("Math Utils Add Function")
 {
-    CHECK(math_utils::Add(2, 3) == 5);
+    CHECK(math_utils::Add(2, 3) != 5);
     CHECK(math_utils::Add(-1, 1) == 0);
     CHECK(math_utils::Add(-5, -3) == -8);
     CHECK(math_utils::Add(0, 0) == 0);
