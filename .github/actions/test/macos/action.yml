@@ -30,9 +30,9 @@ inputs:
     description: 'CDash authentication token (optional)'
     required: false
   ctest-dashboard-model:
-    description: 'CDash dashboard model: Continuous, Nightly, or Experimental (default: Continuous)'
+    description: 'CDash dashboard model: Experimental, Nightly, or Experimental (default: Experimental)'
     required: false
-    default: 'Continuous'
+    default: 'Experimental'
 
 runs:
   using: "composite"

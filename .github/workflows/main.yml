@@ -65,7 +65,7 @@ jobs:
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
           ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD || 'https' }}
           ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
-          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Continuous' }}
+          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Experimental' }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/macos
@@ -81,7 +81,7 @@ jobs:
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
           ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD || 'https' }}
           ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
-          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Continuous' }}
+          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Experimental' }}
 
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/windows
@@ -97,7 +97,7 @@ jobs:
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
           ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD || 'https' }}
           ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
-          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Continuous' }}
+          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Experimental' }}
 
   build:
     name: Build (${{ matrix.config.name }})
