@@ -1,28 +1,33 @@
 # CMake Boilerplate - Simplified Usage Guide
 
-This boilerplate provides powerful yet simple functions to reduce CMake verbosity while maintaining full modern CMake capabilities. All functions support comprehensive visibility control and auto-discovery features.
-
 ## Quick Start
 
 ### Basic Project Setup
 ```cmake
 # In your main CMakeLists.txt
+cmake_minimum_required(VERSION 3.21)
+project(MyProject VERSION 1.0.0)
+
+# Include the boilerplate
 include(cmake/modules/ProjectBoilerplate.cmake)
 
 # Optional: Set up testing framework (call once)
+# Use DEFAULT_TEST_FRAMEWORK for automatic test framework selection
 register_test_framework("doctest")  # or "catch2", "gtest", "boost"
 ```
 
 ## Core Functions
 
-### 1. Executables with `register_executable()`
+### **1. Executables** - `register_executable()`
+
+Create executable targets with automatic source discovery and modern CMake best practices.
 
 #### Basic Usage
 ```cmake
-# Simple executable (auto-discovers src/*.cpp and include/)
+# Minimal setup - auto-discovers src/*.cpp and include/
 register_executable(MyApp INSTALL)
 
-# With custom directories
+# Custom source/include directories
 register_executable(MyApp 
     SOURCE_DIR custom_src 
     INCLUDE_DIR custom_headers
@@ -30,9 +35,9 @@ register_executable(MyApp
 )
 ```
 
-#### Advanced Features
+#### Advanced Configuration
 ```cmake
-# With comprehensive visibility control
+# Full control with visibility scopes
 register_executable(MyApp
     SOURCES 
         PRIVATE "src/main.cpp" "src/internal.cpp"
@@ -59,21 +64,23 @@ register_executable(MyApp
 )
 ```
 
-### 2. Libraries with `register_library()`
+### **2. Libraries** - `register_library()`
+
+Build static, shared, or header-only libraries with proper export configuration.
 
 #### Basic Usage
 ```cmake
 # Static library (default)
 register_library(MyLib INSTALL)
 
-# Shared library
+# Shared library with auto-export
 register_library(MyLib SHARED INSTALL)
 
-# Header-only library
+# Header-only library (interface only)
 register_library(MyLib INTERFACE INSTALL)
 ```
 
-#### Advanced Features
+#### Advanced Configuration
 ```cmake
 # Comprehensive library with proper export handling
 register_library(MyLib SHARED
@@ -94,7 +101,7 @@ register_library(MyLib SHARED
         PRIVATE "BUILDING_MYLIB"
         PUBLIC "MYLIB_API=1"
         INTERFACE "MYLIB_HEADER_ONLY"
-    EXPORT_MACRO "MYLIB_EXPORT"  # For shared libraries
+    EXPORT_MACRO "MYLIB_EXPORT"  # Automatic export symbols
     PROPERTIES 
         "VERSION" "1.0.0"
         "SOVERSION" "1"
@@ -103,7 +110,9 @@ register_library(MyLib SHARED
 )
 ```
 
-### 3. Project Organization with `register_project()`
+### **3. Project Organization** - `register_project()`
+
+Streamline project structure with batch operations and consistent organization.
 
 #### Batch Operations
 ```cmake
@@ -121,14 +130,14 @@ register_project(EXECUTABLES
     "admin_tool"
 )
 
-# Create multiple libraries
+# Create multiple libraries with consistent settings
 register_project(LIBRARIES 
     "core_lib" 
     "util_lib" 
     "plugin_interface"
 )
 
-# Combined operations
+# Combined operations for complex projects
 register_project(
     NAME "MyProject"
     SUBDIRS "core" "utilities"
@@ -137,19 +146,21 @@ register_project(
 )
 ```
 
-### 4. Testing with `register_test()`
+### **4. Testing** - `register_test()`
 
-#### Basic Testing
+Automatic test discovery and framework integration with minimal configuration.
+
+#### Basic Testing Setup
 ```cmake
-# First, register a test framework globally
-register_test_framework("doctest")
+# One-time framework registration (in main CMakeLists.txt)
+register_test_framework("doctest")  # or catch2, gtest, boost
 
-# Simple test (auto-discovers test_*.cpp files)
+# Simple test with auto-discovery
 register_test(MyTests 
     LIBRARIES PRIVATE MyLib
 )
 
-# Custom test with specific files
+# Custom test configuration
 register_test(UnitTests
     SOURCES PRIVATE "test/unit_tests.cpp" "test/helpers.cpp"
     LIBRARIES PRIVATE MyLib test_utils
@@ -158,9 +169,9 @@ register_test(UnitTests
 )
 ```
 
-#### Advanced Testing
+#### Advanced Testing Features
 ```cmake
-# Test with comprehensive visibility control
+# Comprehensive test setup with full control
 register_test(IntegrationTests
     SOURCE_DIR "integration_tests"
     SOURCES 
@@ -176,7 +187,7 @@ register_test(IntegrationTests
         PRIVATE "TEST_MODE=1"
         PRIVATE "MOCK_SERVICES=1"
     COMPILE_OPTIONS 
-        PRIVATE "-g" "-O0"  # Debug info, no optimization
+        PRIVATE "-g" "-O0"  # Debug symbols, no optimization
     PROPERTIES 
         "TIMEOUT" "30"
         "WORKING_DIRECTORY" "${CMAKE_CURRENT_SOURCE_DIR}/test_data"
@@ -235,16 +246,20 @@ register_executable(MyNetworkApp
 
 ## Configuration Options
 
-### Development Mode (Default)
+> **Complete Reference**: See [CMAKE_VARIABLES.md](./CMAKE_VARIABLES.md) for the complete list of all available configuration variables and their detailed descriptions.
+
+### Quick Configuration Modes
+
+#### Development Mode (Default)
 ```cmake
-# Enable all development tools
+# Enable comprehensive development tools
 set(DEV_MODE ON)  # Enables sanitizers, static analysis, warnings as errors
 ```
 
-### Release Mode
+#### Production Mode
 ```cmake
-# Enable optimizations
-set(RELEASE_MODE ON)  # Enables IPO/LTO, optimizations
+# Enable optimizations for release builds
+set(RELEASE_MODE ON)  # Enables IPO/LTO, performance optimizations
 ```
 
 ### Fine-Grained Control
@@ -492,3 +507,47 @@ register_library(MyLib SHARED DEPENDENCIES INSTALL)
 # Test with dependencies
 register_test(MyTests DEPENDENCIES)
 ```
+
+## Best Practices
+
+### 📁 Recommended Project Structure
+```
+MyProject/
+├── CMakeLists.txt              # Main project file
+├── cmake/
+│   └── modules/
+│       └── ProjectBoilerplate.cmake
+├── Dependencies.cmake          # Optional: package dependencies
+├── src/                        # Source files
+├── include/                    # Public headers
+├── tests/                      # Test files
+└── examples/                   # Usage examples
+```
+
+### Common Patterns
+```cmake
+# Typical library setup
+register_library(MyLib SHARED
+    INCLUDE_DIR "include"
+    LIBRARIES PUBLIC "external_api" PRIVATE "internal_dep"
+    INSTALL
+)
+
+# Typical executable setup
+register_executable(MyApp
+    LIBRARIES PRIVATE MyLib
+    INSTALL
+)
+
+# Typical test setup
+register_test(MyLibTests
+    LIBRARIES PRIVATE MyLib
+)
+```
+
+---
+
+> **Next Steps**: 
+> - See [CMAKE_VARIABLES.md](./CMAKE_VARIABLES.md) for complete configuration options
+> - Check [PRESET_FEATURES.md](./PRESET_FEATURES.md) for preset-based development
+> - Review [TESTING_SUMMARY.md](./TESTING_SUMMARY.md) for testing framework details

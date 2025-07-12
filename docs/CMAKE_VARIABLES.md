@@ -24,7 +24,7 @@ This document lists all available CMake cache variables that can be used in pres
 |----------|------|---------|-------------|
 | `ENABLE_STATIC_RUNTIME` | BOOL | OFF | **Auto-detect compiler and link runtime statically** (recommended for portable builds) |
 
-> **💡 Tip**: Use `ENABLE_STATIC_RUNTIME=ON` for portable builds. It automatically applies the correct flags for your compiler:
+> **Tip**: Use `ENABLE_STATIC_RUNTIME=ON` for portable builds. It automatically applies the correct flags for your compiler:
 > - **MSVC**: `/MT` (static CRT)
 > - **GCC/Clang**: `-static-libstdc++ -static-libgcc` 
 > - **Intel**: `-static-intel`
@@ -48,7 +48,7 @@ This document lists all available CMake cache variables that can be used in pres
 | `ENABLE_TSAN` | BOOL | OFF | Thread Sanitizer (detects data races) |
 | `ENABLE_MSAN` | BOOL | OFF | Memory Sanitizer (detects uninitialized reads) |
 
-> **⚠️ Note**: TSAN and ASAN cannot be used together.
+> **Note**: TSAN and ASAN cannot be used together.
 
 ## Static Analysis Tools
 

@@ -1,43 +1,141 @@
-# CMake Testing Framework Integration
+# Testing Framework Integration
 
-## Summary
+Modern C++ testing framework integration with automatic setup and discovery.
 
-This CMake boilerplate provides an easy-to-use template for integrating testing frameworks into C++ projects. It supports 4 popular testing frameworks: doctest, Catch2, Google Test (gtest), and Boost.Test.
+## Overview
 
-## Features Implemented
+This CMake boilerplate provides seamless integration for popular C++ testing frameworks with minimal configuration. Choose your preferred framework and get automatic test discovery, configuration, and execution.
 
-### 🎯 **Simple API**
-- **One-time registration**: `register_test_framework(boost)` in main CMakeLists.txt
-- **Add tests anywhere**: `register_test(MyTests)` in any subdirectory
-- **Auto-discovery**: Tests are automatically found and configured
+> **Configuration Reference**: See [CMAKE_VARIABLES.md](./CMAKE_VARIABLES.md) for all available build and testing configuration variables.
 
-### 🔧 **Supported Frameworks**
-- [**DocTest**](https://github.com/doctest/doctest)
-- [**Catch2**](https://github.com/catchorg/Catch2)
-- [**GTest**](https://github.com/google/googletest)
-- [**Boost.Test**](https://github.com/boostorg/test)
+## Supported Frameworks
 
-## Key Files Modified
+| Framework | Description | Auto-Discovery | CTest Integration |
+|-----------|-------------|----------------|-------------------|
+| [**DocTest**](https://github.com/doctest/doctest) | Fast, lightweight testing | ✅ | ✅ |
+| [**Catch2**](https://github.com/catchorg/Catch2) | Modern, header-only framework | ✅ | ✅ |
+| [**Google Test**](https://github.com/google/googletest) | Industry-standard framework | ✅ | ✅ |
+| [**Boost.Test**](https://github.com/boostorg/test) | Comprehensive testing suite | ✅ | ✅ |
 
-### Core Implementation
-- `project/cmake/modules/ProjectBoilerplate.cmake`: Uses `register_test_framework()` and `register_test()` functions
-- [hello_testing_frameworks](project/samples/hello_testing_frameworks): Shows simple test usage
+## Key Features
 
-## Usage Examples
+### **Simple API**
+- **One-time registration**: `register_test_framework(framework_name)`
+- **Auto-discovery**: Finds `test_*.cpp` files automatically
+- **Seamless integration**: Works with CTest out of the box
 
-### 1. Register Framework (once in main CMakeLists.txt)
+### **Flexible Configuration**
+- **Framework selection**: Choose any supported framework
+- **Custom test patterns**: Override default discovery patterns
+- **Build configuration**: Debug/Release builds supported
+
+## Quick Start
+
+### 1. Framework Registration
+Add once in your main `CMakeLists.txt`:
+
 ```cmake
-register_test_framework(doctest)  # or catch2, gtest, boost
+# Choose your testing framework
+register_test_framework(doctest)   # Fast and lightweight
+# register_test_framework(catch2)  # Modern C++ features
+# register_test_framework(gtest)   # Industry standard
+# register_test_framework(boost)   # Comprehensive suite
 ```
 
-### 2. Add Tests (anywhere in your project)
+### 2. Test Creation
+Add tests anywhere in your project:
+
 ```cmake
-register_test(MyAwesomeTests)  # Auto-discovers test_*.cpp files
+# In any subdirectory CMakeLists.txt
+register_test(MyComponentTests)  # Auto-discovers test_*.cpp files
 ```
 
-### 3. Build and Test
+### 3. Build and Execute
+
+**Using Scripts (Recommended):**
+```powershell
+# Build and run tests in one workflow
+.\scripts\build.ps1 -Config Release
+.\scripts\test.ps1 -Config Release -Verbose
+
+# Development testing with coverage
+.\scripts\build.ps1 -Config Debug
+.\scripts\test.ps1 -Config Debug -Coverage -Output verbose
+```
+
+**Manual Commands (Alternative):**
 ```bash
-cmake -S project -B build -DTEST_FRAMEWORK=gtest
+# Configure with testing enabled
+cmake -S project -B build --preset <your-preset>
+
+# Build including tests
 cmake --build build
-ctest --test-dir build
+
+# Run all tests
+ctest --test-dir build --output-on-failure
+```
+
+## Project Structure
+
+### Recommended Layout
+```
+project/
+├── CMakeLists.txt          # register_test_framework() here
+├── src/
+│   └── my_component.cpp
+├── include/
+│   └── my_component.hpp
+└── tests/
+    ├── CMakeLists.txt      # register_test() here
+    ├── test_component.cpp  # Auto-discovered
+    └── test_utils.cpp      # Auto-discovered
+```
+
+### Core Implementation Files
+- `project/cmake/modules/ProjectBoilerplate.cmake` - Core testing functions
+- `project/samples/hello_testing_frameworks/` - Complete working example
+
+## Advanced Usage
+
+### Custom Test Discovery
+```cmake
+# Override default test file patterns
+register_test(MyTests
+    SOURCES "custom_test_*.cpp" "integration_*.cpp"
+)
+
+# Explicit file listing
+register_test(MyTests
+    SOURCES "specific_test.cpp" "another_test.cpp"
+)
+```
+
+### Framework-Specific Configuration
+```cmake
+# Framework-specific options can be set before registration
+set(DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN ON)
+register_test_framework(doctest)
+```
+
+## Advanced Testing Features
+
+### Script-Based Testing Options
+
+The `test.ps1` script provides comprehensive testing capabilities:
+
+```powershell
+# Run specific test categories
+.\scripts\test.ps1 -Filter "Unit.*" -Parallel 4
+
+# Generate coverage reports
+.\scripts\test.ps1 -Coverage -Output html
+
+# Stress testing for flaky test detection
+.\scripts\test.ps1 -Repeat 10 -StopOnFailure
+
+# Memory testing (Linux/macOS)
+.\scripts\test.ps1 -Valgrind -Timeout 600
+
+# CI/CD integration
+.\scripts\test.ps1 -Output junit -Coverage -Parallel 8
 ```
