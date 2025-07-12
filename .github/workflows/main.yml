@@ -1,4 +1,4 @@
-name: Cross-Platform Builds
+name: Cross-Platform CI/CD Pipeline
 
 on:
   push:
@@ -51,6 +51,8 @@ jobs:
         with:
           submodules: recursive
 
+      # Test phase using our PowerShell scripts
+      # Scripts automatically handle preset-based builds and testing
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/unix
         if: contains(matrix.config.os, 'ubuntu')
@@ -142,6 +144,8 @@ jobs:
         with:
           submodules: recursive
 
+      # Production build phase using our PowerShell scripts  
+      # Scripts handle preset-based builds and artifact creation
       - name: Run ${{ matrix.config.name }} Build
         uses: ./.github/actions/build/unix
         if: contains(matrix.config.os, 'ubuntu')
