@@ -3,7 +3,7 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 
 ## Less boilerplate
 
-* [Simplified Usage Guide](./docs/SIMPLIFIED_USAGE.md)
+* [CMake Variables Reference](./docs/CMAKE_VARIABLES.md) - All available configuration options
 * [Preset-Based Configuration Features](./docs/PRESET_FEATURES.md)
 * [Testing Frameworks Integration](./docs/TESTING_SUMMARY.md)
 * [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md)
