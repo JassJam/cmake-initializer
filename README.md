@@ -4,6 +4,7 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 ## Less boilerplate
 
 * [CMake Variables Reference](./docs/CMAKE_VARIABLES.md) - All available configuration options
+* [Build & Test Scripts](./scripts/README.md) - Cross-platform PowerShell scripts for building, testing, and deployment
 * [Preset-Based Configuration Features](./docs/PRESET_FEATURES.md)
 * [Testing Frameworks Integration](./docs/TESTING_SUMMARY.md)
 * [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md)
@@ -42,6 +43,19 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 - Ninja (recommended) or Visual Studio 2022 (Windows)
 
 ### Basic Usage
+
+**Using Scripts (Recommended):**
+```powershell
+# Clone the repository
+git clone https://github.com/<user>/<your_new_repo>.git
+
+# Build, test, and install
+.\scripts\build.ps1 -Config Release -Static
+.\scripts\test.ps1 -Config Release -Verbose
+.\scripts\install.ps1 -Config Release
+```
+
+**Manual Commands (Alternative):**
 ```bash
 # Clone the repository
 git clone https://github.com/<user>/<your_new_repo>.git
@@ -56,13 +70,13 @@ cmake -S ./project -B "build" --preset <preset> -DCMAKE_INSTALL_PREFIX="install"
 cmake --build "build" --target "install"
 
 # Run tests
-ctest --build-target "build"
+ctest --test-dir "build"
 ```
 
 ### Key Configuration Options
 - **Simple Mode**: `DEV_MODE=ON` (enables all dev tools), `RELEASE_MODE=ON` (optimizations)
 - **Advanced**: Fine-grained control over sanitizers, static analysis, warnings, etc.
-- See [SIMPLIFIED_USAGE.md](./docs/SIMPLIFIED_USAGE.md) for complete options and examples
+- See [docs/CMAKE_VARIABLES.md](./docs/CMAKE_VARIABLES.md) for all available configuration variables and options
 
 ### Customizing for Your Project
 Edit [ProjectMetadata.cmake](./project/ProjectMetadata.cmake) to set your project name, version, and description.
