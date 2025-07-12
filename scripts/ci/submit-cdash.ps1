@@ -35,7 +35,7 @@ if ([string]::IsNullOrEmpty($DropMethod)) {
 }
 
 if ([string]::IsNullOrEmpty($DashboardModel)) {
-    $DashboardModel = "Continuous"
+    $DashboardModel = "Experimental"
 }
 
 Write-Host "=== CI CDash Submission ==="
