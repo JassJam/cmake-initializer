@@ -122,7 +122,8 @@ function(register_emscripten target)
     )
     
     # Configure WebAssembly settings
-    _configure_emscripten_wasm_settings(${target}
+    # Build argument list for _configure_emscripten_wasm_settings
+    set(WASM_ARGS
         EXPORTED_FUNCTIONS "${ARG_EXPORTED_FUNCTIONS}"
         EXPORTED_RUNTIME_METHODS "${ARG_EXPORTED_RUNTIME_METHODS}"
         PRELOAD_FILES "${ARG_PRELOAD_FILES}"
@@ -130,18 +131,44 @@ function(register_emscripten target)
         INITIAL_MEMORY "${ARG_INITIAL_MEMORY}"
         MAXIMUM_MEMORY "${ARG_MAXIMUM_MEMORY}"
         STACK_SIZE "${ARG_STACK_SIZE}"
-        WASM ${ARG_WASM}
-        STANDALONE_WASM ${ARG_STANDALONE_WASM}
-        NODE_JS ${ARG_NODE_JS}
-        PTHREAD ${ARG_PTHREAD}
-        SIMD ${ARG_SIMD}
-        ASYNCIFY ${ARG_ASYNCIFY}
-        ASSERTIONS ${ARG_ASSERTIONS}
-        SAFE_HEAP ${ARG_SAFE_HEAP}
-        DEMANGLE_SUPPORT ${ARG_DEMANGLE_SUPPORT}
-        ALLOW_MEMORY_GROWTH ${ARG_ALLOW_MEMORY_GROWTH}
-        CLOSURE_COMPILER ${ARG_CLOSURE_COMPILER}
     )
+    
+    # Add boolean flags only when they are TRUE
+    if(ARG_WASM)
+        list(APPEND WASM_ARGS WASM)
+    endif()
+    if(ARG_STANDALONE_WASM)
+        list(APPEND WASM_ARGS STANDALONE_WASM)
+    endif()
+    if(ARG_NODE_JS)
+        list(APPEND WASM_ARGS NODE_JS)
+    endif()
+    if(ARG_PTHREAD)
+        list(APPEND WASM_ARGS PTHREAD)
+    endif()
+    if(ARG_SIMD)
+        list(APPEND WASM_ARGS SIMD)
+    endif()
+    if(ARG_ASYNCIFY)
+        list(APPEND WASM_ARGS ASYNCIFY)
+    endif()
+    if(ARG_ASSERTIONS)
+        list(APPEND WASM_ARGS ASSERTIONS)
+    endif()
+    if(ARG_SAFE_HEAP)
+        list(APPEND WASM_ARGS SAFE_HEAP)
+    endif()
+    if(ARG_DEMANGLE_SUPPORT)
+        list(APPEND WASM_ARGS DEMANGLE_SUPPORT)
+    endif()
+    if(ARG_ALLOW_MEMORY_GROWTH)
+        list(APPEND WASM_ARGS ALLOW_MEMORY_GROWTH)
+    endif()
+    if(ARG_CLOSURE_COMPILER)
+        list(APPEND WASM_ARGS CLOSURE_COMPILER)
+    endif()
+    
+    _configure_emscripten_wasm_settings(${target} ${WASM_ARGS})
     
     # Configure installation
     if(ARG_INSTALL)
@@ -212,15 +239,6 @@ function(_configure_emscripten_wasm_settings target)
         message(STATUS "  - Standalone WebAssembly: enabled")
     endif()
     
-    # Environment configuration
-    if(ARG_NODE_JS)
-        target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=node")
-        message(STATUS "  - Target environment: Node.js")
-    else()
-        target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=web")
-        message(STATUS "  - Target environment: Web browser")
-    endif()
-    
     # Memory configuration
     _configure_emscripten_memory(${target}
         INITIAL_MEMORY "${ARG_INITIAL_MEMORY}"
@@ -263,6 +281,21 @@ function(_configure_emscripten_wasm_settings target)
         target_link_options(${target} PRIVATE "SHELL:-s USE_PTHREADS=1")
         target_compile_options(${target} PRIVATE "SHELL:-s USE_PTHREADS=1")
         message(STATUS "  - Pthreads support: enabled")
+    endif()
+    
+    # Environment configuration (must come after pthread to check for worker requirement)
+    if(ARG_NODE_JS)
+        target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=node")
+        message(STATUS "  - Target environment: Node.js")
+    else()
+        # For web environment, include worker support if pthreads are enabled
+        if(ARG_PTHREAD)
+            target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=web,worker")
+            message(STATUS "  - Target environment: Web browser with worker support")
+        else()
+            target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=web")
+            message(STATUS "  - Target environment: Web browser")
+        endif()
     endif()
     
     if(ARG_SIMD)
