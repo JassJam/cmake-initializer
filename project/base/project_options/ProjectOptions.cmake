@@ -40,11 +40,15 @@ option(ENABLE_CPPCHECK "Enable cppcheck static analysis" ${ENABLE_STATIC_ANALYSI
 # === LINKING OPTIONS ===
 option(ENABLE_STATIC_RUNTIME "Statically link runtime libraries for better portability" OFF)
 
+# === EMSCRIPTEN OPTIONS ===
+option(ENABLE_EMSDK_AUTO_INSTALL "Automatically install EMSDK locally if not found" ON)
+
 # Mark advanced options
 mark_as_advanced(
     ENABLE_ASAN ENABLE_LSAN ENABLE_UBSAN ENABLE_TSAN ENABLE_MSAN
     ENABLE_CLANG_TIDY ENABLE_CPPCHECK
     ENABLE_UNITY_BUILD ENABLE_PCH
+    ENABLE_EMSDK_AUTO_INSTALL
 )
 
 # Set up global hardening based on sanitizer settings
