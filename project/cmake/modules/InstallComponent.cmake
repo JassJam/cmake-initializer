@@ -82,7 +82,7 @@ function(install_component target)
     install(TARGETS ${target}
         EXPORT ${target}Targets
         RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
-        LIBRARY DESTINATION ${ARG_LIBRARY_DIR}  # Shared libraries
+        LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
         ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

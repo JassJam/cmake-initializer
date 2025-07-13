@@ -151,7 +151,7 @@ function(register_executable TARGET_NAME)
             # Add the automatically determined parts of the RPATH
             # which point to directories outside the build tree to the install RPATH
             INSTALL_RPATH_USE_LINK_PATH TRUE
-            # The RPATH to be used when installing - look in same directory as executable
+            # The RPATH to be used when installing - executables and libraries in same directory
             INSTALL_RPATH "$ORIGIN"
         )
     endif()
