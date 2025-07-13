@@ -185,11 +185,10 @@ try {
 
     # Determine default prefix if not specified
     if (-not $Prefix) {
-        if ($Platform -eq "Windows") {
-            $Prefix = Join-Path $ProjectDir "install"
-        } else {
-            $Prefix = Join-Path $ProjectDir "install"
-        }
+        # Use the same pattern as build directory: derive from preset structure
+        # Build uses: $ProjectRoot/$BuildDir/build/$Preset
+        # Install uses: $ProjectRoot/$BuildDir/install/$Preset (following preset's installDir pattern)
+        $Prefix = Join-Path $ProjectRoot "$BuildDir/install/$Preset"
     }
 
     Write-Host "Installation prefix: $Prefix" -ForegroundColor Green
