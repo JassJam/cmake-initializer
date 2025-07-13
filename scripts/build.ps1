@@ -44,6 +44,16 @@
     - GCC/Clang: -static-libstdc++ -static-libgcc
     - Intel: -static-intel
 
+.PARAMETER BuildDir
+    Base directory for build outputs. The actual build directory will be
+    {BuildDir}/build/{Preset} relative to the workspace root.
+    Default: "out"
+    
+    Examples:
+    - "out" creates builds in ./out/build/{preset}/
+    - "build" creates builds in ./build/build/{preset}/
+    - "../builds" creates builds in ../builds/build/{preset}/
+
 .PARAMETER Jobs
     Number of parallel build jobs to use during compilation. Higher values can
     speed up builds on multi-core systems but may increase memory usage.
@@ -92,6 +102,7 @@ param(
     [string]$Config = "Release",
     [ValidateSet("msvc", "clang", "gcc", "")]
     [string]$Compiler = "",
+    [string]$BuildDir = "out",
     [switch]$Static,
     [int]$Jobs = 0,
     [switch]$Verbose
@@ -199,9 +210,23 @@ if ($Compiler) {
 Push-Location $ProjectDir
 
 try {
-    # Configure the project
+    # Validate preset exists before configuring
     Write-Host "⚙️  Configuring project..." -ForegroundColor Blue
-    $ConfigCmd = @("cmake", "--preset", $Preset) + $ConfigArgs
+    
+    # Check if preset is available
+    $AvailablePresets = & cmake --list-presets 2>$null | Where-Object { $_ -match '^\s*"([^"]+)"' } | ForEach-Object { $Matches[1] }
+    if ($AvailablePresets -and $Preset -notin $AvailablePresets) {
+        Write-Host "❌ Preset '$Preset' is not available on this platform." -ForegroundColor Red
+        Write-Host "Available presets:" -ForegroundColor Yellow
+        foreach ($p in $AvailablePresets) {
+            Write-Host "  - $p" -ForegroundColor Yellow
+        }
+        throw "Invalid preset: $Preset"
+    }
+    
+    # Configure the project - use workspace root for build output
+    $BuildOutputDir = Join-Path $ProjectRoot "$BuildDir/build/$Preset"
+    $ConfigCmd = @("cmake", "-S", ".", "-B", $BuildOutputDir, "--preset", $Preset) + $ConfigArgs
     
     if ($Verbose) {
         Write-Host "Command: $($ConfigCmd -join ' ')" -ForegroundColor DarkGray
@@ -214,7 +239,7 @@ try {
 
     # Build the project
     Write-Host "🔧 Building project..." -ForegroundColor Blue
-    $BuildCmd = @("cmake", "--build", "out/build/$Preset", "--config", $Config, "--parallel", $Jobs)
+    $BuildCmd = @("cmake", "--build", $BuildOutputDir, "--config", $Config, "--parallel", $Jobs)
     
     if ($Verbose) {
         $BuildCmd += "--verbose"
@@ -229,9 +254,9 @@ try {
     Write-Host "✅ Build completed successfully!" -ForegroundColor Green
     
     # Show build information
-    $BuildDir = Join-Path $ProjectDir "out/build/$Preset"
-    if (Test-Path $BuildDir) {
-        $BuildSize = (Get-ChildItem -Recurse $BuildDir | Measure-Object -Property Length -Sum).Sum
+    $ActualBuildDir = Join-Path $ProjectRoot "$BuildDir/build/$Preset"
+    if (Test-Path $ActualBuildDir) {
+        $BuildSize = (Get-ChildItem -Recurse $ActualBuildDir | Measure-Object -Property Length -Sum).Sum
         $BuildSizeMB = [math]::Round($BuildSize / 1MB, 2)
         Write-Host "Build directory size: ${BuildSizeMB} MB" -ForegroundColor Cyan
     }

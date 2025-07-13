@@ -101,7 +101,7 @@ runs:
         Write-Host "=== Submitting test results to CDash ==="
         $scriptPath = "${{ github.workspace }}/scripts/ci/submit-cdash.ps1"
         & $scriptPath `
-          -BuildDir "out/build/${{ inputs.config-preset }}" `
+          -BuildDir "${{ github.workspace }}/out/build/${{ inputs.config-preset }}" `
           -SourceDir "${{ github.workspace }}/project" `
           -BuildName "${{ inputs.config-name }}-${{ runner.os }}" `
           -CdashSite "${{ inputs.ctest-site }}" `

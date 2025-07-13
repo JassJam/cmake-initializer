@@ -230,8 +230,8 @@ Write-Host "Test Preset: $Preset" -ForegroundColor Green
 Push-Location $ProjectDir
 
 try {
-    # Determine build directory from preset
-    $FullBuildDir = Join-Path $ProjectDir "$BuildDir/build/$Preset"
+    # Determine build directory from preset - use workspace root with configurable BuildDir
+    $FullBuildDir = Join-Path $ProjectRoot "$BuildDir/build/$Preset"
     
     if (-not (Test-Path $FullBuildDir)) {
         throw "Build directory not found: $FullBuildDir. Please run build script first."

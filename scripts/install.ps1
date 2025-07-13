@@ -156,8 +156,8 @@ Write-Host "Using preset: $Preset" -ForegroundColor Green
 Push-Location $ProjectDir
 
 try {
-    # Determine the actual build directory based on preset structure
-    $ActualBuildPath = Join-Path $ProjectDir "$BuildDir/build/$Preset"
+    # Determine the actual build directory based on preset structure - use workspace root with configurable BuildDir
+    $ActualBuildPath = Join-Path $ProjectRoot "$BuildDir/build/$Preset"
     
     # Verify build directory exists
     if (-not (Test-Path $ActualBuildPath)) {

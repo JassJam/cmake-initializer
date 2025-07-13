@@ -124,9 +124,9 @@ Write-Host "Platform: $Platform" -ForegroundColor Green
 Push-Location $ProjectDir
 
 try {
-    # Define paths to clean
+    # Define paths to clean - use workspace root with configurable BuildDir
     $PathsToClean = @()
-    $BuildPath = Join-Path $ProjectDir $BuildDir
+    $BuildPath = Join-Path $ProjectRoot $BuildDir
     
     if ($Cache) {
         # Only clean cache files
@@ -152,11 +152,11 @@ try {
         }
         
         if ($All) {
-            # Also clean install directory and other artifacts
+            # Also clean install directory and other artifacts - use workspace root with configurable BuildDir
             $AdditionalPaths = @(
-                (Join-Path $ProjectDir "install"),
-                (Join-Path $ProjectDir "Testing"),
-                (Join-Path $ProjectDir ".cache")
+                (Join-Path $ProjectRoot "install"),
+                (Join-Path $ProjectRoot "Testing"),
+                (Join-Path $ProjectRoot ".cache")
             )
             
             foreach ($AdditionalPath in $AdditionalPaths) {
