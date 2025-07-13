@@ -30,24 +30,24 @@ Cross-platform build script that works on Windows, Linux, and macOS.
 
 **Basic Usage:**
 ```powershell
-# Build with default settings (Release, auto-detected compiler)
-.\scripts\build.ps1
+# Build with a specific preset (recommended)
+.\scripts\build.ps1 -Preset windows-msvc-debug
 
-# Build Debug configuration with static linking
-.\scripts\build.ps1 -Config Debug -Static
+# Build with release preset 
+.\scripts\build.ps1 -Preset windows-msvc-release
 
-# Build with specific compiler
-.\scripts\build.ps1 -Compiler clang -Clean -Install
+# Build with clang preset
+.\scripts\build.ps1 -Preset windows-clang-debug
 
-# Build with verbose output and multiple jobs
-.\scripts\build.ps1 -Verbose -Jobs 8
+# Build with verbose output and custom build directory
+.\scripts\build.ps1 -Preset windows-msvc-debug -Verbose -BuildDir "custom/build"
 ```
 
 **Parameters:**
-- `Preset` - CMake preset to use (auto-detected by default)
-- `Config` - Build configuration: Debug or Release (default: Release)
-- `Compiler` - Specific compiler: msvc, clang, gcc (auto-detected by default)
-- `Static` - Enable static runtime linking for portable builds
+- `Preset` - CMake preset to use (required - defines compiler, configuration, and settings)
+- `BuildDir` - Custom build directory (default: "out")
+- `Clean` - Clean build directory before building
+- `Install` - Run installation after successful build
 - `Jobs` - Number of parallel build jobs (default: CPU cores)
 - `Verbose` - Enable verbose build output
 
@@ -56,23 +56,24 @@ Cross-platform test execution script with comprehensive testing features.
 
 **Basic Usage:**
 ```powershell
-# Run all tests with default settings
-.\scripts\test.ps1
+# Run tests with a specific preset (recommended)
+.\scripts\test.ps1 -Preset windows-msvc-debug
 
-# Run tests in Debug configuration with verbose output
-.\scripts\test.ps1 -Config Debug -Verbose
+# Run tests with verbose output
+.\scripts\test.ps1 -Preset windows-msvc-debug -Verbose
 
-# Run specific tests with coverage
-.\scripts\test.ps1 -Filter "Unit.*" -Coverage
+# Run specific tests with pattern matching
+.\scripts\test.ps1 -Preset windows-msvc-debug -Filter "Unit.*"
 
-# Run tests with JUnit output for CI/CD
-.\scripts\test.ps1 -Output junit -Parallel 4
+# Run tests with custom build directory
+.\scripts\test.ps1 -Preset windows-msvc-debug -BuildDir "custom/build"
 ```
 
 **Parameters:**
-- `Config` - Build configuration: Debug or Release (default: Release)
-- `Preset` - CMake test preset to use (auto-detected by default)
-- `Compiler` - Specific compiler: msvc, clang, gcc (auto-detected by default)
+- `Preset` - CMake preset to use (required - defines build directory and configuration)
+- `BuildDir` - Custom build directory (default: "out")
+- `Filter` - Test name pattern filter
+- `Parallel` - Number of parallel test jobs
 - `Filter` - Regular expression pattern to filter tests
 - `Parallel` - Number of parallel test jobs (default: CPU cores)
 - `Output` - Output format: default, verbose, junit, json
@@ -109,18 +110,18 @@ Installs built artifacts to a specified location.
 
 **Basic Usage:**
 ```powershell
-# Install with default settings
-.\scripts\install.ps1
+# Install with specific preset (recommended)
+.\scripts\install.ps1 -Preset windows-msvc-debug
 
 # Install to specific location
-.\scripts\install.ps1 -Prefix "C:\Program Files\MyProject"
+.\scripts\install.ps1 -Preset windows-msvc-debug -Prefix "C:\Program Files\MyProject"
 
 # Dry run to see what would be installed
-.\scripts\install.ps1 -DryRun
+.\scripts\install.ps1 -Preset windows-msvc-debug -DryRun
 ```
 
 **Parameters:**
-- `Config` - Build configuration to install: Debug or Release (default: Release)
+- `Preset` - CMake preset to use (required - defines build directory and configuration)
 - `Prefix` - Installation prefix directory (default: ./install)
 - `Component` - Specific component to install (default: all)
 - `BuildDir` - Build directory containing artifacts (default: "out")
@@ -149,12 +150,12 @@ These scripts work on all platforms with PowerShell Core 6+:
 
 **Windows (PowerShell/Command Prompt):**
 ```cmd
-.\scripts\build.ps1 -Config Debug -Static
+.\scripts\build.ps1 -Preset windows-msvc-debug
 ```
 
 **Linux/macOS (PowerShell Core):**
 ```bash
-pwsh ./scripts/build.ps1 -Config Debug -Static
+pwsh ./scripts/build.ps1 -Preset linux-gcc-debug
 ```
 
 ## Examples
@@ -162,22 +163,25 @@ pwsh ./scripts/build.ps1 -Config Debug -Static
 **Quick development workflow:**
 ```powershell
 # Build and test in Debug mode
-.\scripts\build.ps1 -Config Debug
-.\scripts\test.ps1 -Config Debug -Verbose
+.\scripts\build.ps1 -Preset windows-msvc-debug
+.\scripts\test.ps1 -Preset windows-msvc-debug -Verbose
 ```
 
 **Complete development cycle:**
 ```powershell
 # Clean, build, and test
 .\scripts\clean.ps1 -All -Force
-.\scripts\build.ps1 -Config Release -Static
-.\scripts\test.ps1 -Config Release -Coverage
+.\scripts\build.ps1 -Preset windows-msvc-release
+.\scripts\test.ps1 -Preset windows-msvc-release
 ```
 
-**CI/CD pipeline simulation:**
+**Cross-platform testing:**
 ```powershell
-# Test with JUnit output and coverage
-.\scripts\test.ps1 -Output junit -Coverage -Parallel 4
+# Test different configurations
+.\scripts\build.ps1 -Preset windows-msvc-debug
+.\scripts\test.ps1 -Preset windows-msvc-debug
+.\scripts\build.ps1 -Preset windows-clang-debug  
+.\scripts\test.ps1 -Preset windows-clang-debug
 ```
 
 **Cross-compiler testing:**
