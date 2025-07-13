@@ -59,7 +59,7 @@ runs:
         Write-Host "=== Installing artifacts for ${{ inputs.config-name }} ==="
         
         # Use the install script to create distribution artifacts
-        & "${{ github.workspace }}/scripts/install.ps1" -Preset "${{ inputs.config-preset }}" -InstallDir "${{ runner.temp }}/${{ inputs.config-output }}/install"
+        & "${{ github.workspace }}/scripts/install.ps1" -Preset "${{ inputs.config-preset }}" -Prefix "${{ runner.temp }}/${{ inputs.config-output }}/install"
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error "❌ Install failed with exit code: $LASTEXITCODE"
@@ -87,7 +87,7 @@ runs:
       shell: pwsh
       run: |
         Write-Host "=== Cleaning up build environment ==="
-        & "${{ github.workspace }}/scripts/clean.ps1" -Preset "${{ inputs.config-preset }}"
+        & "${{ github.workspace }}/scripts/clean.ps1" -All -Force
         
         # Also clean up temporary install directory
         $INSTALL_DIR = "${{ runner.temp }}/${{ inputs.config-output }}/install"

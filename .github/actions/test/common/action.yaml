@@ -121,5 +121,5 @@ runs:
       shell: pwsh
       run: |
         Write-Host "=== Cleaning up test environment ==="
-        & "${{ github.workspace }}/scripts/clean.ps1" -Preset "${{ inputs.config-preset }}"
+        & "${{ github.workspace }}/scripts/clean.ps1" -All -Force
         Write-Host "Test cleanup completed."
