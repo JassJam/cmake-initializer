@@ -143,6 +143,8 @@ param(
     [string]$Preset = "",
     [ValidateSet("msvc", "clang", "gcc", "")]
     [string]$Compiler = "",
+    [string[]]$Targets = @(),
+    [string[]]$ExcludeTargets = @(),
     [string]$BuildDir = "out",
     [int]$Parallel = 0,
     [string]$Filter = "",
@@ -150,6 +152,7 @@ param(
     [int]$Repeat = 1,
     [ValidateSet("default", "verbose", "junit", "json")]
     [string]$Output = "default",
+    [switch]$ListTargets,
     [switch]$Coverage,
     [switch]$Valgrind,
     [switch]$StopOnFailure,
@@ -249,10 +252,112 @@ try {
 
     Write-Host "Build directory: $FullBuildDir" -ForegroundColor DarkGray
 
+    # List targets if requested
+    if ($ListTargets) {
+        Write-Host "🎯 Available Build Targets:" -ForegroundColor Cyan
+        
+        # Function to find targets recursively
+        function Get-CMakeTargets {
+            param([string]$Directory)
+            
+            $targets = @()
+            
+            # Look for .vcxproj files (Windows/MSVC)
+            $vcxprojFiles = Get-ChildItem -Path $Directory -Recurse -Filter "*.vcxproj" -File | 
+                Where-Object { $_.Name -notmatch "(ALL_BUILD|ZERO_CHECK|INSTALL|RUN_TESTS|Continuous|Experimental|Nightly|NightlyMemoryCheck)" }
+            
+            foreach ($vcxproj in $vcxprojFiles) {
+                $targetName = [System.IO.Path]::GetFileNameWithoutExtension($vcxproj.Name)
+                $relativePath = $vcxproj.Directory.FullName.Replace($Directory, "").TrimStart('\', '/')
+                $targets += @{
+                    Name = $targetName
+                    Path = if ($relativePath) { $relativePath } else { "." }
+                    Type = "Executable/Library"
+                }
+            }
+            
+            return $targets
+        }
+        
+        $allTargets = Get-CMakeTargets -Directory $FullBuildDir
+        
+        if ($allTargets.Count -eq 0) {
+            Write-Host "  No custom targets found (only system targets like ALL_BUILD, INSTALL, etc.)" -ForegroundColor Yellow
+        } else {
+            $groupedTargets = $allTargets | Group-Object -Property Path | Sort-Object Name
+            
+            foreach ($group in $groupedTargets) {
+                $pathDisplay = if ($group.Name -eq ".") { "Project Root" } else { $group.Name }
+                Write-Host "  📁 $pathDisplay" -ForegroundColor Green
+                
+                foreach ($target in $group.Group | Sort-Object Name) {
+                    Write-Host "    🎯 $($target.Name)" -ForegroundColor White
+                }
+                Write-Host ""
+            }
+            
+            Write-Host "Total targets found: $($allTargets.Count)" -ForegroundColor Cyan
+        }
+        
+        Write-Host "`nTo test specific targets:" -ForegroundColor DarkGray
+        Write-Host "  .\scripts\test.ps1 -Targets `"TargetName1`", `"TargetName2`"" -ForegroundColor DarkGray
+        Write-Host "  .\scripts\test.ps1 -Targets `"TargetName`" -ExcludeTargets `"UnwantedTarget`"" -ForegroundColor DarkGray
+        
+        return
+    }
+
     # Check if tests are available
     $TestFiles = Get-ChildItem -Path $FullBuildDir -Recurse -Include "*.exe", "*test*" -File | Where-Object { $_.Name -match "test" }
     if ($TestFiles.Count -eq 0) {
         Write-Warning "No test executables found in build directory. Make sure tests are built with BUILD_TESTING=ON."
+    }
+
+    # If targets are specified, build them first
+    if ($Targets.Count -gt 0) {
+        # Filter targets based on exclusions - ensure we maintain array structure
+        $TargetsToBuild = @($Targets | Where-Object { $_ -notin $ExcludeTargets })
+        
+        if ($TargetsToBuild.Count -eq 0) {
+            Write-Warning "All specified targets were excluded. No targets to build before testing."
+        } else {
+            Write-Host "🔧 Building test targets before running tests..." -ForegroundColor Blue
+            Write-Host "Targets to build: $($TargetsToBuild -join ', ')" -ForegroundColor Green
+            if ($ExcludeTargets.Count -gt 0) {
+                Write-Host "Excluded targets: $($ExcludeTargets -join ', ')" -ForegroundColor Red
+            }
+            
+            $BuildResults = @()
+            foreach ($Target in $TargetsToBuild) {
+                Write-Host "Building target: $Target" -ForegroundColor Yellow
+                $BuildCmd = @("cmake", "--build", $FullBuildDir, "--config", $Config, "--target", $Target)
+                
+                if ($Verbose) {
+                    Write-Host "Build command: $($BuildCmd -join ' ')" -ForegroundColor DarkGray
+                }
+                
+                & $BuildCmd[0] $BuildCmd[1..($BuildCmd.Length-1)]
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✓ Successfully built target: $Target" -ForegroundColor Green
+                    $BuildResults += @{Target = $Target; Success = $true}
+                } else {
+                    Write-Host "✗ Failed to build target: $Target (exit code $LASTEXITCODE)" -ForegroundColor Red
+                    $BuildResults += @{Target = $Target; Success = $false}
+                }
+            }
+            
+            # Report build summary
+            $SuccessfulBuilds = $BuildResults | Where-Object { $_.Success }
+            $FailedBuilds = $BuildResults | Where-Object { -not $_.Success }
+            
+            Write-Host "`nBuild Summary:" -ForegroundColor Cyan
+            Write-Host "  ✓ Successful: $($SuccessfulBuilds.Count)" -ForegroundColor Green
+            Write-Host "  ✗ Failed: $($FailedBuilds.Count)" -ForegroundColor Red
+            
+            if ($FailedBuilds.Count -gt 0) {
+                $FailedTargetNames = ($FailedBuilds | ForEach-Object { $_.Target }) -join ', '
+                throw "Build failed for the following test targets: $FailedTargetNames"
+            }
+        }
     }
 
     # Build CTest command

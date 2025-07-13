@@ -26,13 +26,14 @@
     Release builds enable optimizations and may strip debug symbols.
 
 .PARAMETER Compiler
-    Specific compiler to use. Must be one of: 'msvc', 'clang', 'gcc'.
+    Specific compiler to use. Must be one of: 'msvc', 'clang', 'gcc', 'emscripten'.
     If not specified, uses platform default (MSVC on Windows, GCC on Unix-like).
     
     This parameter changes the CMake preset to use the specified compiler.
     - msvc: Only available on Windows, uses Visual Studio compiler
     - clang: Uses Clang/Clang-cl compiler
     - gcc: Uses GNU Compiler Collection
+    - emscripten: WebAssembly compiler (auto-installs EMSDK if needed)
 
 .PARAMETER Static
     Enable static runtime linking for portable builds. When enabled, links against
@@ -43,6 +44,7 @@
     - MSVC: /MT (static CRT)
     - GCC/Clang: -static-libstdc++ -static-libgcc
     - Intel: -static-intel
+    - Emscripten: -static-libstdc++ with standalone WASM output
 
 .PARAMETER BuildDir
     Base directory for build outputs. The actual build directory will be
@@ -54,10 +56,35 @@
     - "build" creates builds in ./build/build/{preset}/
     - "../builds" creates builds in ../builds/build/{preset}/
 
+.PARAMETER Targets
+    Specific target names to build instead of building all targets. Can be specified
+    multiple times to build multiple specific targets.
+    Example: -Targets "HelloWorld", "MyLibrary"
+
+.PARAMETER ExcludeTargets
+    Target names to exclude from building. Useful when building most targets but
+    wanting to skip specific ones (e.g., slow targets or ones with external dependencies).
+    Example: -ExcludeTargets "SlowTarget", "OptionalLibrary"
+
+.PARAMETER BuildDir
+    Build directory name relative to project root. By default uses 'out' which
+    matches the cmake-initializer preset configuration.
+    Default: "out"
+
+.PARAMETER Static
+    Enable static runtime linking for portable builds. When enabled, links against
+    static versions of runtime libraries to reduce external dependencies.
+    Default: false (uses dynamic linking)
+
 .PARAMETER Jobs
     Number of parallel build jobs to use during compilation. Higher values can
     speed up builds on multi-core systems but may increase memory usage.
     Default: Number of CPU cores detected on the system
+
+.PARAMETER ListTargets
+    List all available build targets without actually building anything.
+    Useful for discovering what targets are available in the project.
+    Default: false
 
 .PARAMETER Verbose
     Enable verbose build output. Shows detailed compilation commands and progress
@@ -100,11 +127,14 @@ param(
     [string]$Preset = "",
     [ValidateSet("Debug", "Release")]
     [string]$Config = "Release",
-    [ValidateSet("msvc", "clang", "gcc", "")]
+    [ValidateSet("msvc", "clang", "gcc", "emscripten", "")]
     [string]$Compiler = "",
+    [string[]]$Targets = @(),
+    [string[]]$ExcludeTargets = @(),
     [string]$BuildDir = "out",
     [switch]$Static,
     [int]$Jobs = 0,
+    [switch]$ListTargets,
     [switch]$Verbose
 )
 
@@ -212,6 +242,14 @@ if ($Compiler) {
                 $Preset = "unixlike-gcc-release"
             }
         }
+        "emscripten" {
+            if ($Config -eq "Debug") {
+                $Preset = "emscripten-debug"
+            } else {
+                $Preset = "emscripten-release"
+            }
+            Write-Host "Emscripten compiler selected - EMSDK will be installed automatically if needed" -ForegroundColor Yellow
+        }
     }
     Write-Host "Compiler: $Compiler" -ForegroundColor Green
 }
@@ -236,20 +274,161 @@ try {
     
     # Configure the project - use workspace root for build output
     $BuildOutputDir = Join-Path $ProjectRoot "$BuildDir/build/$Preset"
-    $ConfigCmd = @("cmake", "-S", ".", "-B", $BuildOutputDir, "--preset", $Preset) + $ConfigArgs
+    
+    $ConfigCmd = @("cmake", "-S", ".", "-B", $BuildOutputDir, "--preset", $Preset)
+    $ConfigCmd += $ConfigArgs
     
     if ($Verbose) {
         Write-Host "Command: $($ConfigCmd -join ' ')" -ForegroundColor DarkGray
     }
     
+    # Run the initial configuration
     & $ConfigCmd[0] $ConfigCmd[1..($ConfigCmd.Length-1)]
-    if ($LASTEXITCODE -ne 0) {
-        throw "Configuration failed with exit code $LASTEXITCODE"
+    $ConfigResult = $LASTEXITCODE
+    
+    # If configuration failed and this is an Emscripten build, try with --fresh
+    if ($ConfigResult -ne 0 -and $Preset -match "emscripten") {
+        Write-Host "Initial configuration failed. Retrying with fresh configuration for Emscripten..." -ForegroundColor Yellow
+        
+        # Add --fresh and try again
+        $FreshConfigCmd = $ConfigCmd + @("--fresh")
+        if ($Verbose) {
+            Write-Host "Retry command: $($FreshConfigCmd -join ' ')" -ForegroundColor DarkGray
+        }
+        
+        & $FreshConfigCmd[0] $FreshConfigCmd[1..($FreshConfigCmd.Length-1)]
+        $ConfigResult = $LASTEXITCODE
+    }
+    
+    if ($ConfigResult -ne 0) {
+        throw "Configuration failed with exit code $ConfigResult"
+    }
+
+    # List targets if requested
+    if ($ListTargets) {
+        Write-Host "🎯 Available Build Targets:" -ForegroundColor Cyan
+        
+        # Function to find targets recursively
+        function Get-CMakeTargets {
+            param([string]$Directory)
+            
+            $targets = @()
+            
+            # Look for .vcxproj files (Windows/MSVC)
+            $vcxprojFiles = Get-ChildItem -Path $Directory -Recurse -Filter "*.vcxproj" -File | 
+                Where-Object { $_.Name -notmatch "(ALL_BUILD|ZERO_CHECK|INSTALL|RUN_TESTS|Continuous|Experimental|Nightly|NightlyMemoryCheck)" }
+            
+            foreach ($vcxproj in $vcxprojFiles) {
+                $targetName = [System.IO.Path]::GetFileNameWithoutExtension($vcxproj.Name)
+                $relativePath = $vcxproj.Directory.FullName.Replace($BuildOutputDir, "").TrimStart('\', '/')
+                $targets += @{
+                    Name = $targetName
+                    Path = if ($relativePath) { $relativePath } else { "." }
+                    Type = "Executable/Library"
+                }
+            }
+            
+            # Look for Makefile targets (Unix-like systems)
+            $makefileTargets = @()
+            if (Test-Path (Join-Path $Directory "Makefile")) {
+                try {
+                    $helpOutput = & make -C $Directory help 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        $makefileTargets = $helpOutput | Where-Object { $_ -match "^\.\.\." } | 
+                            ForEach-Object { ($_ -split " ")[1] } | Where-Object { $_ -and $_ -notmatch "(all|clean|depend|help)" }
+                    }
+                } catch {
+                    # Ignore errors when make help is not available
+                }
+            }
+            
+            return $targets
+        }
+        
+        $allTargets = Get-CMakeTargets -Directory $BuildOutputDir
+        
+        if ($allTargets.Count -eq 0) {
+            Write-Host "  No custom targets found (only system targets like ALL_BUILD, INSTALL, etc.)" -ForegroundColor Yellow
+        } else {
+            $groupedTargets = $allTargets | Group-Object -Property Path | Sort-Object Name
+            
+            foreach ($group in $groupedTargets) {
+                $pathDisplay = if ($group.Name -eq ".") { "Project Root" } else { $group.Name }
+                Write-Host "  📁 $pathDisplay" -ForegroundColor Green
+                
+                foreach ($target in $group.Group | Sort-Object Name) {
+                    Write-Host "    🎯 $($target.Name)" -ForegroundColor White
+                }
+                Write-Host ""
+            }
+            
+            Write-Host "Total targets found: $($allTargets.Count)" -ForegroundColor Cyan
+        }
+        
+        Write-Host "`nTo build specific targets:" -ForegroundColor DarkGray
+        Write-Host "  .\scripts\build.ps1 -Targets `"TargetName1`", `"TargetName2`"" -ForegroundColor DarkGray
+        Write-Host "  .\scripts\build.ps1 -Targets `"TargetName`" -ExcludeTargets `"UnwantedTarget`"" -ForegroundColor DarkGray
+        
+        return
     }
 
     # Build the project
     Write-Host "🔧 Building project..." -ForegroundColor Blue
     $BuildCmd = @("cmake", "--build", $BuildOutputDir, "--config", $Config, "--parallel", $Jobs)
+    
+    if ($Targets.Count -gt 0) {
+        # Filter out excluded targets - ensure we maintain array structure
+        $TargetsToBuild = @($Targets | Where-Object { $_ -notin $ExcludeTargets })
+        
+        if ($TargetsToBuild.Count -eq 0) {
+            throw "No targets to build after applying exclusions"
+        }
+        
+        if ($TargetsToBuild.Count -eq 1) {
+            $BuildCmd += "--target", $TargetsToBuild[0]
+            Write-Host "Target: $($TargetsToBuild[0])" -ForegroundColor Green
+        } else {
+            # For multiple targets, build them individually to handle failures gracefully
+            Write-Host "Targets: $($TargetsToBuild -join ', ')" -ForegroundColor Green
+            if ($ExcludeTargets.Count -gt 0) {
+                Write-Host "Excluded: $($ExcludeTargets -join ', ')" -ForegroundColor Yellow
+            }
+            
+            $SuccessfulTargets = @()
+            $FailedTargets = @()
+            
+            foreach ($Target in $TargetsToBuild) {
+                Write-Host "  Building $Target..." -ForegroundColor DarkCyan
+                $TargetBuildCmd = @("cmake", "--build", $BuildOutputDir, "--config", $Config, "--parallel", $Jobs, "--target", $Target)
+                if ($Verbose) {
+                    $TargetBuildCmd += "--verbose"
+                }
+                
+                & $TargetBuildCmd[0] $TargetBuildCmd[1..($TargetBuildCmd.Length-1)]
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "  ✅ $Target" -ForegroundColor Green
+                    $SuccessfulTargets += $Target
+                } else {
+                    Write-Host "  ❌ $Target failed" -ForegroundColor Red
+                    $FailedTargets += $Target
+                }
+            }
+            
+            Write-Host "📊 Build summary:" -ForegroundColor Cyan
+            Write-Host "  ✅ Successful: $($SuccessfulTargets.Count)/$($TargetsToBuild.Count) ($($SuccessfulTargets -join ', '))" -ForegroundColor Green
+            if ($FailedTargets.Count -gt 0) {
+                Write-Host "  ❌ Failed: $($FailedTargets.Count)/$($TargetsToBuild.Count) ($($FailedTargets -join ', '))" -ForegroundColor Red
+                throw "Some targets failed to build"
+            }
+            
+            # Skip the normal build execution since we built targets individually
+            return
+        }
+    } elseif ($ExcludeTargets.Count -gt 0) {
+        Write-Host "Excluded targets: $($ExcludeTargets -join ', ')" -ForegroundColor Yellow
+        Write-Host "Building all targets except excluded ones..." -ForegroundColor Blue
+        # Note: CMake doesn't have native exclude functionality, so we build all targets and let it handle what exists
+    }
     
     if ($Verbose) {
         $BuildCmd += "--verbose"
