@@ -105,7 +105,15 @@ if (-not (Test-Path $CTestScript)) {
 }
 
 Write-Host "`n=== Running CTest Submission ==="
-ctest -S $CTestScript --build-config $BuildConfig --verbose --output-on-failure
+
+# Set environment variable for the CTest script
+$env:CTEST_CONFIGURATION_TYPE = $BuildConfig
+
+# Always include --build-config parameter - it's ignored by single-config generators
+$ctestArgs = @("-S", $CTestScript, "--build-config", $BuildConfig, "--verbose", "--output-on-failure")
+Write-Host "Command: ctest -S $CTestScript --build-config $BuildConfig --verbose --output-on-failure" -ForegroundColor Gray
+
+ctest @ctestArgs
 $ctestExitCode = $LASTEXITCODE
 
 Pop-Location -StackName "CDashSubmission"
