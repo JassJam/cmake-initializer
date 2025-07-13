@@ -104,6 +104,7 @@ runs:
           -BuildDir "${{ github.workspace }}/out/build/${{ inputs.config-preset }}" `
           -SourceDir "${{ github.workspace }}/project" `
           -BuildName "${{ inputs.config-name }}-${{ runner.os }}" `
+          -Preset "${{ inputs.config-preset }}" `
           -CdashSite "${{ inputs.ctest-site }}" `
           -CdashLocation "${{ inputs.ctest-location }}" `
           -AuthToken "${{ inputs.ctest-auth-token }}" `

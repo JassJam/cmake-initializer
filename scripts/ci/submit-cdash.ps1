@@ -11,6 +11,9 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$BuildName,
     
+    [Parameter(Mandatory=$true)]
+    [string]$Preset,
+    
     [string]$CdashSite = $env:CTEST_DASHBOARD_SITE,
     [string]$CdashLocation = $env:CTEST_DASHBOARD_LOCATION,
     [string]$AuthToken = $env:CDASH_AUTH_TOKEN,
@@ -38,10 +41,22 @@ if ([string]::IsNullOrEmpty($DashboardModel)) {
     $DashboardModel = "Experimental"
 }
 
+# Derive build configuration from preset name
+if ($Preset -match "debug") {
+    $BuildConfig = "Debug"
+} elseif ($Preset -match "release") {
+    $BuildConfig = "Release"
+} else {
+    # Default fallback
+    $BuildConfig = "Release"
+}
+
 Write-Host "=== CI CDash Submission ==="
 Write-Host "Build Directory: $BuildDir"
 Write-Host "Source Directory: $SourceDir"
 Write-Host "Build Name: $BuildName"
+Write-Host "Preset: $Preset"
+Write-Host "Build Configuration: $BuildConfig"
 Write-Host "CDash Site: $CdashSite"
 Write-Host "CDash Location: $CdashLocation"
 Write-Host "Dashboard Model: $DashboardModel"
@@ -90,7 +105,7 @@ if (-not (Test-Path $CTestScript)) {
 }
 
 Write-Host "`n=== Running CTest Submission ==="
-ctest -S $CTestScript --build-config Debug --verbose --output-on-failure
+ctest -S $CTestScript --build-config $BuildConfig --verbose --output-on-failure
 $ctestExitCode = $LASTEXITCODE
 
 Pop-Location -StackName "CDashSubmission"
