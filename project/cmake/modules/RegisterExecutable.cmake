@@ -141,6 +141,21 @@ function(register_executable TARGET_NAME)
         set_target_properties(${TARGET_NAME} PROPERTIES ${ARG_PROPERTIES})
     endif()
 
+    # Configure RPATH for shared library dependencies
+    if(UNIX)
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            # Don't skip the full RPATH for the build tree
+            SKIP_BUILD_RPATH FALSE
+            # When building, don't use the install RPATH already
+            BUILD_WITH_INSTALL_RPATH FALSE
+            # Add the automatically determined parts of the RPATH
+            # which point to directories outside the build tree to the install RPATH
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+            # The RPATH to be used when installing - look in same directory as executable
+            INSTALL_RPATH "$ORIGIN"
+        )
+    endif()
+
     # Handle dependencies
     if(ARG_DEPENDENCIES)
         # Check if Dependencies.cmake exists and include it

@@ -363,7 +363,7 @@ function(_process_and_install_package target pkg_name pkg_params_string pkg_link
                         
                         if (lib_soversion)
                             install(FILES $<TARGET_SONAME_FILE:${link_target}>
-                                DESTINATION ${lib_install_dir}
+                                DESTINATION ${bin_install_dir}
                                 COMPONENT ${pkg_component}
                             )
                         endif()

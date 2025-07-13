@@ -20,6 +20,7 @@ message(STATUS "Configuring ${THIS_PROJECT_PRETTY_NAME} v${THIS_PROJECT_VERSION}
 # Basic setup
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # Generate compile_commands.json
+
 include(GNUInstallDirs)
 include(GenerateExportHeader)
 
