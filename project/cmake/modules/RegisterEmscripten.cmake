@@ -203,6 +203,20 @@ function(_configure_emscripten_html_output target)
             TITLE "${ARG_HTML_TITLE}"
             CANVAS_ID "${ARG_CANVAS_ID}"
         )
+    else()
+        # Process custom template for variable substitution
+        set(TEMPLATE_DIR "${CMAKE_CURRENT_BINARY_DIR}/emscripten_templates")
+        file(MAKE_DIRECTORY "${TEMPLATE_DIR}")
+        set(PROCESSED_TEMPLATE "${TEMPLATE_DIR}/${target}_shell.html")
+        
+        _create_emscripten_html_template("${PROCESSED_TEMPLATE}"
+            TITLE "${ARG_HTML_TITLE}"
+            CANVAS_ID "${ARG_CANVAS_ID}"
+            TEMPLATE_FILE "${ARG_HTML_TEMPLATE}"
+        )
+        
+        # Update ARG_HTML_TEMPLATE to point to the processed template
+        set(ARG_HTML_TEMPLATE "${PROCESSED_TEMPLATE}")
     endif()
     
     # Configure target to use HTML output

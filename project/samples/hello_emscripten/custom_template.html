@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>{{TITLE}}</title>
+    <style>
+        /* Custom styles for your WebAssembly application */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        #{{CANVAS_ID}} {
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            background-color: #000000;
+            display: block;
+            margin: 20px auto;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+        
+        .console-output {
+            background-color: #2d2d2d;
+            color: #00ff00;
+            padding: 15px;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border-radius: 5px;
+            border: 1px solid #4CAF50;
+        }
+        
+        .status-bar {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .loading { color: #FFC107; }
+        .ready { color: #4CAF50; }
+        .error { color: #F44336; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <h1>{{TITLE}}</h1>
+        <div id="status" class="status-bar loading">Initializing WebAssembly...</div>
+        
+        <canvas id="{{CANVAS_ID}}" width="800" height="600"></canvas>
+        
+        <div class="controls">
+            <button class="btn" onclick="Module.requestFullscreen()">🔍 Fullscreen</button>
+            <button class="btn" onclick="clearConsole()">🗑️ Clear Console</button>
+            <button class="btn" onclick="pauseApp()">⏸️ Pause</button>
+            <button class="btn" onclick="resumeApp()">▶️ Resume</button>
+        </div>
+        
+        <div id="output" class="console-output"></div>
+        
+        <div class="status-bar">
+            <small>💡 Tip: Open browser developer tools (F12) for additional debugging information</small>
+        </div>
+    </div>
+    
+    <script>
+        // Application state
+        let isPaused = false;
+        
+        // Utility functions
+        function clearConsole() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        function pauseApp() {
+            isPaused = true;
+            // You can implement pause logic here
+            console.log('Application paused');
+        }
+        
+        function resumeApp() {
+            isPaused = false;
+            // You can implement resume logic here
+            console.log('Application resumed');
+        }
+        
+        // Emscripten Module configuration
+        var Module = {
+            canvas: document.getElementById('{{CANVAS_ID}}'),
+            
+            // Console output handling
+            print: function(text) {
+                var output = document.getElementById('output');
+                output.innerHTML += '<span style="color: #00ff00;">' + text + '</span>\\n';
+                output.scrollTop = output.scrollHeight;
+            },
+            
+            printErr: function(text) {
+                var output = document.getElementById('output');
+                output.innerHTML += '<span style="color: #ff6666;">[ERROR] ' + text + '</span>\\n';
+                output.scrollTop = output.scrollHeight;
+            },
+            
+            // Lifecycle callbacks
+            onRuntimeInitialized: function() {
+                document.getElementById('status').innerHTML = '✅ WebAssembly Ready';
+                document.getElementById('status').className = 'status-bar ready';
+                console.log('WebAssembly runtime initialized successfully');
+            },
+            
+            onAbort: function(what) {
+                document.getElementById('status').innerHTML = '❌ WebAssembly Error: ' + what;
+                document.getElementById('status').className = 'status-bar error';
+                console.error('WebAssembly aborted:', what);
+            },
+            
+            // Progress callback for loading
+            setStatus: function(text) {
+                if (text) {
+                    document.getElementById('status').innerHTML = '⏳ ' + text;
+                    document.getElementById('status').className = 'status-bar loading';
+                }
+            },
+            
+            // Memory growth callback
+            onGrowMemory: function() {
+                console.log('WebAssembly memory expanded');
+            }
+        };
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (Module.canvas) {
+                // Implement canvas resize logic here if needed
+            }
+        });
+        
+        // Initialize application
+        window.addEventListener('load', function() {
+            console.log('Page loaded, initializing WebAssembly module...');
+        });
+    </script>
+    
+    <!-- Emscripten will inject the generated JavaScript here -->
+    {{{ SCRIPT }}}
+</body>
+</html>
