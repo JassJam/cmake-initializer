@@ -9,12 +9,14 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 * [Testing Frameworks Integration](./docs/TESTING_SUMMARY.md)
 * [CI/CD Pipeline Guide](./docs/CICD_PIPELINE.md)
 * [CDash Integration Guide](./docs/CDASH_INTEGRATION.md.md)
+* [Emscripten Auto-Installation](./docs/EMSCRIPTEN_AUTO_INSTALL.md) - Zero-setup WebAssembly builds
 
 ## Features
 
 - **Cross-Platform Ready**: Preconfigured presets for:
   - Windows: MSVC & Clang-Cl (Debug/Release)
   - Unix-like: GCC & Clang (Debug/Release)
+  - WebAssembly: Emscripten (Debug/Release)
 - **Modern CMake**: Targets-based structure with `CMakePresets.json` configuration.
 - **Modular Architecture**: Clean separation of concerns with focused modules:
   - `register_executable()`: Comprehensive executable creation with visibility control
@@ -29,11 +31,12 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
   - Automatic version/config generation
   - Package management via CPM/XRepo
   - Hardened build options
-- **Sample Projects**: 4 ready-to-use examples:
+- **Sample Projects**: 5 ready-to-use examples:
   - Hello World
   - Static/Shared Libraries
   - External Package Usage
-  - Testing Frameworks (doctest, Catch2, gtest, Boost.Test) 
+  - Testing Frameworks (doctest, Catch2, gtest, Boost.Test)
+  - WebAssembly/Emscripten 
 
 ## Quick Start
 

@@ -130,6 +130,76 @@ This document lists all available CMake cache variables that can be used in pres
 }
 ```
 
+### WebAssembly/Emscripten Build
+```json
+{
+  "cacheVariables": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_C_COMPILER": "emcc",
+    "CMAKE_CXX_COMPILER": "em++",
+    "CMAKE_EXECUTABLE_SUFFIX": ".html",
+    "ENABLE_STATIC_RUNTIME": true
+  }
+}
+```
+
+## Emscripten-Specific Variables
+
+When building with Emscripten, these additional variables are available:
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ENABLE_EMSDK_AUTO_INSTALL` | BOOL | ON | **Automatically install EMSDK locally if not found** |
+| `CMAKE_CROSSCOMPILING_EMULATOR` | STRING | node | JavaScript engine for running tests |
+| `CMAKE_EXECUTABLE_SUFFIX` | STRING | .js | File extension for executables |
+| `EMSCRIPTEN_ROOT` | STRING | auto-detected | Emscripten installation directory |
+
+### EMSDK Auto-Installation
+
+The framework automatically handles EMSDK installation:
+
+- **Enabled by default**: `ENABLE_EMSDK_AUTO_INSTALL=ON`
+- **Local installation**: Downloads to `.emsdk/` directory (ignored by git)
+- **Zero-setup builds**: Just run `.\scripts\build.ps1 -Compiler emscripten`
+- **Setup script**: Generates `setup_emscripten.sh/.bat` for manual use
+
+Disable auto-installation with:
+```json
+{
+  "cacheVariables": {
+    "ENABLE_EMSDK_AUTO_INSTALL": false
+  }
+}
+```
+
+### Emscripten Optimization Flags
+
+The framework automatically applies these optimizations for Emscripten builds:
+
+- **Debug**: `-s ASSERTIONS=1 -s SAFE_HEAP=1 -s DEMANGLE_SUPPORT=1`
+- **Release**: `-O3 --closure 1 -s STANDALONE_WASM=1`
+- **Static Runtime**: `-static-libstdc++ -s WASM=1`
+
+### Emscripten Helper Functions
+
+Use these CMake functions for advanced Emscripten configuration:
+
+```cmake
+# Automatic configuration (recommended)
+target_configure_emscripten_auto(MyTarget SIMD PTHREAD)
+
+# Manual configuration for specific needs
+target_configure_emscripten(MyTarget
+    WASM
+    EXPORTED_FUNCTIONS "_main" "_my_function"
+    MEMORY_SIZE 67108864
+    PRELOAD_FILES "data.txt"
+)
+
+# Generate HTML template
+create_emscripten_html_template("my_app.html" TITLE "My App")
+```
+
 ## Command Line Usage
 
 You can override any of these variables from the command line:

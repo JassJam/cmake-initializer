@@ -545,9 +545,7 @@ register_test(MyLibTests
 )
 ```
 
----
-
-> **Next Steps**: 
-> - See [CMAKE_VARIABLES.md](./CMAKE_VARIABLES.md) for complete configuration options
-> - Check [PRESET_FEATURES.md](./PRESET_FEATURES.md) for preset-based development
-> - Review [TESTING_SUMMARY.md](./TESTING_SUMMARY.md) for testing framework details
+## **Next Steps**: 
+- See [CMAKE_VARIABLES.md](./CMAKE_VARIABLES.md) for complete configuration options
+- Check [PRESET_FEATURES.md](./PRESET_FEATURES.md) for preset-based development
+- Review [TESTING_SUMMARY.md](./TESTING_SUMMARY.md) for testing framework details
