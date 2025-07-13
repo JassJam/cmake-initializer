@@ -188,7 +188,6 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
 
 Write-Host "🧪 cmake-initializer Test Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
-Write-Host "Configuration: $Config" -ForegroundColor Green
 
 # Determine preset if not specified
 if (-not $Preset) {
@@ -200,6 +199,17 @@ if (-not $Preset) {
         $Preset = "unixlike-gcc-$($Config.ToLower())"
     }
 }
+
+# Derive build configuration from preset name if preset was provided
+if ($PSBoundParameters.ContainsKey('Preset')) {
+    if ($Preset -match "debug") {
+        $Config = "Debug"
+    } elseif ($Preset -match "release") {
+        $Config = "Release"
+    }
+}
+
+Write-Host "Configuration: $Config" -ForegroundColor Green
 
 # Override preset based on compiler selection
 if ($Compiler) {

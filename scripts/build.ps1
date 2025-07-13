@@ -140,7 +140,6 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
 
 Write-Host "🔨 cmake-initializer Build Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
-Write-Host "Configuration: $Config" -ForegroundColor Green
 
 # Determine preset if not specified
 if (-not $Preset) {
@@ -156,6 +155,17 @@ if (-not $Preset) {
     }
 }
 
+# Derive build configuration from preset name
+if ($Preset -match "debug") {
+    $Config = "Debug"
+} elseif ($Preset -match "release") {
+    $Config = "Release"
+} else {
+    # Default fallback
+    $Config = "Release"
+}
+
+Write-Host "Configuration: $Config" -ForegroundColor Green
 Write-Host "Preset: $Preset" -ForegroundColor Green
 
 # Build CMake configuration arguments
