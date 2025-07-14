@@ -174,7 +174,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
-        "ENABLE_EMSDK_AUTO_INSTALL": false,
+        "ENABLE_EMSDK_AUTO_INSTALL": true,
         "EMSCRIPTEN_GENERATE_HTML": true,
         "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
@@ -193,7 +193,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
-        "ENABLE_EMSDK_AUTO_INSTALL": false,
+        "ENABLE_EMSDK_AUTO_INSTALL": true,
         "EMSCRIPTEN_GENERATE_HTML": true,
         "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
