@@ -252,9 +252,24 @@ function(register_test TARGET_NAME)
     endif()
 
     # Register test with CTest
-    if(EMSCRIPTEN)
+    # Use get_current_compiler to detect if we're building with Emscripten
+    get_current_compiler(CURRENT_COMPILER)
+    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         # For Emscripten, run the test through Node.js
-        add_test(NAME ${TARGET_NAME} COMMAND node ${TARGET_NAME}.js)
+        # Emscripten generates multiple files: .html, .js, and .wasm
+        # We need to run the .js file regardless of the CMAKE_EXECUTABLE_SUFFIX setting
+        
+        # Try to find Node.js from EMSDK first, then fall back to system Node.js
+        set(NODE_EXECUTABLE "node")
+        if(DEFINED ENV{EMSDK})
+            # Look for Node.js in EMSDK installation
+            file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node")
+            if(EMSDK_NODE_PATHS)
+                list(GET EMSDK_NODE_PATHS 0 NODE_EXECUTABLE)
+            endif()
+        endif()
+        
+        add_test(NAME ${TARGET_NAME} COMMAND ${NODE_EXECUTABLE} ${TARGET_NAME}.js)
         # Set working directory to where the .js file is located
         set_tests_properties(${TARGET_NAME} PROPERTIES
             WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_NAME}>
