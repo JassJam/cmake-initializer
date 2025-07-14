@@ -6,7 +6,16 @@
 
 include_guard(GLOBAL)
 include(EmsdkManager)
-include(EmscriptenSupport)
+include(EmscriptenTemplate)
+
+# Initialize Emscripten environment if needed
+function(_ensure_emscripten_ready)
+    if(NOT DEFINED EMSDK_INITIALIZED)
+        verify_and_setup_emscripten_compilers()
+        configure_emscripten_html_generation()
+        set(EMSDK_INITIALIZED TRUE CACHE INTERNAL "EMSDK has been initialized")
+    endif()
+endfunction()
 
 # One-liner function to register an Emscripten/WebAssembly target
 # Usage:
@@ -58,11 +67,13 @@ function(register_emscripten target)
         "SOURCES;HEADERS;INCLUDES;LIBRARIES;DEPENDENCIES;EXPORTED_FUNCTIONS;EXPORTED_RUNTIME_METHODS;PRELOAD_FILES;EMBED_FILES"
         ${ARGN}
     )
-    
+
     # Validate arguments
     if(NOT ARG_SOURCES)
         message(FATAL_ERROR "register_emscripten: SOURCES argument is required")
     endif()
+
+    _ensure_emscripten_ready()
     
     # Ensure Emscripten environment is ready
     include(GetCurrentCompiler)

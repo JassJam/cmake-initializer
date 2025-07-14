@@ -180,26 +180,6 @@ The framework automatically applies these optimizations for Emscripten builds:
 - **Release**: `-O3 --closure 1 -s STANDALONE_WASM=1`
 - **Static Runtime**: `-static-libstdc++ -s WASM=1`
 
-### Emscripten Helper Functions
-
-Use these CMake functions for advanced Emscripten configuration:
-
-```cmake
-# Automatic configuration (recommended)
-target_configure_emscripten_auto(MyTarget SIMD PTHREAD)
-
-# Manual configuration for specific needs
-target_configure_emscripten(MyTarget
-    WASM
-    EXPORTED_FUNCTIONS "_main" "_my_function"
-    MEMORY_SIZE 67108864
-    PRELOAD_FILES "data.txt"
-)
-
-# Generate HTML template
-create_emscripten_html_template("my_app.html" TITLE "My App")
-```
-
 ## Command Line Usage
 
 You can override any of these variables from the command line:

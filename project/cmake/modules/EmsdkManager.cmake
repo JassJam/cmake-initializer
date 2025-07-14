@@ -43,7 +43,11 @@ function(ensure_emsdk_available)
         return()
     endif()
     
-    message(STATUS "EMSDK not found. Installing locally to ${LOCAL_EMSDK_DIR}")
+    if (ENABLE_EMSDK_AUTO_INSTALL)
+        message(STATUS "EMSDK not found. Automatically installing it locally to ${LOCAL_EMSDK_DIR}")
+    else()
+        message(FATAL_ERROR "EMSDK not found. Please install it manually or enable ENABLE_EMSDK_AUTO_INSTALL to download it automatically.")
+    endif()
     
     # Create the directory
     file(MAKE_DIRECTORY "${LOCAL_EMSDK_DIR}")
@@ -262,7 +266,7 @@ function(configure_emscripten_html_generation)
     
     # Create HTML template if it doesn't exist
     if(NOT EXISTS "${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
-        include(EmscriptenSupport)
+        include(EmscriptenTemplate)
         create_emscripten_html_template("${EMSCRIPTEN_HTML_SHELL_TEMPLATE}" 
             TITLE "cmake-initializer WebAssembly App"
             CANVAS_ID "canvas"
