@@ -255,25 +255,60 @@ function(register_test TARGET_NAME)
     # Use get_current_compiler to detect if we're building with Emscripten
     get_current_compiler(CURRENT_COMPILER)
     if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
-        # For Emscripten, run the test through Node.js
-        # Emscripten generates multiple files: .html, .js, and .wasm
-        # We need to run the .js file regardless of the CMAKE_EXECUTABLE_SUFFIX setting
+        # For Emscripten tests, we need to generate .js files for Node.js execution
+        # Override the global executable suffix for test targets
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            SUFFIX ".js"  # Generate .js files for Node.js compatibility
+        )
+        
+        # Add Emscripten-specific link options for test executables
+        target_link_options(${TARGET_NAME} PRIVATE
+            "SHELL:-s ENVIRONMENT=node"     # Target Node.js environment
+            "SHELL:-s EXIT_RUNTIME=1"       # Allow process to exit properly
+            "SHELL:-s NODEJS_CATCH_EXIT=0"  # Don't catch exit calls
+            "SHELL:-s EXPORTED_RUNTIME_METHODS=['callMain']"  # Export main function
+        )
         
         # Try to find Node.js from EMSDK first, then fall back to system Node.js
         set(NODE_EXECUTABLE "node")
         if(DEFINED ENV{EMSDK})
             # Look for Node.js in EMSDK installation
-            file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node")
+            file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node*")
             if(EMSDK_NODE_PATHS)
                 list(GET EMSDK_NODE_PATHS 0 NODE_EXECUTABLE)
             endif()
         endif()
         
-        add_test(NAME ${TARGET_NAME} COMMAND ${NODE_EXECUTABLE} ${TARGET_NAME}.js)
-        # Set working directory to where the .js file is located
+        # Find the Node.js executable if not from EMSDK
+        if(NODE_EXECUTABLE STREQUAL "node")
+            find_program(NODE_EXECUTABLE node)
+            if(NOT NODE_EXECUTABLE)
+                message(WARNING "Node.js not found. Emscripten tests may not run properly.")
+                set(NODE_EXECUTABLE "node")
+            endif()
+        endif()
+        
+        add_test(NAME ${TARGET_NAME} COMMAND ${NODE_EXECUTABLE} $<TARGET_FILE:${TARGET_NAME}>)
+        # Set working directory to where the test files are located
         set_tests_properties(${TARGET_NAME} PROPERTIES
             WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_NAME}>
         )
+        
+        # Ensure the WASM file is also copied for installation
+        if(ARG_INSTALL)
+            # Create a custom target to install both .js and .wasm files for tests
+            get_target_property(TEST_OUTPUT_DIR ${TARGET_NAME} RUNTIME_OUTPUT_DIRECTORY)
+            if(NOT TEST_OUTPUT_DIR)
+                set(TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
+            endif()
+            
+            install(FILES 
+                ${TEST_OUTPUT_DIR}/${TARGET_NAME}.js
+                ${TEST_OUTPUT_DIR}/${TARGET_NAME}.wasm
+                DESTINATION bin
+                OPTIONAL
+            )
+        endif()
     else()
         # For native builds, run the executable directly
         add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})

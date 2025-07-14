@@ -87,6 +87,21 @@ function(install_component target)
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
+    
+    # Handle Emscripten WebAssembly files
+    include(GetCurrentCompiler)
+    get_current_compiler(CURRENT_COMPILER)
+    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
+        get_target_property(target_type ${target} TYPE)
+        if(target_type STREQUAL "EXECUTABLE")
+            # Install accompanying WASM files for Emscripten executables
+            install(FILES 
+                $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>.wasm
+                DESTINATION ${ARG_RUNTIME_DIR}
+                OPTIONAL
+            )
+        endif()
+    endif()
 
     # Install export configuration
     install(EXPORT ${target}Targets
