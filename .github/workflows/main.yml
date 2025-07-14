@@ -15,7 +15,7 @@ jobs:
     continue-on-error: false
     strategy:
       fail-fast: true  # Stop all jobs if any test fails
-      max-parallel: 6
+      max-parallel: 4
       matrix:
         config:
           - name: linux-x64-clang
@@ -44,6 +44,15 @@ jobs:
             os: windows-latest
             preset: windows-msvc-debug
             output: windows-x64-msvc
+
+          - name: emscripten-debug
+            os: ubuntu-latest
+            preset: emscripten-debug
+            output: wasm-debug
+          - name: emscripten-release
+            os: ubuntu-latest
+            preset: emscripten-release
+            output: wasm-release
 
     steps:
       - name: Checkout code
@@ -101,6 +110,22 @@ jobs:
           ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
           ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Experimental' }}
 
+      - name: Run ${{ matrix.config.name }} Tests
+        uses: ./.github/actions/test/emscripten
+        if: contains(matrix.config.name, 'emscripten')
+        with:
+          config-name: ${{ matrix.config.name }}
+          config-os: ${{ matrix.config.os }}
+          config-preset: ${{ matrix.config.preset }}
+          config-output: ${{ matrix.config.output }}
+
+          ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
+          ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
+          ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
+          ctest-drop-method: ${{ secrets.CTEST_DROP_METHOD || 'https' }}
+          ctest-auth-token: ${{ secrets.CDASH_AUTH_TOKEN }}
+          ctest-dashboard-model: ${{ secrets.CTEST_DASHBOARD_MODEL || 'Experimental' }}
+
   build:
     name: Build (${{ matrix.config.name }})
     runs-on: ${{ matrix.config.os }}
@@ -138,6 +163,11 @@ jobs:
             preset: windows-msvc-release
             output: windows-x64-msvc
 
+          - name: emscripten-release
+            os: ubuntu-latest
+            preset: emscripten-release
+            output: wasm-release
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -167,6 +197,15 @@ jobs:
       - name: Run ${{ matrix.config.name }} Build
         uses: ./.github/actions/build/windows
         if: contains(matrix.config.os, 'windows')
+        with:
+          config-name: ${{ matrix.config.name }}
+          config-os: ${{ matrix.config.os }}
+          config-preset: ${{ matrix.config.preset }}
+          config-output: ${{ matrix.config.output }}
+
+      - name: Run ${{ matrix.config.name }} Build
+        uses: ./.github/actions/build/emscripten
+        if: contains(matrix.config.name, 'emscripten')
         with:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
