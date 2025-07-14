@@ -7,6 +7,7 @@ check_sanitizers_support(SUPPORTS_UBSAN SUPPORTS_ASAN)
 # === MAIN CONFIGURATION OPTIONS ===
 option(DEV_MODE "Enable development mode (all quality tools)" ON)
 option(RELEASE_MODE "Enable release optimizations" OFF)
+option(BUILD_TESTING "Build and enable testing" ON)
 
 # === QUALITY TOOLS ===
 option(ENABLE_SANITIZERS "Enable address/undefined behavior sanitizers" ${DEV_MODE})
