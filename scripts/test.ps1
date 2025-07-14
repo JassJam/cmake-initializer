@@ -369,6 +369,36 @@ try {
         }
     }
 
+    # Check if any tests exist before running CTest
+    Write-Host "🔍 Checking for available tests..." -ForegroundColor Blue
+    
+    # Use ctest --show-only to check if tests exist without running them
+    $TestCheckCmd = @("ctest", "--test-dir", $FullBuildDir, "--build-config", $Config, "--show-only=json-v1")
+    
+    try {
+        $TestOutput = & $TestCheckCmd[0] $TestCheckCmd[1..($TestCheckCmd.Length-1)] 2>$null
+        $TestCheckResult = $LASTEXITCODE
+        
+        if ($TestCheckResult -eq 0 -and $TestOutput) {
+            # Parse the JSON to count tests
+            $TestInfo = $TestOutput | ConvertFrom-Json -ErrorAction SilentlyContinue
+            $TestCount = if ($TestInfo.tests) { $TestInfo.tests.Count } else { 0 }
+            
+            if ($TestCount -eq 0) {
+                Write-Host "⚠️  No tests were found to run" -ForegroundColor Yellow
+                Write-Host "This usually means BUILD_TESTING=OFF or no test targets were defined" -ForegroundColor Yellow
+                Write-Host "✅ Test execution completed (no tests to run)" -ForegroundColor Green
+                exit 0
+            } else {
+                Write-Host "Found $TestCount test(s) to run" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "⚠️  Could not determine test count, proceeding with test execution..." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "⚠️  Could not check for tests, proceeding with test execution..." -ForegroundColor Yellow
+    }
+
     # Build CTest command
     $CTestCmd = @("ctest", "--test-dir", $FullBuildDir, "--build-config", $Config)
     

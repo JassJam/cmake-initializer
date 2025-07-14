@@ -106,6 +106,35 @@ if (-not (Test-Path $CTestScript)) {
 
 Write-Host "`n=== Running CTest Submission ==="
 
+# Check if any tests exist before running dashboard submission
+Write-Host "🔍 Checking for available tests..." -ForegroundColor Blue
+
+# Use ctest --show-only to check if tests exist
+$TestCheckCmd = @("ctest", "--test-dir", $BuildDir, "--build-config", $BuildConfig, "--show-only=json-v1")
+
+try {
+    $TestOutput = & $TestCheckCmd[0] $TestCheckCmd[1..($TestCheckCmd.Length-1)] 2>$null
+    $TestCheckResult = $LASTEXITCODE
+    
+    if ($TestCheckResult -eq 0 -and $TestOutput) {
+        $TestInfo = $TestOutput | ConvertFrom-Json -ErrorAction SilentlyContinue
+        $TestCount = if ($TestInfo.tests) { $TestInfo.tests.Count } else { 0 }
+        
+        if ($TestCount -eq 0) {
+            Write-Host "⚠️  No tests found - skipping CDash test submission" -ForegroundColor Yellow
+            Write-Host "This usually means BUILD_TESTING=OFF or no test targets were defined" -ForegroundColor Yellow
+            Write-Host "✅ CDash submission completed (no tests to submit)" -ForegroundColor Green
+            exit 0
+        } else {
+            Write-Host "Found $TestCount test(s) - proceeding with CDash submission" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "⚠️  Could not determine test count, proceeding with submission..." -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "⚠️  Could not check for tests, proceeding with submission..." -ForegroundColor Yellow
+}
+
 # Set environment variable for the CTest script
 $env:CTEST_CONFIGURATION_TYPE = $BuildConfig
 
