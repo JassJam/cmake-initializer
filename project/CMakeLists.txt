@@ -28,9 +28,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # Generate compile_commands.json
 include(GNUInstallDirs)
 include(GenerateExportHeader)
 
-# Enable testing
-include(CTest)
-enable_testing()
+# Enable testing conditionally
+if(BUILD_TESTING)
+    include(CTest)
+    enable_testing()
+endif()
 
 # Add remaining cmake modules
 include(PreventInSourceBuilds)
