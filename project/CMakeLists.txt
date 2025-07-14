@@ -10,7 +10,6 @@ include(./ProjectMetadata.cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(EmsdkManager)
 
-
 # Set up project with metadata
 project(${THIS_PROJECT_NAME}
     VERSION "${THIS_PROJECT_VERSION}"
@@ -27,6 +26,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # Generate compile_commands.json
 
 include(GNUInstallDirs)
 include(GenerateExportHeader)
+
+option(BUILD_TESTING "Build and enable testing" ON)
 
 # Enable testing
 if(BUILD_TESTING)
