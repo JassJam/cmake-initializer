@@ -61,6 +61,12 @@ endfunction()
 #     [INSTALL_DESTINATION path]             # Custom install destination
 # )
 function(register_emscripten target)
+    # Early return if not building with Emscripten
+    if(NOT EMSCRIPTEN)
+        message(STATUS "Skipping Emscripten target '${target}' - not building with Emscripten compiler")
+        return()
+    endif()
+    
     cmake_parse_arguments(ARG
         "WASM;STANDALONE_WASM;NODE_JS;PTHREAD;SIMD;ASYNCIFY;ASSERTIONS;SAFE_HEAP;DEMANGLE_SUPPORT;ALLOW_MEMORY_GROWTH;CLOSURE_COMPILER;INSTALL"
         "HTML_TEMPLATE;HTML_TITLE;CANVAS_ID;OUTPUT_DIR;INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE;INSTALL_DESTINATION"
