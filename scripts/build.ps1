@@ -91,6 +91,11 @@
     information. Useful for debugging build issues.
     Default: false
 
+.PARAMETER ExtraArgs
+    Additional arguments to pass directly to CMake commands. Useful for passing
+    custom variables or options that aren't covered by other parameters.
+    Example: @("-DBUILD_TESTING=ON", "-DCMAKE_VERBOSE_MAKEFILE=ON")
+
 .EXAMPLE
     .\scripts\build.ps1
     
@@ -135,7 +140,8 @@ param(
     [switch]$Static,
     [int]$Jobs = 0,
     [switch]$ListTargets,
-    [switch]$Verbose
+    [switch]$Verbose,
+    [string[]]$ExtraArgs = @()
 )
 
 # Set error action preference
@@ -200,6 +206,12 @@ Write-Host "Preset: $Preset" -ForegroundColor Green
 
 # Build CMake configuration arguments
 $ConfigArgs = @()
+
+# Add extra arguments if provided
+if ($ExtraArgs -and $ExtraArgs.Count -gt 0) {
+    $ConfigArgs += $ExtraArgs
+    Write-Host "Extra CMake args: $($ExtraArgs -join ' ')" -ForegroundColor Yellow
+}
 
 # Add static linking if requested
 if ($Static) {

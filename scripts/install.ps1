@@ -124,6 +124,11 @@
     existing files without confirmation prompts.
     Default: false (shows confirmation for conflicts)
 
+.PARAMETER ExtraArgs
+    Additional arguments to pass directly to CMake install commands. Useful for passing
+    custom variables or options that aren't covered by other parameters.
+    Example: @("--verbose", "--parallel 4")
+
 .EXAMPLE
     .\scripts\install.ps1
     
@@ -175,7 +180,8 @@ param(
     [switch]$ListTargets,
     [switch]$Verbose,
     [switch]$DryRun,
-    [switch]$Force
+    [switch]$Force,
+    [string[]]$ExtraArgs = @()
 )
 
 # Set error action preference
@@ -369,6 +375,12 @@ try {
 
     # Build install command - use cmake --install with error handling for Emscripten compatibility
     $InstallArgs = @("--install", $ActualBuildPath, "--config", $Config)
+
+    # Add extra arguments if provided
+    if ($ExtraArgs -and $ExtraArgs.Count -gt 0) {
+        $InstallArgs += $ExtraArgs
+        Write-Host "Extra CMake install args: $($ExtraArgs -join ' ')" -ForegroundColor Yellow
+    }
 
     if ($Prefix) {
         $InstallArgs += "--prefix"

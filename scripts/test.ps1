@@ -100,6 +100,11 @@
     individual test results, timing information, and system details.
     Default: false
 
+.PARAMETER ExtraArgs
+    Additional arguments to pass directly to CTest commands. Useful for passing
+    custom variables or options that aren't covered by other parameters.
+    Example: @("--rerun-failed", "--extra-verbose")
+
 .EXAMPLE
     .\scripts\test.ps1
     
@@ -156,7 +161,8 @@ param(
     [switch]$Coverage,
     [switch]$Valgrind,
     [switch]$StopOnFailure,
-    [switch]$Verbose
+    [switch]$Verbose,
+    [string[]]$ExtraArgs = @()
 )
 
 # Set error action preference
@@ -238,6 +244,9 @@ if ($Compiler) {
 }
 
 Write-Host "Test Preset: $Preset" -ForegroundColor Green
+
+# Determine test preset from configure preset
+$TestPreset = "test-$Preset"
 
 # Change to project directory
 Push-Location $ProjectDir
@@ -362,6 +371,17 @@ try {
 
     # Build CTest command
     $CTestCmd = @("ctest", "--test-dir", $FullBuildDir, "--build-config", $Config)
+    
+    # Add extra arguments if provided
+    if ($ExtraArgs -and $ExtraArgs.Count -gt 0) {
+        $CTestCmd += $ExtraArgs
+        Write-Host "Extra CTest args: $($ExtraArgs -join ' ')" -ForegroundColor Yellow
+    }
+    
+    # Add test preset if available
+    if ($TestPreset) {
+        $CTestCmd += @("--preset", $TestPreset)
+    }
     
     # Add parallel execution
     $CTestCmd += @("--parallel", $Parallel)

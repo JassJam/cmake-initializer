@@ -77,8 +77,8 @@ runs:
       run: |
         Write-Host "=== Building and Testing ${{ inputs.config-name }} using scripts ==="
         
-        # Use the new build and test scripts
-        & "${{ github.workspace }}/scripts/build.ps1" -Preset "${{ inputs.config-preset }}"
+        # Use the new build and test scripts with BUILD_TESTING enabled
+        & "${{ github.workspace }}/scripts/build.ps1" -Preset "${{ inputs.config-preset }}" -ExtraArgs @("-DBUILD_TESTING=ON")
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error "❌ Build failed with exit code: $LASTEXITCODE"
