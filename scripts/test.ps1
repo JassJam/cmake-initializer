@@ -245,9 +245,6 @@ if ($Compiler) {
 
 Write-Host "Test Preset: $Preset" -ForegroundColor Green
 
-# Determine test preset from configure preset
-$TestPreset = "test-$Preset"
-
 # Change to project directory
 Push-Location $ProjectDir
 
@@ -406,11 +403,6 @@ try {
     if ($ExtraArgs -and $ExtraArgs.Count -gt 0) {
         $CTestCmd += $ExtraArgs
         Write-Host "Extra CTest args: $($ExtraArgs -join ' ')" -ForegroundColor Yellow
-    }
-    
-    # Add test preset if available
-    if ($TestPreset) {
-        $CTestCmd += @("--preset", $TestPreset)
     }
     
     # Add parallel execution
