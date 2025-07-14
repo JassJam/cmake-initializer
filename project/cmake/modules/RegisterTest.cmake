@@ -2,6 +2,12 @@
 # Testing Framework Registration System
 # ==============================================================================
 
+# Configuration Variables:
+# - EMSCRIPTEN_NODE_EXECUTABLE: Path to Node.js executable for running Emscripten tests
+#   Defaults to auto-detection from EMSDK or system PATH
+# - EMSCRIPTEN_TEST_OPTIONS: Additional options for Emscripten test execution
+#   Example: "--experimental-wasm-bigint --max-old-space-size=4096"
+
 # Global variables to store test framework configuration
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED FALSE)
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")
@@ -262,53 +268,49 @@ function(register_test TARGET_NAME)
         )
         
         # Add Emscripten-specific link options for test executables
-        target_link_options(${TARGET_NAME} PRIVATE
-            "SHELL:-s ENVIRONMENT=node"     # Target Node.js environment
-            "SHELL:-s EXIT_RUNTIME=1"       # Allow process to exit properly
-            "SHELL:-s NODEJS_CATCH_EXIT=0"  # Don't catch exit calls
-            "SHELL:-s EXPORTED_RUNTIME_METHODS=['callMain']"  # Export main function
-        )
+        # These can be overridden by setting EMSCRIPTEN_TEST_OPTIONS before calling this function
+        if(NOT DEFINED EMSCRIPTEN_TEST_OPTIONS)
+            set(EMSCRIPTEN_TEST_OPTIONS
+                "SHELL:-s ENVIRONMENT=node"     # Target Node.js environment
+                "SHELL:-s EXIT_RUNTIME=1"       # Allow process to exit properly
+                "SHELL:-s NODEJS_CATCH_EXIT=0"  # Don't catch exit calls
+                "SHELL:-s EXPORTED_RUNTIME_METHODS=['callMain']"  # Export main function
+            )
+        endif()
+        target_link_options(${TARGET_NAME} PRIVATE ${EMSCRIPTEN_TEST_OPTIONS})
         
-        # Try to find Node.js from EMSDK first, then fall back to system Node.js
-        set(NODE_EXECUTABLE "node")
-        if(DEFINED ENV{EMSDK})
-            # Look for Node.js in EMSDK installation
-            file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node*")
-            if(EMSDK_NODE_PATHS)
-                list(GET EMSDK_NODE_PATHS 0 NODE_EXECUTABLE)
+        # Try to find Node.js executable
+        # This can be overridden by setting EMSCRIPTEN_NODE_EXECUTABLE
+        if(NOT DEFINED EMSCRIPTEN_NODE_EXECUTABLE)
+            set(NODE_EXECUTABLE "node")
+            if(DEFINED ENV{EMSDK})
+                # Look for Node.js in EMSDK installation - handle both Unix and Windows paths
+                if(WIN32)
+                    file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node.exe")
+                else()
+                    file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node")
+                endif()
+                if(EMSDK_NODE_PATHS)
+                    list(GET EMSDK_NODE_PATHS 0 NODE_EXECUTABLE)
+                endif()
             endif()
+            
+            # Find the Node.js executable if not from EMSDK
+            if(NODE_EXECUTABLE STREQUAL "node")
+                find_program(NODE_EXECUTABLE node)
+                if(NOT NODE_EXECUTABLE)
+                    message(WARNING "Node.js not found. Emscripten tests may not run properly.")
+                    set(NODE_EXECUTABLE "node")
+                endif()
+            endif()
+            set(EMSCRIPTEN_NODE_EXECUTABLE ${NODE_EXECUTABLE} CACHE STRING "Path to Node.js executable for Emscripten tests")
         endif()
         
-        # Find the Node.js executable if not from EMSDK
-        if(NODE_EXECUTABLE STREQUAL "node")
-            find_program(NODE_EXECUTABLE node)
-            if(NOT NODE_EXECUTABLE)
-                message(WARNING "Node.js not found. Emscripten tests may not run properly.")
-                set(NODE_EXECUTABLE "node")
-            endif()
-        endif()
-        
-        add_test(NAME ${TARGET_NAME} COMMAND ${NODE_EXECUTABLE} $<TARGET_FILE:${TARGET_NAME}>)
+        add_test(NAME ${TARGET_NAME} COMMAND ${EMSCRIPTEN_NODE_EXECUTABLE} $<TARGET_FILE:${TARGET_NAME}>)
         # Set working directory to where the test files are located
         set_tests_properties(${TARGET_NAME} PROPERTIES
             WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_NAME}>
         )
-        
-        # Ensure the WASM file is also copied for installation
-        if(ARG_INSTALL)
-            # Create a custom target to install both .js and .wasm files for tests
-            get_target_property(TEST_OUTPUT_DIR ${TARGET_NAME} RUNTIME_OUTPUT_DIRECTORY)
-            if(NOT TEST_OUTPUT_DIR)
-                set(TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
-            endif()
-            
-            install(FILES 
-                ${TEST_OUTPUT_DIR}/${TARGET_NAME}.js
-                ${TEST_OUTPUT_DIR}/${TARGET_NAME}.wasm
-                DESTINATION bin
-                OPTIONAL
-            )
-        endif()
     else()
         # For native builds, run the executable directly
         add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})

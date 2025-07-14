@@ -153,6 +153,8 @@ When building with Emscripten, these additional variables are available:
 | `CMAKE_CROSSCOMPILING_EMULATOR` | STRING | node | JavaScript engine for running tests |
 | `CMAKE_EXECUTABLE_SUFFIX` | STRING | .js | File extension for executables |
 | `EMSCRIPTEN_ROOT` | STRING | auto-detected | Emscripten installation directory |
+| `EMSCRIPTEN_NODE_EXECUTABLE` | STRING | auto-detected | Path to Node.js executable for test execution |
+| `EMSCRIPTEN_TEST_OPTIONS` | STRING | "" | Additional Node.js options for running tests |
 
 ### EMSDK Auto-Installation
 
