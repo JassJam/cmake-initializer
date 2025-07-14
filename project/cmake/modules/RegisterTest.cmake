@@ -252,7 +252,17 @@ function(register_test TARGET_NAME)
     endif()
 
     # Register test with CTest
-    add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
+    if(EMSCRIPTEN)
+        # For Emscripten, run the test through Node.js
+        add_test(NAME ${TARGET_NAME} COMMAND node ${TARGET_NAME}.js)
+        # Set working directory to where the .js file is located
+        set_tests_properties(${TARGET_NAME} PROPERTIES
+            WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_NAME}>
+        )
+    else()
+        # For native builds, run the executable directly
+        add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
+    endif()
 
     # Install if requested
     if(ARG_INSTALL)
