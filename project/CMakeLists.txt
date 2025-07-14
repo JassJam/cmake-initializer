@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.21)
 
-
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "Using C++ standard: ${CMAKE_CXX_STANDARD}")
 
 include(./cmake/Policies.cmake)
 include(./ProjectMetadata.cmake)
+
+# Add our cmake modules early for EMSDK setup
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+include(EmsdkManager)
+
 
 # Set up project with metadata
 project(${THIS_PROJECT_NAME}
@@ -28,9 +32,7 @@ include(GenerateExportHeader)
 include(CTest)
 enable_testing()
 
-# Add our cmake modules
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-
+# Add remaining cmake modules
 include(PreventInSourceBuilds)
 include(InstallComponent)
 include(CPMPackageManager)

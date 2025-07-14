@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{TITLE}}</title>
     <style>
         /* Custom styles for your WebAssembly application */
@@ -89,7 +89,7 @@
         <canvas id="{{CANVAS_ID}}" width="800" height="600"></canvas>
         
         <div class="controls">
-            <button class="btn" onclick="Module.requestFullscreen()">🔍 Fullscreen</button>
+            <button class="btn" onclick="toggleFullscreen()">🔍 Fullscreen</button>
             <button class="btn" onclick="clearConsole()">🗑️ Clear Console</button>
             <button class="btn" onclick="pauseApp()">⏸️ Pause</button>
             <button class="btn" onclick="resumeApp()">▶️ Resume</button>
@@ -121,6 +121,40 @@
             isPaused = false;
             // You can implement resume logic here
             console.log('Application resumed');
+        }
+        
+        function toggleFullscreen() {
+            const canvas = document.getElementById('{{CANVAS_ID}}');
+            if (!canvas) {
+                console.error('Canvas element not found');
+                return;
+            }
+            
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                if (canvas.requestFullscreen) {
+                    canvas.requestFullscreen();
+                } else if (canvas.webkitRequestFullscreen) {
+                    canvas.webkitRequestFullscreen();
+                } else if (canvas.msRequestFullscreen) {
+                    canvas.msRequestFullscreen();
+                } else if (canvas.mozRequestFullScreen) {
+                    canvas.mozRequestFullScreen();
+                } else {
+                    console.error('Fullscreen API not supported');
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                }
+            }
         }
         
         // Emscripten Module configuration

@@ -5,7 +5,7 @@ register_emscripten(HelloEmscripten
     CANVAS_ID "hello-canvas"
     INITIAL_MEMORY 16MB
     STACK_SIZE 5MB
-    EXPORTED_RUNTIME_METHODS ccall cwrap UTF8ToString lengthBytesUTF8 requestFullscreen
+    EXPORTED_RUNTIME_METHODS ccall cwrap UTF8ToString lengthBytesUTF8
     PTHREAD
     INSTALL
 )
