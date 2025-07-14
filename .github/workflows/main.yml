@@ -178,7 +178,7 @@ jobs:
       # Scripts handle preset-based builds and artifact creation
       - name: Run ${{ matrix.config.name }} Build
         uses: ./.github/actions/build/unix
-        if: contains(matrix.config.os, 'ubuntu')
+        if: contains(matrix.config.name, 'linux')
         with:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
@@ -187,7 +187,7 @@ jobs:
 
       - name: Run ${{ matrix.config.name }} Build
         uses: ./.github/actions/build/macos
-        if: contains(matrix.config.os, 'macos')
+        if: contains(matrix.config.name, 'macos')
         with:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
@@ -196,7 +196,7 @@ jobs:
 
       - name: Run ${{ matrix.config.name }} Build
         uses: ./.github/actions/build/windows
-        if: contains(matrix.config.os, 'windows')
+        if: contains(matrix.config.name, 'windows')
         with:
           config-name: ${{ matrix.config.name }}
           config-os: ${{ matrix.config.os }}
