@@ -449,9 +449,6 @@ try {
         Write-Host "Command: $($InstallCmd -join ' ')" -ForegroundColor DarkGray
     }
     
-    # Run the installation
-    Write-Host "📦 Installing project..." -ForegroundColor Blue
-    
     # For Emscripten presets, try installing individual components to avoid global install failures
     if ($Preset -like "*emscripten*" -and -not $Target) {
         Write-Host "🔧 Using component-based installation for Emscripten compatibility..." -ForegroundColor Blue

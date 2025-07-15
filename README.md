@@ -11,6 +11,18 @@ A modern, cross-platform CMake project template designed to streamline C++ proje
 * [CDash Integration Guide](./docs/CDASH_INTEGRATION.md.md)
 * [Emscripten Auto-Installation](./docs/EMSCRIPTEN_AUTO_INSTALL.md) - Zero-setup WebAssembly builds
 
+
+## Environment Variables & Secrets
+
+You can use `.env` files in your project directory to provide secrets or configuration values at configure time. These can be loaded as compile-time definitions using the `ENVIRONMENT` argument in `register_executable`, `register_library`, etc. This allows you to keep sensitive values (API keys, tokens, etc.) out of your source code and version control. Example:
+
+```cmake
+register_executable(MyApp ENVIRONMENT production)
+# Loads .env and .env.production from the same directory as your CMakeLists.txt
+```
+
+**Note:** Do not commit `.env` files containing secrets to public repositories.
+
 ## Features
 
 - **Cross-Platform Ready**: Preconfigured presets for:

@@ -25,6 +25,7 @@ endfunction()
 #     [INCLUDES include/dir1 include/dir2]   # Include directories
 #     [LIBRARIES lib1 lib2 ...]              # Link libraries
 #     [DEPENDENCIES dep1 dep2 ...]           # Target dependencies
+#     [ENVIRONMENT dev|prod|test|...]        # Environment for loading .env files
 #     
 #     # HTML/Web Configuration
 #     [HTML_TEMPLATE path/to/template.html]  # Custom HTML shell template
@@ -60,21 +61,23 @@ endfunction()
 #     [INSTALL]                              # Install target to CMAKE_INSTALL_PREFIX
 #     [INSTALL_DESTINATION path]             # Custom install destination
 # )
-function(register_emscripten target)
+function(register_emscripten TARGET_NAME)
     # Early return if not building with Emscripten
     include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
     if(NOT CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
-        message(STATUS "Skipping Emscripten target '${target}' - not building with Emscripten compiler")
+        message(STATUS "Skipping Emscripten target '${TARGET_NAME}' - not building with Emscripten compiler")
         return()
     endif()
+
+    set(options WASM TANDALONE_WASM NODE_JS PTHREAD SIMD ASYNCIFY ASSERTIONS
+        SAFE_HEAP DEMANGLE_SUPPORT ALLOW_MEMORY_GROWTH CLOSURE_COMPILER INSTALL)
+    set(oneValueArgs HTML_TEMPLATE HTML_TITLE CANVAS_ID OUTPUT_DIR INITIAL_MEMORY
+        MAXIMUM_MEMORY STACK_SIZE INSTALL_DESTINATION ENVIRONMENT)
+    set(multiValueArgs SOURCES HEADERS INCLUDES LIBRARIES DEPENDENCIES EXPORTED_FUNCTIONS
+        EXPORTED_RUNTIME_METHODS PRELOAD_FILES EMBED_FILES)
     
-    cmake_parse_arguments(ARG
-        "WASM;STANDALONE_WASM;NODE_JS;PTHREAD;SIMD;ASYNCIFY;ASSERTIONS;SAFE_HEAP;DEMANGLE_SUPPORT;ALLOW_MEMORY_GROWTH;CLOSURE_COMPILER;INSTALL"
-        "HTML_TEMPLATE;HTML_TITLE;CANVAS_ID;OUTPUT_DIR;INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE;INSTALL_DESTINATION"
-        "SOURCES;HEADERS;INCLUDES;LIBRARIES;DEPENDENCIES;EXPORTED_FUNCTIONS;EXPORTED_RUNTIME_METHODS;PRELOAD_FILES;EMBED_FILES"
-        ${ARGN}
-    )
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Validate arguments
     if(NOT ARG_SOURCES)
@@ -83,33 +86,38 @@ function(register_emscripten target)
 
     _ensure_emscripten_ready()
     
-    message(STATUS "Registering Emscripten target: ${target}")
+    message(STATUS "Registering Emscripten target: ${TARGET_NAME}")
     
     # Create the executable target
-    add_executable(${target} ${ARG_SOURCES})
+    add_executable(${TARGET_NAME} ${ARG_SOURCES})
     
+    # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
+    set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
+    include(LoadEnvVariable)
+    target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
+
     # Add headers for IDE integration
     if(ARG_HEADERS)
-        target_sources(${target} PRIVATE ${ARG_HEADERS})
+        target_sources(${TARGET_NAME} PRIVATE ${ARG_HEADERS})
     endif()
     
     # Configure include directories
     if(ARG_INCLUDES)
-        target_include_directories(${target} PRIVATE ${ARG_INCLUDES})
+        target_include_directories(${TARGET_NAME} PRIVATE ${ARG_INCLUDES})
     endif()
     
     # Link libraries
     if(ARG_LIBRARIES)
-        target_link_libraries(${target} PRIVATE ${ARG_LIBRARIES})
+        target_link_libraries(${TARGET_NAME} PRIVATE ${ARG_LIBRARIES})
     endif()
     
     # Add dependencies
     if(ARG_DEPENDENCIES)
-        add_dependencies(${target} ${ARG_DEPENDENCIES})
+        add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
     endif()
     
     # Configure HTML output
-    _configure_emscripten_html_output(${target}
+    _configure_emscripten_html_output(${TARGET_NAME}
         HTML_TEMPLATE "${ARG_HTML_TEMPLATE}"
         HTML_TITLE "${ARG_HTML_TITLE}"
         CANVAS_ID "${ARG_CANVAS_ID}"
@@ -163,16 +171,16 @@ function(register_emscripten target)
         list(APPEND WASM_ARGS CLOSURE_COMPILER)
     endif()
     
-    _configure_emscripten_wasm_settings(${target} ${WASM_ARGS})
+    _configure_emscripten_wasm_settings(${TARGET_NAME} ${WASM_ARGS})
     
     # Configure installation
     if(ARG_INSTALL)
-        _configure_emscripten_installation(${target}
+        _configure_emscripten_installation(${TARGET_NAME}
             INSTALL_DESTINATION "${ARG_INSTALL_DESTINATION}"
         )
     endif()
     
-    message(STATUS "Emscripten target '${target}' configured successfully")
+    message(STATUS "Emscripten target '${TARGET_NAME}' configured successfully")
 endfunction()
 
 # Internal function to configure HTML output
@@ -181,7 +189,7 @@ function(_configure_emscripten_html_output target)
     
     # Set default values
     if(NOT ARG_HTML_TITLE)
-        set(ARG_HTML_TITLE "${target} - WebAssembly Application")
+        set(ARG_HTML_TITLE "${TARGET_NAME} - WebAssembly Application")
     endif()
     
     if(NOT ARG_CANVAS_ID)
@@ -192,7 +200,7 @@ function(_configure_emscripten_html_output target)
     if(NOT ARG_HTML_TEMPLATE)
         set(TEMPLATE_DIR "${CMAKE_CURRENT_BINARY_DIR}/emscripten_templates")
         file(MAKE_DIRECTORY "${TEMPLATE_DIR}")
-        set(ARG_HTML_TEMPLATE "${TEMPLATE_DIR}/${target}_shell.html")
+        set(ARG_HTML_TEMPLATE "${TEMPLATE_DIR}/${TARGET_NAME}_shell.html")
         
         _create_emscripten_html_template("${ARG_HTML_TEMPLATE}"
             TITLE "${ARG_HTML_TITLE}"
@@ -202,7 +210,7 @@ function(_configure_emscripten_html_output target)
         # Process custom template for variable substitution
         set(TEMPLATE_DIR "${CMAKE_CURRENT_BINARY_DIR}/emscripten_templates")
         file(MAKE_DIRECTORY "${TEMPLATE_DIR}")
-        set(PROCESSED_TEMPLATE "${TEMPLATE_DIR}/${target}_shell.html")
+        set(PROCESSED_TEMPLATE "${TEMPLATE_DIR}/${TARGET_NAME}_shell.html")
         
         _create_emscripten_html_template("${PROCESSED_TEMPLATE}"
             TITLE "${ARG_HTML_TITLE}"
@@ -215,15 +223,15 @@ function(_configure_emscripten_html_output target)
     endif()
     
     # Configure target to use HTML output
-    set_target_properties(${target} PROPERTIES
-        OUTPUT_NAME "${target}.html"
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        OUTPUT_NAME "${TARGET_NAME}.html"
         SUFFIX ""
     )
     
     # Add shell file option
-    target_link_options(${target} PRIVATE "SHELL:--shell-file ${ARG_HTML_TEMPLATE}")
+    target_link_options(${TARGET_NAME} PRIVATE "SHELL:--shell-file ${ARG_HTML_TEMPLATE}")
     
-    message(STATUS "  - HTML output: ${target}.html")
+    message(STATUS "  - HTML output: ${TARGET_NAME}.html")
     message(STATUS "  - HTML template: ${ARG_HTML_TEMPLATE}")
 endfunction()
 
@@ -238,18 +246,18 @@ function(_configure_emscripten_wasm_settings target)
     
     # WebAssembly output (default enabled)
     if(NOT DEFINED ARG_WASM OR ARG_WASM)
-        target_link_options(${target} PRIVATE "SHELL:-s WASM=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s WASM=1")
         message(STATUS "  - WebAssembly output: enabled")
     endif()
     
     # Standalone WebAssembly
     if(ARG_STANDALONE_WASM)
-        target_link_options(${target} PRIVATE "SHELL:-s STANDALONE_WASM=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s STANDALONE_WASM=1")
         message(STATUS "  - Standalone WebAssembly: enabled")
     endif()
     
     # Memory configuration
-    _configure_emscripten_memory(${target}
+    _configure_emscripten_memory(${TARGET_NAME}
         INITIAL_MEMORY "${ARG_INITIAL_MEMORY}"
         MAXIMUM_MEMORY "${ARG_MAXIMUM_MEMORY}"
         STACK_SIZE "${ARG_STACK_SIZE}"
@@ -259,72 +267,72 @@ function(_configure_emscripten_wasm_settings target)
     # Function exports
     if(ARG_EXPORTED_FUNCTIONS)
         string(JOIN "," EXPORTED_FUNCS ${ARG_EXPORTED_FUNCTIONS})
-        target_link_options(${target} PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=[${EXPORTED_FUNCS}]")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=[${EXPORTED_FUNCS}]")
         message(STATUS "  - Exported functions: ${EXPORTED_FUNCS}")
     endif()
     
     # Runtime method exports
     if(ARG_EXPORTED_RUNTIME_METHODS)
         string(JOIN "," EXPORTED_METHODS ${ARG_EXPORTED_RUNTIME_METHODS})
-        target_link_options(${target} PRIVATE "SHELL:-s EXPORTED_RUNTIME_METHODS=[${EXPORTED_METHODS}]")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s EXPORTED_RUNTIME_METHODS=[${EXPORTED_METHODS}]")
         message(STATUS "  - Exported runtime methods: ${EXPORTED_METHODS}")
     endif()
     
     # File system configuration
     if(ARG_PRELOAD_FILES)
         foreach(file ${ARG_PRELOAD_FILES})
-            target_link_options(${target} PRIVATE "SHELL:--preload-file ${file}")
+            target_link_options(${TARGET_NAME} PRIVATE "SHELL:--preload-file ${file}")
         endforeach()
         message(STATUS "  - Preloaded files: ${ARG_PRELOAD_FILES}")
     endif()
     
     if(ARG_EMBED_FILES)
         foreach(file ${ARG_EMBED_FILES})
-            target_link_options(${target} PRIVATE "SHELL:--embed-file ${file}")
+            target_link_options(${TARGET_NAME} PRIVATE "SHELL:--embed-file ${file}")
         endforeach()
         message(STATUS "  - Embedded files: ${ARG_EMBED_FILES}")
     endif()
     
     # Advanced options
     if(ARG_PTHREAD)
-        target_link_options(${target} PRIVATE "SHELL:-s USE_PTHREADS=1")
-        target_compile_options(${target} PRIVATE "SHELL:-s USE_PTHREADS=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s USE_PTHREADS=1")
+        target_compile_options(${TARGET_NAME} PRIVATE "SHELL:-s USE_PTHREADS=1")
         message(STATUS "  - Pthreads support: enabled")
     endif()
     
     # Environment configuration (must come after pthread to check for worker requirement)
     if(ARG_NODE_JS)
-        target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=node")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s ENVIRONMENT=node")
         message(STATUS "  - Target environment: Node.js")
     else()
         # For web environment, include worker support if pthreads are enabled
         if(ARG_PTHREAD)
-            target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=web,worker")
+            target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s ENVIRONMENT=web,worker")
             message(STATUS "  - Target environment: Web browser with worker support")
         else()
-            target_link_options(${target} PRIVATE "SHELL:-s ENVIRONMENT=web")
+            target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s ENVIRONMENT=web")
             message(STATUS "  - Target environment: Web browser")
         endif()
     endif()
     
     if(ARG_SIMD)
         # SIMD is now controlled by compiler flags only, not linker settings
-        target_compile_options(${target} PRIVATE "-msimd128")
+        target_compile_options(${TARGET_NAME} PRIVATE "-msimd128")
         message(STATUS "  - SIMD optimizations: enabled")
     endif()
     
     if(ARG_ASYNCIFY)
-        target_link_options(${target} PRIVATE "SHELL:-s ASYNCIFY=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s ASYNCIFY=1")
         message(STATUS "  - Asyncify (async/await): enabled")
     endif()
     
     if(ARG_ASSERTIONS)
-        target_link_options(${target} PRIVATE "SHELL:-s ASSERTIONS=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s ASSERTIONS=1")
         message(STATUS "  - Runtime assertions: enabled")
     endif()
     
     if(ARG_SAFE_HEAP)
-        target_link_options(${target} PRIVATE "SHELL:-s SAFE_HEAP=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s SAFE_HEAP=1")
         message(STATUS "  - Safe heap checks: enabled")
     endif()
     
@@ -335,7 +343,7 @@ function(_configure_emscripten_wasm_settings target)
     endif()
     
     if(ARG_CLOSURE_COMPILER)
-        target_link_options(${target} PRIVATE "SHELL:--closure 1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:--closure 1")
         message(STATUS "  - Closure Compiler optimization: enabled")
     endif()
 endfunction()
@@ -347,24 +355,24 @@ function(_configure_emscripten_memory target)
     # Parse memory sizes (support units like 16MB, 64MB, etc.)
     if(ARG_INITIAL_MEMORY)
         _parse_memory_size("${ARG_INITIAL_MEMORY}" INITIAL_BYTES)
-        target_link_options(${target} PRIVATE "SHELL:-s INITIAL_MEMORY=${INITIAL_BYTES}")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s INITIAL_MEMORY=${INITIAL_BYTES}")
         message(STATUS "  - Initial memory: ${ARG_INITIAL_MEMORY} (${INITIAL_BYTES} bytes)")
     endif()
     
     if(ARG_MAXIMUM_MEMORY)
         _parse_memory_size("${ARG_MAXIMUM_MEMORY}" MAXIMUM_BYTES)
-        target_link_options(${target} PRIVATE "SHELL:-s MAXIMUM_MEMORY=${MAXIMUM_BYTES}")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s MAXIMUM_MEMORY=${MAXIMUM_BYTES}")
         message(STATUS "  - Maximum memory: ${ARG_MAXIMUM_MEMORY} (${MAXIMUM_BYTES} bytes)")
     endif()
     
     if(ARG_STACK_SIZE)
         _parse_memory_size("${ARG_STACK_SIZE}" STACK_BYTES)
-        target_link_options(${target} PRIVATE "SHELL:-s STACK_SIZE=${STACK_BYTES}")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s STACK_SIZE=${STACK_BYTES}")
         message(STATUS "  - Stack size: ${ARG_STACK_SIZE} (${STACK_BYTES} bytes)")
     endif()
     
     if(ARG_ALLOW_MEMORY_GROWTH)
-        target_link_options(${target} PRIVATE "SHELL:-s ALLOW_MEMORY_GROWTH=1")
+        target_link_options(${TARGET_NAME} PRIVATE "SHELL:-s ALLOW_MEMORY_GROWTH=1")
         message(STATUS "  - Memory growth: enabled")
     endif()
 endfunction()
@@ -404,9 +412,9 @@ function(_configure_emscripten_installation target)
     
     # Install the HTML file and associated assets
     install(FILES 
-        "$<TARGET_FILE_DIR:${target}>/${target}.html"
-        "$<TARGET_FILE_DIR:${target}>/${target}.js"
-        "$<TARGET_FILE_DIR:${target}>/${target}.wasm"
+        "$<TARGET_FILE_DIR:${TARGET_NAME}>/${TARGET_NAME}.html"
+        "$<TARGET_FILE_DIR:${TARGET_NAME}>/${TARGET_NAME}.js"
+        "$<TARGET_FILE_DIR:${TARGET_NAME}>/${TARGET_NAME}.wasm"
         DESTINATION "${ARG_INSTALL_DESTINATION}"
         OPTIONAL
     )
