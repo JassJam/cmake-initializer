@@ -16,6 +16,14 @@ if(DEFINED ENV{EMSDK} AND EXISTS "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/
     
     # Set compilers
     set(EMSCRIPTEN_ROOT_PATH "$ENV{EMSDK}/upstream/emscripten")
+    # replace \\ with /
+    string(REPLACE "\\" "/" EMSCRIPTEN_ROOT_PATH "${EMSCRIPTEN_ROOT_PATH}")
+    set(EMSCRIPTEN_TOOLCHAIN_PATH "${EMSCRIPTEN_ROOT_PATH}/cmake/Modules/Platform/Emscripten.cmake")
+
+    if (NOT EXISTS "${EMSCRIPTEN_TOOLCHAIN_PATH}")
+        message(FATAL_ERROR "Emscripten toolchain file does not exist: ${EMSCRIPTEN_TOOLCHAIN_PATH}")
+    endif()
+
     if(WIN32)
         set(CMAKE_C_COMPILER "${EMSCRIPTEN_ROOT_PATH}/emcc.bat")
         set(CMAKE_CXX_COMPILER "${EMSCRIPTEN_ROOT_PATH}/em++.bat")
@@ -23,7 +31,7 @@ if(DEFINED ENV{EMSDK} AND EXISTS "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/
         set(CMAKE_C_COMPILER "${EMSCRIPTEN_ROOT_PATH}/emcc")
         set(CMAKE_CXX_COMPILER "${EMSCRIPTEN_ROOT_PATH}/em++")
     endif()
-    
+
     message(STATUS "Using Emscripten from: ${EMSCRIPTEN_ROOT_PATH}")
 else()
     message(FATAL_ERROR "Emscripten SDK not found. Please install EMSDK and set the EMSDK environment variable.")
