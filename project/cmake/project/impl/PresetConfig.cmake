@@ -1,8 +1,8 @@
 # ==============================================================================
-# Preset-Based Configuration System
+# Preset Configuration
 # ==============================================================================
-# This module handles automatic configuration based on CMake preset variables
-# including test framework registration and CTest dashboard setup.
+# This file handles all preset-based configuration to keep the main 
+# CMakeLists.txt clean and focused.
 
 # Auto-register test framework if DEFAULT_TEST_FRAMEWORK is defined in preset
 function(configure_preset_test_framework)
@@ -26,10 +26,8 @@ function(configure_preset_test_framework)
 endfunction()
 
 # Main preset configuration function - call this to apply all preset-based settings
-function(configure_from_presets)
-    message(STATUS "Configuring project from preset variables...")
-    
-    configure_preset_test_framework()
-    
-    message(STATUS "Preset configuration completed")
-endfunction()
+message(STATUS "Configuring project from preset variables...")
+
+configure_preset_test_framework()
+
+message(STATUS "Preset configuration completed")

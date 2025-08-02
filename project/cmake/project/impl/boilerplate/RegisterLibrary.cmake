@@ -41,6 +41,16 @@ function(register_library TARGET_NAME)
         set(LIB_TYPE STATIC)  # Default to static
     endif()
 
+    # Handle Emscripten platform limitations
+    include(GetCurrentCompiler)
+    get_current_compiler(CURRENT_COMPILER)
+    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN" AND LIB_TYPE STREQUAL "SHARED")
+        message(STATUS "Converting shared library '${TARGET_NAME}' to static for Emscripten platform")
+        set(LIB_TYPE STATIC)
+        set(ARG_SHARED FALSE)
+        set(ARG_STATIC TRUE)
+    endif()
+
     # Set defaults
     if(NOT ARG_SOURCE_DIR)
         set(ARG_SOURCE_DIR "src")
@@ -51,6 +61,22 @@ function(register_library TARGET_NAME)
 
     # Create library
     add_library(${TARGET_NAME} ${LIB_TYPE})
+
+    # Generate export header for shared libraries (or libraries that were originally shared)
+    if((ARG_SHARED OR ARG_STATIC) AND ARG_EXPORT_MACRO AND NOT ARG_INTERFACE)
+        include(GenerateExportHeader)
+        
+        # For Emscripten, we still generate export headers for compatibility but they'll be empty
+        generate_export_header(${TARGET_NAME}
+            BASE_NAME ${TARGET_NAME}
+            EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO}
+            EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}/${TARGET_NAME}/${TARGET_NAME}_export.h"
+        )
+        
+        # Ensure the export header directory is in the include path
+        target_include_directories(${TARGET_NAME} PUBLIC 
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}>)
+    endif()
 
     # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
     set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")

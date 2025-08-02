@@ -254,29 +254,3 @@ function(verify_and_setup_emscripten_compilers)
     message(STATUS "  - em++: ${EMPP_PATH}")
     message(STATUS "  - toolchain: ${TOOLCHAIN_FILE}")
 endfunction()
-
-# Configure HTML generation for Emscripten builds
-function(configure_emscripten_html_generation)
-    if(NOT EMSCRIPTEN_GENERATE_HTML)
-        return()
-    endif()
-    
-    # Set default HTML shell file template
-    set(EMSCRIPTEN_HTML_SHELL_TEMPLATE "${CMAKE_SOURCE_DIR}/.emsdk/emscripten_shell.html")
-    
-    # Create HTML template if it doesn't exist
-    if(NOT EXISTS "${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
-        include(EmscriptenTemplate)
-        create_emscripten_html_template("${EMSCRIPTEN_HTML_SHELL_TEMPLATE}" 
-            TITLE "cmake-initializer WebAssembly App"
-            CANVAS_ID "canvas"
-        )
-    endif()
-    
-    # Set global linker flags for HTML generation
-    add_link_options("SHELL:--shell-file ${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
-    
-    message(STATUS "Emscripten HTML generation enabled")
-    message(STATUS "  - HTML shell template: ${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
-    message(STATUS "  - Output will be .html files with embedded WebAssembly")
-endfunction()

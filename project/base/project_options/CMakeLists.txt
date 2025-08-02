@@ -3,12 +3,11 @@ add_library(${THIS_PROJECT_NAMESPACE}::options ALIAS ${THIS_PROJECT_NAME}_option
 
 #
 
-include(TargetAddCompilerWarnings)
+include(CompilerWarnings)
 include(TargetHardening)
 include(TargetSanitizers)
 include(StaticAnalysis)
 include(StaticLinking)
-include(ProjectOptions.cmake)
 
 # enable IPO optimization if needed
 if (ENABLE_IPO)

@@ -1,7 +1,6 @@
 #
 # Compiler cache support (ccache/sccache)
 #
-option(ENABLE_CCACHE "Enable ccache for faster rebuilds" ON)
 
 if(ENABLE_CCACHE)
     find_program(CCACHE_PROGRAM ccache)
@@ -19,5 +18,3 @@ if(ENABLE_CCACHE)
         message(STATUS "** No compiler cache found (ccache/sccache)")
     endif()
 endif()
-
-mark_as_advanced(ENABLE_CCACHE)

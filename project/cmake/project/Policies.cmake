@@ -12,3 +12,8 @@ endif()
 if(POLICY CMP0117)
     cmake_policy(SET CMP0117 NEW) 
 endif()
+
+# Set policy for IN_LIST operator
+if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+endif()

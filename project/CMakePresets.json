@@ -65,7 +65,8 @@
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
         "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_TESTING": "ON"
+        "BUILD_TESTING": "ON",
+        "ENABLE_EXCEPTIONS": "ON"
       }
     },
     {
@@ -78,7 +79,8 @@
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
         "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "OFF",
+        "ENABLE_EXCEPTIONS": "ON"
       }
     },
 
@@ -92,7 +94,8 @@
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_TESTING": "ON"
+        "BUILD_TESTING": "ON",
+        "ENABLE_EXCEPTIONS": "ON"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -110,7 +113,8 @@
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "OFF",
+        "ENABLE_EXCEPTIONS": "ON"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -129,7 +133,8 @@
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_TESTING": "ON"
+        "BUILD_TESTING": "ON",
+        "ENABLE_EXCEPTIONS": "ON"
       }
     },
     {
@@ -142,7 +147,8 @@
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "OFF",
+        "ENABLE_EXCEPTIONS": "ON"
       }
     },
 
@@ -156,7 +162,8 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_TESTING": "ON"
+        "BUILD_TESTING": "ON",
+        "ENABLE_EXCEPTIONS": "ON"
       }
     },
     {
@@ -169,7 +176,8 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "OFF",
+        "ENABLE_EXCEPTIONS": "ON"
       }
     },
 
@@ -182,14 +190,15 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
-        "ENABLE_EMSDK_AUTO_INSTALL": true,
+        "ENABLE_EMSDK_AUTO_INSTALL": false,
         "EMSCRIPTEN_GENERATE_HTML": true,
         "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
         "CMAKE_SYSTEM_NAME": "Emscripten",
-        "BUILD_TESTING": "ON"
+        "BUILD_TESTING": "ON",
+        "ENABLE_EXCEPTIONS": "ON"
       },
       "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake"
     },
@@ -202,14 +211,15 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
-        "ENABLE_EMSDK_AUTO_INSTALL": true,
+        "ENABLE_EMSDK_AUTO_INSTALL": false,
         "EMSCRIPTEN_GENERATE_HTML": true,
         "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
         "CMAKE_SYSTEM_NAME": "Emscripten",
-        "BUILD_TESTING": "OFF"
+        "BUILD_TESTING": "OFF",
+        "ENABLE_EXCEPTIONS": "ON"
       },
       "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake"
     }
