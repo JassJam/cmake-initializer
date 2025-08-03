@@ -34,9 +34,9 @@ function(setup_common_project_options TARGET_NAME)
     )
 
     # Configure exception handling
-    targets_configure_exceptions(
-        TARGETS ${TARGET_NAME}
-        ENABLE_EXCEPTIONS ${ENABLE_EXCEPTIONS}
+    target_configure_exceptions(
+        ${TARGET_NAME} PRIVATE
+        USE_EXCEPTIONS ${ENABLE_EXCEPTIONS}
     )
 
     # Enable sanitizers if needed

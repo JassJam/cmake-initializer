@@ -207,70 +207,46 @@ endfunction()
 #
 # Configure exception handling for targets
 # usage:
-# targets_configure_exceptions(
-#   TARGETS target1 target2...
-#   ENABLE_EXCEPTIONS [ON/OFF]
-# )
+# target_configure_exceptions(TARGET_NAME SCOPE_NAME)
 #
-function(targets_configure_exceptions)
-    # Parse the options
-    set(oneValueArgs
-        ENABLE_EXCEPTIONS
-    )
-    set(multiValueArgs
-        TARGETS
-    )
-    cmake_parse_arguments(
-        ARG
-        ""
-        ${oneValueArgs}
-        ${multiValueArgs}
-        ${ARGN}
-    )
-
+function(target_configure_exceptions TARGET_NAME SCOPE_NAME)
     get_current_compiler(CURRENT_COMPILER)
 
-    if (NOT ARG_TARGETS)
-        message(FATAL_ERROR "targets_configure_exceptions() called without TARGETs")
+    if (NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "target_configure_exceptions() called without a TARGET")
     endif()
 
-    # Default to ON if not specified
-    if (NOT DEFINED ARG_ENABLE_EXCEPTIONS)
-        set(ARG_ENABLE_EXCEPTIONS ON)
+    if(NOT ${SCOPE_NAME} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        message(FATAL_ERROR "target_add_compiler_warnings() called with invalid SCOPE: ${SCOPE_NAME}")
     endif()
-
-    message(STATUS "Configuring exception handling: ${ARG_ENABLE_EXCEPTIONS} for compiler: ${CURRENT_COMPILER}")
 
     set(EXCEPTION_FLAGS "")
-
     if (${CURRENT_COMPILER} MATCHES "MSVC")
-        if (ARG_ENABLE_EXCEPTIONS)
+        if (ENABLE_EXCEPTIONS)
             list(APPEND EXCEPTION_FLAGS /EHsc)
         else()
             list(APPEND EXCEPTION_FLAGS /EHsc-)
         endif()
     elseif (${CURRENT_COMPILER} MATCHES "CLANG.*|GCC")
-        if (ARG_ENABLE_EXCEPTIONS)
-            list(APPEND EXCEPTION_FLAGS -fexceptions)  # Enable exceptions
+        if (ENABLE_EXCEPTIONS)
+            list(APPEND EXCEPTION_FLAGS -fexceptions)
         else()
-            list(APPEND EXCEPTION_FLAGS -fno-exceptions)  # Disable exceptions
+            list(APPEND EXCEPTION_FLAGS -fno-exceptions)
         endif()
     elseif ("${CURRENT_COMPILER}" STREQUAL "EMSCRIPTEN")
-        if (ARG_ENABLE_EXCEPTIONS)
-            list(APPEND EXCEPTION_FLAGS -fexceptions)  # Enable exceptions
+        if (ENABLE_EXCEPTIONS)
+            list(APPEND EXCEPTION_FLAGS -fexceptions)
         else()
-            list(APPEND EXCEPTION_FLAGS -fno-exceptions)  # Disable exceptions  
+            list(APPEND EXCEPTION_FLAGS -fno-exceptions) 
         endif()
     endif()
 
-    foreach(target ${ARG_TARGETS})
-        if(EXCEPTION_FLAGS)
-            target_compile_options(
-                ${target}
-                PRIVATE
-                $<$<COMPILE_LANGUAGE:CXX>:${EXCEPTION_FLAGS}>
-            )
-            message(TRACE "Applied exception flags '${EXCEPTION_FLAGS}' to target '${target}'")
-        endif()
-    endforeach()
+    if(EXCEPTION_FLAGS)
+        target_compile_options(
+            ${TARGET_NAME}
+            ${SCOPE_NAME}
+            $<$<COMPILE_LANGUAGE:CXX>:${EXCEPTION_FLAGS}>
+        )
+        message(TRACE "Applied exception flags '${EXCEPTION_FLAGS}' to target '${TARGET_NAME}'")
+    endif()
 endfunction()
