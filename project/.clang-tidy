@@ -1,6 +1,7 @@
 Checks: >
  -*,
  clang-diagnostic-*,
+ clang-diagnostic-newline-eof,
  llvm-*,
  misc-*,
  -misc-const-correctness,

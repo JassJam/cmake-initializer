@@ -193,60 +193,54 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
         endif()
     endif()
 
-    # set the warnings for all targets
-    foreach(target ${ARG_TARGETS})
-        target_compile_options(
-            ${target}
-            PRIVATE
-            $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
-            $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
-        )
-    endforeach()
+    # Apply warnings to the target
+    target_compile_options(
+        ${TARGET_NAME}
+        ${SCOPE_NAME}
+        $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
+        $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
+    )
 endfunction()
 
 #
-# Configure exception handling for targets
+# Wrapper function for target-specific warning overrides
 # usage:
-# target_configure_exceptions(TARGET_NAME SCOPE_NAME)
+# target_set_warnings(
+#   TARGET_NAME
+#   [WARNINGS_AS_ERRORS]
+#   [MSVC_WARNINGS] (string)
+#   [CLANG_WARNINGS] (string)
+#   [GCC_WARNINGS] (string)
+#   [EMSCRIPTEN_WARNINGS] (string)
+# )
 #
-function(target_configure_exceptions TARGET_NAME SCOPE_NAME)
-    get_current_compiler(CURRENT_COMPILER)
+function(target_set_warnings TARGET_NAME)
+    # Parse the options
+    set(oneValueArgs
+        WARNINGS_AS_ERRORS
+    )
+    set(multiValueArgs
+        MSVC_WARNINGS
+        CLANG_WARNINGS
+        GCC_WARNINGS
+        EMSCRIPTEN_WARNINGS
+    )
+    cmake_parse_arguments(
+        ARG
+        ""
+        ${oneValueArgs}
+        ${multiValueArgs}
+        ${ARGN}
+    )
 
-    if (NOT TARGET ${TARGET_NAME})
-        message(FATAL_ERROR "target_configure_exceptions() called without a TARGET")
-    endif()
-
-    if(NOT ${SCOPE_NAME} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
-        message(FATAL_ERROR "target_add_compiler_warnings() called with invalid SCOPE: ${SCOPE_NAME}")
-    endif()
-
-    set(EXCEPTION_FLAGS "")
-    if (${CURRENT_COMPILER} MATCHES "MSVC")
-        if (ENABLE_EXCEPTIONS)
-            list(APPEND EXCEPTION_FLAGS /EHsc)
-        else()
-            list(APPEND EXCEPTION_FLAGS /EHsc-)
-        endif()
-    elseif (${CURRENT_COMPILER} MATCHES "CLANG.*|GCC")
-        if (ENABLE_EXCEPTIONS)
-            list(APPEND EXCEPTION_FLAGS -fexceptions)
-        else()
-            list(APPEND EXCEPTION_FLAGS -fno-exceptions)
-        endif()
-    elseif ("${CURRENT_COMPILER}" STREQUAL "EMSCRIPTEN")
-        if (ENABLE_EXCEPTIONS)
-            list(APPEND EXCEPTION_FLAGS -fexceptions)
-        else()
-            list(APPEND EXCEPTION_FLAGS -fno-exceptions) 
-        endif()
-    endif()
-
-    if(EXCEPTION_FLAGS)
-        target_compile_options(
-            ${TARGET_NAME}
-            ${SCOPE_NAME}
-            $<$<COMPILE_LANGUAGE:CXX>:${EXCEPTION_FLAGS}>
-        )
-        message(TRACE "Applied exception flags '${EXCEPTION_FLAGS}' to target '${TARGET_NAME}'")
-    endif()
+    # Call the existing function
+    target_add_compiler_warnings(
+        ${TARGET_NAME}
+        PRIVATE
+        WARNINGS_AS_ERRORS ${ARG_WARNINGS_AS_ERRORS}
+        MSVC_WARNINGS ${ARG_MSVC_WARNINGS}
+        CLANG_WARNINGS ${ARG_CLANG_WARNINGS}
+        GCC_WARNINGS ${ARG_GCC_WARNINGS}
+        EMSCRIPTEN_WARNINGS ${ARG_EMSCRIPTEN_WARNINGS}
+    )
 endfunction()

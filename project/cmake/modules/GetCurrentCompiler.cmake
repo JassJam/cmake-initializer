@@ -31,7 +31,6 @@ function(get_current_compiler OUTPUT_VARIABLE)
     set(COMPILER_VERSION ${MSVC_VERSION})
     #
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang.*")
-    message("Detected Clang compiler")
     # Check if this is actually Emscripten (which reports as Clang)
     if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR 
        CMAKE_TOOLCHAIN_FILE MATCHES "emscripten" OR

@@ -1,36 +1,104 @@
 #
 # Static analysis tools setup (clang-tidy, cppcheck)
 # Usage:
-#   target_enable_static_analysis(target_name)
+#   enable_global_static_analysis()                  # Enable static analysis globally
+#   target_enable_static_analysis(target_name [ENABLE_CLANG_TIDY] [ENABLE_CPPCHECK])
+
+# Global static analysis configuration
+# Usage: enable_global_static_analysis(
+#   [ENABLE_CLANG_TIDY]
+#   [ENABLE_CPPCHECK] 
+#   [ENABLE_EXCEPTIONS]
+# )
+function(enable_global_static_analysis)
+    set(optionsArgs 
+        ENABLE_CLANG_TIDY
+        ENABLE_CPPCHECK
+        ENABLE_EXCEPTIONS
+    )
+    cmake_parse_arguments(ARG "${options}" "" "" ${ARGN})
+
+    if(ARG_ENABLE_CLANG_TIDY)
+        set(CMAKE_CXX_CLANG_TIDY clang-tidy PARENT_SCOPE)
+
+        if(ARG_ENABLE_EXCEPTIONS)
+            set(CMAKE_CXX_CLANG_TIDY_EXCEPTIONS "--extra-arg=/EHsc" PARENT_SCOPE)
+        else()
+            set(CMAKE_CXX_CLANG_TIDY_EXCEPTIONS "--extra-arg=/EHs-c-" PARENT_SCOPE)
+        endif()
+
+        set(CMAKE_CXX_CLANG_TIDY_ARGS "--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy" PARENT_SCOPE)
+        set(CMAKE_CXX_CLANG_TIDY_HEADER_FILTER "^${CMAKE_SOURCE_DIR}/(?!out/build/.*/_deps/).*" PARENT_SCOPE)
+        set(CMAKE_CXX_CLANG_TIDY_USE_COLOR "--use-color" PARENT_SCOPE)
+        set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "--extra-arg=-Wno-unused-command-line-argument" PARENT_SCOPE)
+        set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=-Wno-unknown-argument" PARENT_SCOPE)
+
+        if(WIN32)
+            set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=-Wno-dll-attribute-on-redeclaration" PARENT_SCOPE)
+            set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=-Wno-inconsistent-dllimport" PARENT_SCOPE)
+            endif()
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            if(ARG_ENABLE_EXCEPTIONS)
+                set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=/EHsc" PARENT_SCOPE)
+            else()
+                set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=/EHs-c-" PARENT_SCOPE)
+            endif()
+        elseif(CMAKE_CXX_COMPILER_ID MATCHES "CLANG.*|GCC|EMSCRIPTEN")
+            if(ARG_ENABLE_EXCEPTIONS)
+                set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=-fexceptions" PARENT_SCOPE)
+            else()
+                set(CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS "${CMAKE_CXX_CLANG_TIDY_EXTRA_ARGS} --extra-arg=-fno-exceptions" PARENT_SCOPE)
+            endif()
+        endif()
+
+        message(STATUS "** Global clang-tidy enabled")
+    endif()
+    
+    if(ENABLE_CPPCHECK)
+        find_program(CPPCHECK_EXE NAMES cppcheck)
+        if(CPPCHECK_EXE)
+            set(CMAKE_CXX_CPPCHECK ${CPPCHECK_EXE} PARENT_SCOPE)
+            message(STATUS "** Global cppcheck enabled")
+        else()
+            message(WARNING "** cppcheck requested but not found")
+        endif()
+    endif()
+endfunction()
+
+#
+# Enable static analysis for a specific target
+# Usage: target_enable_static_analysis(target_name
+#   [ENABLE_CLANG_TIDY]
+#   [ENABLE_CPPCHECK]
+#   [ENABLE_EXCEPTIONS]
+# )
 function(target_enable_static_analysis TARGET_NAME)
+    set(options 
+        ENABLE_CLANG_TIDY
+        ENABLE_CPPCHECK
+        ENABLE_EXCEPTIONS
+    )
+    cmake_parse_arguments(ARG "${options}" "" "" ${ARGN})
+    
     if(NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_enable_static_analysis: Target '${TARGET_NAME}' does not exist")
     endif()
 
     # clang-tidy setup
-    if(ENABLE_CLANG_TIDY)
-        _configure_clang_tidy(${TARGET_NAME})
+    if(ARG_ENABLE_CLANG_TIDY)
+        _configure_clang_tidy(${TARGET_NAME} ${ARG_ENABLE_EXCEPTIONS})
     endif()
 
     # cppcheck setup
-    if(ENABLE_CPPCHECK)
+    if(ARG_ENABLE_CPPCHECK)
         _configure_cppcheck(${TARGET_NAME})
     endif()
-endfunction()
-
-# 
-# Function to enable static analysis for multiple targets
-# Usage: targets_enable_static_analysis(target1 target2 ...)
-function(targets_enable_static_analysis)
-    foreach(TARGET_NAME ${ARGN})
-        target_enable_static_analysis(${TARGET_NAME})
-    endforeach()
 endfunction()
 
 #
 
 # Helper function to create clang-tidy custom targets
-function(_configure_clang_tidy TARGET_NAME)
+function(_configure_clang_tidy TARGET_NAME ENABLE_EXCEPTIONS)
     find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
         
     # If not found in PATH, try to find it using vswhere (Windows/Visual Studio)
@@ -95,24 +163,7 @@ function(_configure_clang_tidy TARGET_NAME)
     
     if(CLANG_TIDY_EXE)
         message(STATUS "** clang-tidy found: ${CLANG_TIDY_EXE}")
-        # For Visual Studio generator with MSVC, clang-tidy integration doesn't work during build
-        # Provide alternative approaches based on compiler and generator
-        if(CMAKE_GENERATOR MATCHES "Visual Studio" AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            message(STATUS "** Visual Studio + MSVC: clang-tidy doesn't run during build")
-            message(STATUS "** Option for ${TARGET_NAME}: Manual clang-tidy via cmake --build . --target ${TARGET_NAME}_clang_tidy")
-            
-            # Don't set the property as it doesn't work with MSVC + Visual Studio
-            # Just create the custom target for manual execution
-            _add_clang_tidy_custom_target(${TARGET_NAME} ${CLANG_TIDY_EXE} FALSE)
-        elseif(CMAKE_GENERATOR MATCHES "Visual Studio")
-            message(STATUS "** Visual Studio generator - clang-tidy via custom target for: ${TARGET_NAME}")
-            # For Visual Studio with Clang compiler, try the property but primarily use custom targets
-            _add_clang_tidy_custom_target(${TARGET_NAME} ${CLANG_TIDY_EXE} TRUE)
-        else()
-            # For other generators (Ninja, Unix Makefiles), the property works well
-            _add_clang_tidy_custom_target(${TARGET_NAME} ${CLANG_TIDY_EXE} TRUE)
-            message(STATUS "** clang-tidy enabled for target: ${TARGET_NAME}")
-        endif()
+        _add_clang_tidy_custom_target(${TARGET_NAME} ${ENABLE_EXCEPTIONS} ${CLANG_TIDY_EXE})
     else()
         # If clang-tidy not found, inform user about alternatives
         if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -127,13 +178,13 @@ function(_configure_clang_tidy TARGET_NAME)
 endfunction()
 
 # Helper function to create clang-tidy custom targets
-function(_add_clang_tidy_custom_target TARGET_NAME clang_tidy_exe set_target_property)
-    if(NOT clang_tidy_exe)
+function(_add_clang_tidy_custom_target TARGET_NAME ENABLE_EXCEPTIONS CLANG_TIDY_EXE)
+    if(NOT CLANG_TIDY_EXE)
         return()
     endif()
     
     # Build clang-tidy arguments
-    set(CXX_CLANG_TIDY_ARGS "${clang_tidy_exe}")
+    set(CXX_CLANG_TIDY_ARGS "${CLANG_TIDY_EXE}")
     list(APPEND CXX_CLANG_TIDY_ARGS "--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
     list(APPEND CXX_CLANG_TIDY_ARGS "--header-filter=^${CMAKE_SOURCE_DIR}/(?!out/build/.*/_deps/).*")
     
@@ -146,13 +197,13 @@ function(_add_clang_tidy_custom_target TARGET_NAME clang_tidy_exe set_target_pro
     list(APPEND CXX_CLANG_TIDY_ARGS "--use-color")
     
     if(CURRENT_COMPILER MATCHES "MSVC")
-        if(ENABLE_EXCEPTIONS)
+        if(${ENABLE_EXCEPTIONS})
             list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=/EHsc")
         else()
-            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=/EHsc-")
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=/EHs-c-")
         endif()
     elseif(CURRENT_COMPILER MATCHES "CLANG.*|GCC|EMSCRIPTEN")
-        if(ENABLE_EXCEPTIONS)
+        if(${ENABLE_EXCEPTIONS})
             list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-fexceptions")
         else()
             list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-fno-exceptions")
@@ -186,10 +237,7 @@ function(_configure_cppcheck TARGET_NAME)
         list(APPEND CXX_CPPCHECK_ARGS "--template=gcc")
         list(APPEND CXX_CPPCHECK_ARGS "--verbose")
         list(APPEND CXX_CPPCHECK_ARGS "--quiet")
-
-        if(ENABLE_WARNINGS_AS_ERRORS)
-            list(APPEND CPPCHECK_ARGS "--error-exitcode=1")
-        endif()
+        list(APPEND CXX_CPPCHECK_ARGS "--error-exitcode=1")
 
         set_target_properties(${TARGET_NAME} PROPERTIES
             CXX_CPPCHECK "${CXX_CPPCHECK_ARGS}"

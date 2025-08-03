@@ -1,0 +1,12 @@
+root = true
+
+[*.{c++,cc,cpp,cppm,cxx,h,h++,hh,hpp,hxx,inl,ipp,ixx,tlh,tli}]
+indent_style = tab
+tab_width = 4
+indent_size = 4
+insert_final_newline = true
+
+# Visual C++ Code Style settings
+
+cpp_generate_documentation_comments = xml
+
