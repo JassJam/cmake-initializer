@@ -60,4 +60,4 @@ namespace math_utils
         }
         return result;
     }
-}
+} // namespace math_utils

@@ -4,6 +4,11 @@
 # This module provides the register_library function for comprehensive
 # library target registration with full visibility control.
 
+include_guard(GLOBAL)
+include(LoadEnvVariable)
+include(StringListInterpolation)
+include(SetupCommonProjectOptions)
+
 # Comprehensive library registration with visibility control
 # usage:
 # register_library(MyLibrary
@@ -146,8 +151,8 @@ function(register_library TARGET_NAME)
         set(DEFAULT_LINK_TYPE INTERFACE)
     endif()
     
-    # Always link common library
-    target_link_libraries(${TARGET_NAME} ${DEFAULT_LINK_TYPE} ${THIS_PROJECT_NAMESPACE}::common)
+    # Always link config library only (not full common)
+    target_link_libraries(${TARGET_NAME} ${DEFAULT_LINK_TYPE} ${THIS_PROJECT_NAMESPACE}::config)
     
     if(ARG_LIBRARIES)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
@@ -227,6 +232,9 @@ function(register_library TARGET_NAME)
             message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
         endif()
     endif()
+
+    # Apply common project options (warnings, sanitizers, static analysis, etc.)
+    setup_common_project_options(${TARGET_NAME})
 
     # Install if requested
     if(ARG_INSTALL)

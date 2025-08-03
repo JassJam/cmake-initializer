@@ -49,4 +49,4 @@ namespace math_utils
      * @throws std::invalid_argument if n is negative
      */
     long long Factorial(int n);
-}
+} // namespace math_utils

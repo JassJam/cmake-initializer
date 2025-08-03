@@ -52,8 +52,7 @@ function(targets_enable_hardening)
 
 	if ("${CURRENT_COMPILER}" STREQUAL "MSVC")
 		message(STATUS "*** Hardening MSVC flags: /DYNAMICBASE /guard:cf /NXCOMPAT /CETCOMPAT")
-		list(APPEND NEW_COMPILE_OPTIONS /DYNAMICBASE /guard:cf)
-		list(APPEND NEW_LINK_OPTIONS /NXCOMPAT /CETCOMPAT)
+		list(APPEND NEW_LINK_OPTIONS /DYNAMICBASE /guard:cf /NXCOMPAT /CETCOMPAT)
 
 	elseif ("${CURRENT_COMPILER}" MATCHES "Clang|GCC")
 		message(STATUS "*** GLIBC++ Assertions (vector[], string[], ...) enabled")
@@ -132,18 +131,26 @@ function(targets_enable_hardening)
 			if (NOT TARGET ${target})
 				message(FATAL_ERROR "Target ${target} not found")
 			endif()
+			
+			# Get target type to determine appropriate visibility
+			get_target_property(target_type ${target} TYPE)
+			if(target_type STREQUAL "INTERFACE_LIBRARY")
+				set(visibility INTERFACE)
+			else()
+				set(visibility PRIVATE)
+			endif()
+			
 			# if NEW_COMPILE_OPTIONS is not empty, set it
 			if (NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
-				target_compile_options(${target} INTERFACE ${NEW_COMPILE_OPTIONS})
-				set_target_properties(${target} PROPERTIES COMPILE_FLAGS "${NEW_COMPILE_OPTIONS}")
+				target_compile_options(${target} ${visibility} ${NEW_COMPILE_OPTIONS})
 			endif()
 			# if NEW_LINK_OPTIONS is not empty, set it
 			if (NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
-				target_link_options(${target} INTERFACE ${NEW_LINK_OPTIONS})
+				target_link_options(${target} ${visibility} ${NEW_LINK_OPTIONS})
 			endif()
 			# if NEW_CXX_DEFINITIONS is not empty, set it
 			if (NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
-				target_compile_definitions(${target} INTERFACE ${NEW_CXX_DEFINITIONS})
+				target_compile_definitions(${target} ${visibility} ${NEW_CXX_DEFINITIONS})
 			endif()
 		endforeach()
 	endif()

@@ -1,6 +1,8 @@
 # Emscripten toolchain file for WebAssembly builds
 # This toolchain includes the official Emscripten toolchain and adds project-specific settings
 
+include_guard(GLOBAL)
+
 # First, try to set up EMSDK if it's not available
 if(NOT DEFINED ENV{EMSDK} OR NOT EXISTS "$ENV{EMSDK}")
     # Include the EMSDK manager to install it automatically
@@ -20,14 +22,13 @@ if(DEFINED ENV{EMSDK} AND EXISTS "$ENV{EMSDK}/upstream/emscripten")
     
     # Add Emscripten modules to CMAKE_MODULE_PATH so CMake can find Platform/Emscripten.cmake
     list(APPEND CMAKE_MODULE_PATH "${EMSCRIPTEN_ROOT_PATH}/cmake/Modules")
-    message(STATUS "Added Emscripten modules to CMAKE_MODULE_PATH: ${EMSCRIPTEN_ROOT_PATH}/cmake/Modules")
 
-    if(WIN32)
-        set(CMAKE_C_COMPILER "${EMSCRIPTEN_ROOT_PATH}/emcc.bat")
-        set(CMAKE_CXX_COMPILER "${EMSCRIPTEN_ROOT_PATH}/em++.bat")
+    if(CMAKE_HOST_WIN32)
+        set(CMAKE_C_COMPILER "${EMSCRIPTEN_ROOT_PATH}/emcc.bat" CACHE FILEPATH "C compiler")
+        set(CMAKE_CXX_COMPILER "${EMSCRIPTEN_ROOT_PATH}/em++.bat" CACHE FILEPATH "C++ compiler")
     else()
-        set(CMAKE_C_COMPILER "${EMSCRIPTEN_ROOT_PATH}/emcc")
-        set(CMAKE_CXX_COMPILER "${EMSCRIPTEN_ROOT_PATH}/em++")
+        set(CMAKE_C_COMPILER "${EMSCRIPTEN_ROOT_PATH}/emcc" CACHE FILEPATH "C compiler")
+        set(CMAKE_CXX_COMPILER "${EMSCRIPTEN_ROOT_PATH}/em++" CACHE FILEPATH "C++ compiler")
     endif()
 
     message(STATUS "Using Emscripten from: ${EMSCRIPTEN_ROOT_PATH}")

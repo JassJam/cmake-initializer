@@ -1,4 +1,3 @@
 
 add_subdirectory(project_config)
-add_subdirectory(project_options)
 add_subdirectory(project_common)

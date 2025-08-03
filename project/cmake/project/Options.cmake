@@ -50,11 +50,16 @@ option(ENABLE_MSAN "Enable memory sanitizer (detects uninitialized reads)" OFF)
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" ${ENABLE_STATIC_ANALYSIS})
 option(ENABLE_CPPCHECK "Enable cppcheck static analysis" ${ENABLE_STATIC_ANALYSIS})
 
+# === LANGUAGE FEATURES ===
+option(ENABLE_EXCEPTIONS "Enable C++ exception handling" ON)
+
 # === LINKING OPTIONS ===
 option(ENABLE_STATIC_RUNTIME "Statically link runtime libraries for better portability" OFF)
 
 # === EMSCRIPTEN OPTIONS ===
 option(ENABLE_EMSDK_AUTO_INSTALL "Automatically install EMSDK locally if not found" ON)
+
+#
 
 # Mark advanced options
 mark_as_advanced(

@@ -4,7 +4,7 @@
 
 int main()
 {
-    std::cout << hello_world() << std::endl;
+    std::cout << HelloWorld() << std::endl;
 #ifdef USER_NAME
     std::cout << "User: " << USER_NAME << std::endl;
 #endif

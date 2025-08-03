@@ -4,6 +4,8 @@
 # Simplified one-liner interface for WebAssembly/Emscripten target registration.
 # This module provides a streamlined API for creating WebAssembly applications.
 
+include_guard(GLOBAL)
+include(SetupCommonProjectOptions)
 include(${CMAKE_SOURCE_DIR}/cmake/toolchains/emscripten/EmsdkManager.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/toolchains/emscripten/EmscriptenTemplate.cmake)
 
@@ -171,6 +173,12 @@ function(register_emscripten TARGET_NAME)
     endif()
     
     _configure_emscripten_wasm_settings(${TARGET_NAME} ${WASM_ARGS})
+    
+    # Link config library
+    target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::config)
+    
+    # Apply common project options (warnings, sanitizers, static analysis, etc.)
+    setup_common_project_options(${TARGET_NAME})
     
     # Configure installation
     if(ARG_INSTALL)

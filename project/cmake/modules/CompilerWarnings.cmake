@@ -8,8 +8,9 @@ include(GetCurrentCompiler)
 #
 # Set compiler warnings
 # usage:
-# targets_add_compiler_warnings(
-#   TARGETS target1 target2...
+# target_add_compiler_warnings(
+#   TARGET_NAME
+#   [SCOPE_NAME]
 #   [MSVC_WARNINGS] (string)
 #   [CLANG_WARNINGS] (string)
 #   [GCC_WARNINGS] (string)
@@ -17,13 +18,12 @@ include(GetCurrentCompiler)
 #   WARNINGS_AS_ERRORS [ON/OFF]
 # )
 #
-function(targets_add_compiler_warnings)
+function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
     # Parse the options first
     set(oneValueArgs
         WARNINGS_AS_ERRORS
     )
     set(multiValueArgs
-        TARGETS
         MSVC_WARNINGS
         CLANG_WARNINGS
         GCC_WARNINGS
@@ -41,16 +41,25 @@ function(targets_add_compiler_warnings)
 
     #
 
-    if (NOT ARG_TARGETS)
-        message(FATAL_ERROR "targets_add_compiler_warnings() called without TARGETs")
+    if(NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "target_add_compiler_warnings() called without TARGET")
     endif()
 
-    if ("${CURRENT_COMPILER}" EQUAL "MSVC")
-        if (ARG_MSVC_WARNINGS)
+    if(NOT SCOPE_NAME)
+        set(SCOPE_NAME PRIVATE)
+    elseif(${SCOPE_NAME} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        set(SCOPE_NAME ${SCOPE_NAME})
+    else()
+        message(FATAL_ERROR "target_add_compiler_warnings() called with invalid SCOPE: ${SCOPE_NAME}")
+    endif()
+
+    if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        if(ARG_MSVC_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_MSVC_WARNINGS}")
         else()
             set(PROJECT_WARNINGS_CXX
                 /W4 # Baseline reasonable warnings
+                /w14189 # 'identifier': local variable is initialized but not referenced
                 /w14242 # 'identifier': conversion from 'type1' to 'type2', possible loss of data
                 /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
                 /w14263 # 'function': member function does not override any base class virtual member function
@@ -76,13 +85,13 @@ function(targets_add_compiler_warnings)
             )
         endif()
 
-        if (ARG_WARNINGS_AS_ERRORS)
+        if(ARG_WARNINGS_AS_ERRORS)
             message(TRACE "Warnings are treated as errors")
-            list(APPEND ${ARG_MSVC_WARNINGS} /WX /sdl)
+            list(APPEND PROJECT_WARNINGS_CXX /WX /sdl)
         endif()
 
-    elseif ("${CURRENT_COMPILER}" STREQUAL "Clang")
-        if (ARG_CLANG_WARNINGS)
+    elseif("${CURRENT_COMPILER}" MATCHES "CLANG.*")
+        if(ARG_CLANG_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_CLANG_WARNINGS}")
         else()
             set(PROJECT_WARNINGS_CXX
@@ -102,17 +111,20 @@ function(targets_add_compiler_warnings)
                 -Wdouble-promotion # warn if float is implicit promoted to double
                 -Wformat=2 # warn on security issues around functions that format output (ie printf)
                 -Wimplicit-fallthrough # warn on statements that fallthrough without an explicit annotation
+                -Wno-error=unused-command-line-argument # ignore unused command line arguments warning
+                -Wno-error=unknown-argument # ignore unknown command line arguments warning
+                -Wno-c++98-compat -Wno-c++98-compat-pedantic # ignore C++98 compatibility warnings
             )
         endif()
 
-        if (ARG_WARNINGS_AS_ERRORS)
+        if(ARG_WARNINGS_AS_ERRORS)
             message(TRACE "Warnings are treated as errors")
-            list(APPEND ${ARG_CLANG_WARNINGS} -Werror)
+            list(APPEND PROJECT_WARNINGS_CXX -Werror)
         endif()
 
-    elseif ("${CURRENT_COMPILER}" STREQUAL "GCC")
+    elseif("${CURRENT_COMPILER}" STREQUAL "GCC")
 
-        if (ARG_GCC_WARNINGS)
+        if(ARG_GCC_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_GCC_WARNINGS}")
         else()
             set(PROJECT_WARNINGS_CXX
@@ -137,19 +149,22 @@ function(targets_add_compiler_warnings)
                 -Wduplicated-branches # warn if if / else branches have duplicated code
                 -Wlogical-op # warn about logical operations being used where bitwise were probably wanted
                 -Wuseless-cast # warn if you perform a cast to the same type
+                -Wno-error=unused-command-line-argument # ignore unused command line arguments warning
+                -Wno-error=unknown-argument # ignore unknown command line arguments warning
+                -Wno-c++98-compat -Wno-c++98-compat-pedantic # ignore C++98 compatibility warnings
             )
         endif()
 
-        if (ARG_WARNINGS_AS_ERRORS)
+        if(ARG_WARNINGS_AS_ERRORS)
             message(TRACE "Warnings are treated as errors")
-            list(APPEND ${ARG_GCC_WARNINGS} -Werror)
+            list(APPEND PROJECT_WARNINGS_CXX -Werror)
         endif()
     
-    elseif ("${CURRENT_COMPILER}" STREQUAL "EMSCRIPTEN")
-        if (ARG_EMSCRIPTEN_WARNINGS)
+    elseif("${CURRENT_COMPILER}" STREQUAL "EMSCRIPTEN")
+        if(ARG_EMSCRIPTEN_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_EMSCRIPTEN_WARNINGS}")
         else()
-            set(ARG_EMSCRIPTEN_WARNINGS
+            set(PROJECT_WARNINGS_CXX
                 -Wall # all warnings
                 -Wextra # extra warnings
                 -Wshadow # warn the user if a variable declaration shadows one from a parent context
@@ -164,22 +179,98 @@ function(targets_add_compiler_warnings)
                 -Wnull-dereference # warn if a null dereference is detected
                 -Wdouble-promotion # warn if float is implicit promoted to double
                 -Wformat=2 # warn on security issues around functions that format output (ie printf)
+                -Wimplicit-fallthrough # warn on statements that fallthrough without an explicit annotation
+                -Wmisleading-indentation # warn if indentation implies blocks where blocks do not exist
+                -Wno-unused-command-line-argument # ignore unused command line arguments warning
+                -Wno-unknown-argument # ignore unknown command line arguments warning
+                -Wno-c++98-compat -Wno-c++98-compat-pedantic # ignore C++98 compatibility warnings
             )
         endif()
 
-        if (ARG_WARNINGS_AS_ERRORS)
+        if(ARG_WARNINGS_AS_ERRORS)
             message(TRACE "Warnings are treated as errors")
-            list(APPEND ${ARG_EMSCRIPTEN_WARNINGS} -Werror)
+            list(APPEND PROJECT_WARNINGS_CXX -Werror)
         endif()
-    endif ()
+    endif()
 
     # set the warnings for all targets
     foreach(target ${ARG_TARGETS})
         target_compile_options(
             ${target}
-            INTERFACE
+            PRIVATE
             $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
             $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
         )
+    endforeach()
+endfunction()
+
+#
+# Configure exception handling for targets
+# usage:
+# targets_configure_exceptions(
+#   TARGETS target1 target2...
+#   ENABLE_EXCEPTIONS [ON/OFF]
+# )
+#
+function(targets_configure_exceptions)
+    # Parse the options
+    set(oneValueArgs
+        ENABLE_EXCEPTIONS
+    )
+    set(multiValueArgs
+        TARGETS
+    )
+    cmake_parse_arguments(
+        ARG
+        ""
+        ${oneValueArgs}
+        ${multiValueArgs}
+        ${ARGN}
+    )
+
+    get_current_compiler(CURRENT_COMPILER)
+
+    if (NOT ARG_TARGETS)
+        message(FATAL_ERROR "targets_configure_exceptions() called without TARGETs")
+    endif()
+
+    # Default to ON if not specified
+    if (NOT DEFINED ARG_ENABLE_EXCEPTIONS)
+        set(ARG_ENABLE_EXCEPTIONS ON)
+    endif()
+
+    message(STATUS "Configuring exception handling: ${ARG_ENABLE_EXCEPTIONS} for compiler: ${CURRENT_COMPILER}")
+
+    set(EXCEPTION_FLAGS "")
+
+    if (${CURRENT_COMPILER} MATCHES "MSVC")
+        if (ARG_ENABLE_EXCEPTIONS)
+            list(APPEND EXCEPTION_FLAGS /EHsc)
+        else()
+            list(APPEND EXCEPTION_FLAGS /EHsc-)
+        endif()
+    elseif (${CURRENT_COMPILER} MATCHES "CLANG.*|GCC")
+        if (ARG_ENABLE_EXCEPTIONS)
+            list(APPEND EXCEPTION_FLAGS -fexceptions)  # Enable exceptions
+        else()
+            list(APPEND EXCEPTION_FLAGS -fno-exceptions)  # Disable exceptions
+        endif()
+    elseif ("${CURRENT_COMPILER}" STREQUAL "EMSCRIPTEN")
+        if (ARG_ENABLE_EXCEPTIONS)
+            list(APPEND EXCEPTION_FLAGS -fexceptions)  # Enable exceptions
+        else()
+            list(APPEND EXCEPTION_FLAGS -fno-exceptions)  # Disable exceptions  
+        endif()
+    endif()
+
+    foreach(target ${ARG_TARGETS})
+        if(EXCEPTION_FLAGS)
+            target_compile_options(
+                ${target}
+                PRIVATE
+                $<$<COMPILE_LANGUAGE:CXX>:${EXCEPTION_FLAGS}>
+            )
+            message(TRACE "Applied exception flags '${EXCEPTION_FLAGS}' to target '${target}'")
+        endif()
     endforeach()
 endfunction()

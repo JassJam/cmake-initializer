@@ -4,6 +4,11 @@
 # This module provides the register_executable function for comprehensive
 # executable target registration with full visibility control.
 
+include_guard(GLOBAL)
+include(LoadEnvVariable)
+include(StringListInterpolation)
+include(SetupCommonProjectOptions)
+
 # Comprehensive executable registration with visibility control
 # usage:
 # register_executable(MyExecutable
@@ -80,8 +85,8 @@ function(register_executable TARGET_NAME)
         endforeach()
     endif()
 
-    # Add libraries with visibility (always include common)
-    target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::common)
+    # Add libraries with visibility (always include config only, not full common)
+    target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::config)
     
     if(ARG_LIBRARIES)
         set(current_visibility "PRIVATE")  # Default visibility
@@ -176,6 +181,9 @@ function(register_executable TARGET_NAME)
             message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
         endif()
     endif()
+
+    # Apply common project options (warnings, sanitizers, static analysis, etc.)
+    setup_common_project_options(${TARGET_NAME})
 
     # Install if requested
     if(ARG_INSTALL)

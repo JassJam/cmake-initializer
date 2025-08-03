@@ -2,7 +2,7 @@
 
 #include <string>
 
-inline std::string hello_world()
+inline std::string HelloWorld()
 {
     return "Hello, World!";
 }

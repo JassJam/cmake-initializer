@@ -1,9 +1,8 @@
-#include "hello_world.hpp"
-
 #include <iostream>
+#include "hello_world.hpp"
 
 int main()
 {
-    std::cout << hello_world() << std::endl;
+    std::cout << HelloWorld() << std::endl;
     return 0;
 }

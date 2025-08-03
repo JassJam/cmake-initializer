@@ -1,6 +1,6 @@
 #include "hello_world.hpp"
 
-std::string hello_world()
+std::string HelloWorld()
 {
     return "Hello, World!";
 }

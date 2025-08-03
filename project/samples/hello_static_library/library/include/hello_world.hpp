@@ -2,4 +2,4 @@
 
 #include <string>
 
-std::string hello_world();
+std::string HelloWorld();

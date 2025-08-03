@@ -2,6 +2,9 @@
 # Testing Framework Registration System
 # ==============================================================================
 
+include_guard(GLOBAL)
+include(SetupCommonProjectOptions)
+
 # Configuration Variables:
 # - EMSCRIPTEN_NODE_EXECUTABLE: Path to Node.js executable for running Emscripten tests
 #   Defaults to auto-detection from EMSDK or system PATH
@@ -33,17 +36,32 @@ function(register_test_framework FRAMEWORK_NAME)
     
     # Set up framework-specific configuration
     if(FRAMEWORK_NAME STREQUAL "doctest")
-        CPMAddPackage("gh:doctest/doctest@2.4.11")
+        CPMAddPackage(
+            NAME doctest
+            GITHUB_REPOSITORY doctest/doctest
+            GIT_TAG v2.4.11
+            SYSTEM ON
+        )
         set(FRAMEWORK_LIBS doctest::doctest)
         set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
         
     elseif(FRAMEWORK_NAME STREQUAL "catch2")
-        CPMAddPackage("gh:catchorg/Catch2@3.5.2")
-        set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
+        CPMAddPackage(
+            NAME Catch2
+            GITHUB_REPOSITORY catchorg/Catch2
+            GIT_TAG v3.5.2
+            SYSTEM ON
+        )
+        set(FRAMEWORK_LIBS Catch2::Catch2WithMain )
         set(FRAMEWORK_DEFS "")
         
     elseif(FRAMEWORK_NAME STREQUAL "gtest")
-        CPMAddPackage("gh:google/googletest@1.14.0")
+        CPMAddPackage(
+            NAME googletest
+            GITHUB_REPOSITORY google/googletest
+            GIT_TAG v1.14.0
+            SYSTEM ON
+        )
         set(FRAMEWORK_LIBS gtest_main)
         set(FRAMEWORK_DEFS "")
         
@@ -55,6 +73,7 @@ function(register_test_framework FRAMEWORK_NAME)
             OPTIONS
                 "BOOST_ENABLE_CMAKE ON"
                 "BOOST_INCLUDE_LIBRARIES test"
+            SYSTEM ON
         )
         set(FRAMEWORK_LIBS Boost::unit_test_framework)
         set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
@@ -168,9 +187,9 @@ function(register_test TARGET_NAME)
         endforeach()
     endif()
 
-    # Add libraries with visibility (always include framework and common)
+    # Add libraries with visibility (always include framework and config)
     target_link_libraries(${TARGET_NAME} PRIVATE 
-        ${framework_libs} ${THIS_PROJECT_NAMESPACE}::common)
+        ${framework_libs} ${THIS_PROJECT_NAMESPACE}::config)
     
     if(ARG_LIBRARIES)
         set(current_visibility "PRIVATE")  # Default visibility for tests
@@ -321,6 +340,9 @@ function(register_test TARGET_NAME)
         # For native builds, run the executable directly
         add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
     endif()
+
+    # Apply common project options (warnings, sanitizers, static analysis, etc.)
+    setup_common_project_options(${TARGET_NAME})
 
     # Install if requested
     if(ARG_INSTALL)
