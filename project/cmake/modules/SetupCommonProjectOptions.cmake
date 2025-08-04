@@ -142,7 +142,7 @@ function(setup_common_project_options TARGET_NAME)
     
     if(ENABLE_HARDENING_VALUE)
         include(TargetHardening)
-        target_enable_hardening(${TARGET_NAME})
+        target_enable_hardening(${TARGET_NAME} PRIVATE)
     endif()
 
     # Configure static analysis (per-target override or use global settings)

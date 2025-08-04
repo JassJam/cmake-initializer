@@ -2,7 +2,7 @@ include(StringListInterpolation)
 
 #
 # Dependency management function for CMake projects using CPM
-# Usage:
+# usage:
 #     target_add_dependency(target_name
 #         PACKAGES
 #             package1 

@@ -5,7 +5,7 @@
 # organization and batch target creation.
 
 # Simple project setup - reduces boilerplate in subdirectories
-# Usage:
+# usage:
 # register_project(NAME "MyProject"
 #     SUBDIRS "subdir1" "subdir2"
 #     EXECUTABLES "MyApp1" "MyApp2"

@@ -1,94 +1,17 @@
-include_guard(GLOBAL)
-
 include(GetCurrentCompiler)
 
-#
-# Enable hardening flags for the project globally to all targets and dependencies
-#
-# Example usage:
-# enable_global_hardening()
-#
-function(enable_global_hardening)
-	# Call once
-	get_property(already_registered GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED)
-	if(already_registered)
-        return()
-    endif()
-
-	message(STATUS "** Enable global hardening to all targets and all dependencies")
-
-    _get_hardening_options(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS)
-    
-    message(STATUS "** Hardening Compiler Flags: ${NEW_COMPILE_OPTIONS}")
-    message(STATUS "** Hardening Linker Flags: ${NEW_LINK_OPTIONS}")
-    message(STATUS "** Hardening Compiler Defines: ${NEW_CXX_DEFINITIONS}")
-    
-    message(STATUS "** Setting hardening options globally for all dependencies")
-    
-    # Set global compile options - use add_compile_options instead of modifying CMAKE_CXX_FLAGS
-    if(NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
-        add_compile_options(${NEW_COMPILE_OPTIONS})
-    endif()
-    
-    # Set global link options - use add_link_options instead of modifying CMAKE_*_LINKER_FLAGS
-    if(NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
-        add_link_options(${NEW_LINK_OPTIONS})
-    endif()
-    
-    # Set global compile definitions
-    if(NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
-        foreach(DEFINITION ${NEW_CXX_DEFINITIONS})
-            add_compile_definitions(${DEFINITION})
-        endforeach()
-    endif()
-
-    set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED TRUE)
-endfunction()
-
-#
-# Enable hardening for a specific target
-# Usage:
-# target_enable_hardening(MyTarget)
-function(target_enable_hardening TARGET_NAME)
-    if(NOT TARGET ${TARGET_NAME})
-        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
-    endif()
-
-    _get_hardening_options(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS)
-    
-    message(STATUS "** Hardening Compiler Flags: ${NEW_COMPILE_OPTIONS}")
-    message(STATUS "** Hardening Linker Flags: ${NEW_LINK_OPTIONS}")
-    message(STATUS "** Hardening Compiler Defines: ${NEW_CXX_DEFINITIONS}")
-    
-    # Set target-specific compile options
-    if(NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
-        target_compile_options(${TARGET_NAME} PRIVATE ${NEW_COMPILE_OPTIONS})
-    endif()
-    
-    # Set target-specific link options
-    if(NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
-        target_link_options(${TARGET_NAME} PRIVATE ${NEW_LINK_OPTIONS})
-    endif()
-    
-    # Set target-specific compile definitions
-    if(NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
-        target_compile_definitions(${TARGET_NAME} PRIVATE ${NEW_CXX_DEFINITIONS})
-    endif()
-
-    message(STATUS "** Enable hardening for targets: ${TARGET_NAME}")
-endfunction()
-
-#
+set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED FALSE)
 
 #
 # Private function to determine if UBSan minimal runtime should be enabled
 #
 function(_should_enable_ubsan_minimal_runtime RESULT_VAR)
     if(NOT SUPPORTS_UBSAN 
-         OR PROJECT_ENABLE_SANITIZER_UNDEFINED
-         OR PROJECT_ENABLE_SANITIZER_ADDRESS
-         OR PROJECT_ENABLE_SANITIZER_THREAD
-         OR PROJECT_ENABLE_SANITIZER_LEAK)
+         OR ENABLE_UBSAN
+         OR ENABLE_ASAN
+         OR ENABLE_TSAN
+         OR ENABLE_LSAN
+         OR ENABLE_MSAN)
         set(${RESULT_VAR} FALSE PARENT_SCOPE)
     else()
         set(${RESULT_VAR} TRUE PARENT_SCOPE)
@@ -147,7 +70,7 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
     # Stack clash protection
     check_cxx_compiler_flag(-fstack-clash-protection CLASH_PROTECTION)
     if(CLASH_PROTECTION)
-        if(LINUX OR CURRENT_COMPILER MATCHES "GCC")
+        if(LINUX OR "${CURRENT_COMPILER}" MATCHES "GCC")
             message(STATUS "*** g++/clang -fstack-clash-protection enabled")
             list(APPEND ${COMPILE_OPTIONS_VAR} -fstack-clash-protection)
         else()
@@ -158,17 +81,15 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
     endif()
 
     # UBSan minimal runtime
-    _should_enable_ubsan_minimal_runtime(ENABLE_UBSAN_MINIMAL_RUNTIME)
-    if(ENABLE_UBSAN_MINIMAL_RUNTIME)
-        check_cxx_compiler_flag("-fsanitize=undefined -fno-sanitize-recover=undefined -fsanitize-minimal-runtime"
+    check_cxx_compiler_flag("-fsanitize=undefined -fno-sanitize-recover=undefined -fsanitize-minimal-runtime"
                             MINIMAL_RUNTIME)
-        if(MINIMAL_RUNTIME)
-            list(APPEND ${COMPILE_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
-            list(APPEND ${LINK_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
-            message(STATUS "*** ubsan minimal runtime enabled")
-        else()
-            message(STATUS "*** ubsan minimal runtime NOT enabled (not supported)")
-        endif()
+
+    if(MINIMAL_RUNTIME)
+        list(APPEND ${COMPILE_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
+        list(APPEND ${LINK_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
+        message(STATUS "*** ubsan minimal runtime enabled")
+    else()
+        message(STATUS "*** ubsan minimal runtime NOT enabled (not supported)")
     endif()
 
     set(${COMPILE_OPTIONS_VAR} ${${COMPILE_OPTIONS_VAR}} PARENT_SCOPE)
@@ -186,10 +107,10 @@ function(_get_hardening_options COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEFINITIONS
     set(NEW_COMPILE_OPTIONS "")
     set(NEW_CXX_DEFINITIONS "")
 
-    if(CURRENT_COMPILER STREQUAL "MSVC")
+    if("${CURRENT_COMPILER}" STREQUAL "MSVC")
         _configure_msvc_hardening(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS)
-    elseif(CURRENT_COMPILER MATCHES "CLANG.*|GCC")
-        _configure_gcc_clang_hardening(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS CURRENT_COMPILER)
+    elseif("${CURRENT_COMPILER}" MATCHES "Clang|GCC")
+        _configure_gcc_clang_hardening(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS "${CURRENT_COMPILER}")
     else()
         message(STATUS "*** ubsan minimal runtime NOT enabled (not requested)")
     endif()
@@ -197,4 +118,94 @@ function(_get_hardening_options COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEFINITIONS
     set(${COMPILE_OPTIONS_VAR} ${NEW_COMPILE_OPTIONS} PARENT_SCOPE)
     set(${LINK_OPTIONS_VAR} ${NEW_LINK_OPTIONS} PARENT_SCOPE)
     set(${DEFINITIONS_VAR} ${NEW_CXX_DEFINITIONS} PARENT_SCOPE)
+endfunction()
+
+#
+# Enable hardening flags for the project
+# - FOR_ALL_DEPENDENCIES[in], apply the hardening options to all dependencies of the TARGET_NAME
+#
+# Usage:
+# target_enable_hardening(
+#   TARGET_NAME
+# 	[PRIVATE|PUBLIC|INTERFACE]
+# )
+function(target_enable_hardening TARGET_NAME SCOPE_NAME)
+    if(NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "target_enable_hardening() called without TARGET")
+    endif()
+    if(NOT SCOPE_NAME)
+        set(SCOPE_NAME PRIVATE)
+    elseif(NOT ${SCOPE_NAME} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        message(FATAL_ERROR "Invalid SCOPE_NAME '${SCOPE_NAME}' for target_enable_hardening()")
+    endif()
+
+    _should_enable_ubsan_minimal_runtime(ENABLE_UBSAN_MINIMAL_RUNTIME)
+    _get_hardening_options(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS)
+    
+    message(STATUS "** Hardening Compiler Flags: ${NEW_COMPILE_OPTIONS}")
+    message(STATUS "** Hardening Linker Flags: ${NEW_LINK_OPTIONS}")
+    message(STATUS "** Hardening Compiler Defines: ${NEW_CXX_DEFINITIONS}")
+    
+    # if NEW_COMPILE_OPTIONS is not empty, set it
+    if(NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
+        target_compile_options(${TARGET_NAME} ${SCOPE_NAME} ${NEW_COMPILE_OPTIONS})
+    endif()
+
+    # if NEW_LINK_OPTIONS is not empty, set it
+    if(NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
+        target_link_options(${TARGET_NAME} ${SCOPE_NAME} ${NEW_LINK_OPTIONS})
+    endif()
+    
+    # if NEW_CXX_DEFINITIONS is not empty, set it
+    if(NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
+        target_compile_definitions(${TARGET_NAME} ${SCOPE_NAME} ${NEW_CXX_DEFINITIONS})
+    endif()
+endfunction()
+
+#
+# Enable hardening flags for the project globally to all targets and dependencies
+#
+# Example usage:
+# enable_global_hardening()
+#
+function(enable_global_hardening)
+	# Call once
+	get_property(already_registered GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED)
+	if(already_registered)
+        return()
+    endif()
+
+	message(STATUS "** Enable global hardening to all targets and all dependencies")
+
+    _should_enable_ubsan_minimal_runtime(ENABLE_UBSAN_MINIMAL_RUNTIME)
+    _get_hardening_options(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS)
+    
+    message(STATUS "** Hardening Compiler Flags: ${NEW_COMPILE_OPTIONS}")
+    message(STATUS "** Hardening Linker Flags: ${NEW_LINK_OPTIONS}")
+    message(STATUS "** Hardening Compiler Defines: ${NEW_CXX_DEFINITIONS}")
+    
+    message(STATUS "** Setting hardening options globally for all dependencies")
+    
+    # Set global compile options
+    if(NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
+        string(JOIN " " COMPILE_FLAGS_STR ${NEW_COMPILE_OPTIONS})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS_STR}" CACHE STRING "Global CXX flags with hardening" FORCE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILE_FLAGS_STR}" CACHE STRING "Global C flags with hardening" FORCE)
+    endif()
+    
+    # Set global link options
+    if(NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
+        string(JOIN " " LINK_FLAGS_STR ${NEW_LINK_OPTIONS})
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINK_FLAGS_STR}" CACHE STRING "Global EXE linker flags with hardening" FORCE)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS_STR}" CACHE STRING "Global SHARED linker flags with hardening" FORCE)
+    endif()
+    
+    # Set global compile definitions
+    if(NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
+        foreach(DEFINITION ${NEW_CXX_DEFINITIONS})
+            add_compile_definitions(${DEFINITION})
+        endforeach()
+    endif()
+
+    set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED TRUE)
 endfunction()

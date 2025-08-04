@@ -1,6 +1,6 @@
 #
 # Interprocedural Optimization (IPO/LTO) setup
-# Usage:
+# usage:
 #   enable_global_interprocedural_optimization()     # Enable IPO globally
 #   target_enable_interprocedural_optimization(target_name)  # Enable IPO for specific target
 #

@@ -17,7 +17,7 @@ set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "")
 
 # Register a test framework globally (call once in main CMakeLists.txt)
-# Usage:
+# usage:
 # register_test_framework("doctest") (or "catch2", "gtest", "boost")
 function(register_test_framework FRAMEWORK_NAME)
     # Skip if testing is disabled
@@ -92,7 +92,7 @@ function(register_test_framework FRAMEWORK_NAME)
 endfunction()
 
 # Comprehensive test creation function - uses the registered test framework
-# Usage:
+# usage:
 # register_test(MyTest
 #     SOURCE_DIR "tests"
 #     SOURCES PRIVATE "test_main.cpp" "test_utils.cpp" PUBLIC "api_test.cpp"

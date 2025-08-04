@@ -7,7 +7,7 @@
 include_guard(GLOBAL)
 
 # Check if EMSDK is available and install it locally if needed
-# Usage:
+# usage:
 # ensure_emsdk_available()
 function(ensure_emsdk_available)
     # Check if EMSDK is already available and properly activated

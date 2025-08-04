@@ -12,7 +12,7 @@ include(GetCurrentCompiler)
 
 # Enable static runtime linking for a specific target with auto-detection
 #
-# Usage:
+# usage:
 # target_enable_static_linking(
 #   TARGET_NAME
 #   [PRIVATE|PUBLIC|INTERFACE]
@@ -62,7 +62,7 @@ function(target_enable_static_linking TARGET_NAME SCOPE_NAME)
 endfunction()
 
 # Enable static linking of runtime libraries globally
-# Usage:
+# usage:
 # enable_static_linking()
 function(enable_static_linking)
     include(GetCurrentCompiler)

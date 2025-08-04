@@ -27,7 +27,7 @@ endfunction()
 #
 # Enable global exceptions handling
 #
-# Usage:
+# usage:
 #   enable_global_exceptions([ON/OFF])
 function(configure_global_exceptions ON_OFF)
     _configure_exceptions(OUTPUT_FLAGS ON_OFF)

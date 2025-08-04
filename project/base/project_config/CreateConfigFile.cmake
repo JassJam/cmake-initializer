@@ -1,5 +1,5 @@
 # function used to create the config file of the project
-# Usage: 
+# usage: 
 #   _create_config_file(version)                               # Uses default: ${THIS_PROJECT_NAMESPACE}/config/config.hpp
 #   _create_config_file(version CONFIG_DIR custom_dir)        # Uses custom generation directory
 #   _create_config_file(version INSTALL_SUBDIR custom_subdir) # Uses custom install subdirectory
@@ -13,7 +13,7 @@
 #   _create_config_file("1.0.0")                                      # → install/include/myproject/config/config.hpp  
 #   _create_config_file("1.0.0" INSTALL_SUBDIR "mylib")               # → install/include/mylib/config.hpp
 #   _create_config_file("1.0.0" CONFIG_DIR "/custom/path/config.hpp") # Custom generation path (advanced) to create the config file of the project
-# Usage: 
+# usage: 
 #   _create_config_file(version)                               # Uses default: ${THIS_PROJECT_NAMESPACE}/config.hpp
 #   _create_config_file(version CONFIG_DIR custom_dir)        # Uses custom generation directory
 #   _create_config_file(version INSTALL_SUBDIR custom_subdir) # Uses custom install subdirectory

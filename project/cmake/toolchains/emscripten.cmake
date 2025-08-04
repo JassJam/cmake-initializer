@@ -6,7 +6,7 @@ include_guard(GLOBAL)
 # First, try to set up EMSDK if it's not available
 if(NOT DEFINED ENV{EMSDK} OR NOT EXISTS "$ENV{EMSDK}")
     # Include the EMSDK manager to install it automatically
-    include(../modules/EmsdkManager.cmake)
+    include(emscripten/EmsdkManager.cmake)
     ensure_emsdk_available()
 endif()
 
@@ -37,12 +37,14 @@ else()
 endif()
 
 # Set default compilation flags for WebAssembly
-set(CMAKE_C_FLAGS_INIT "-s WASM=1")
-set(CMAKE_CXX_FLAGS_INIT "-s WASM=1")
-
+# Note: -s WASM=1 is a linker setting, so we don't set it in compile flags
 # Enable pthread support by default for better compatibility
-set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -pthread")
-set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -pthread")
+set(CMAKE_C_FLAGS_INIT "-pthread")
+set(CMAKE_CXX_FLAGS_INIT "-pthread")
+
+# Set default linker flags for WebAssembly
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-s WASM=1")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "-s WASM=1")
 
 # Set executable suffix
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
