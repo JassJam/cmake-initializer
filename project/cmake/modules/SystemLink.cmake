@@ -12,7 +12,7 @@ function(target_include_system_directories target)
 
     foreach(scope IN ITEMS INTERFACE PUBLIC PRIVATE)
         foreach(lib_include_dirs IN LISTS ARG_${scope})
-            if (${scope} STREQUAL "INTERFACE" OR ${scope} STREQUAL "PUBLIC")
+            if(${scope} STREQUAL "INTERFACE" OR ${scope} STREQUAL "PUBLIC")
                 target_include_directories(
                     ${target}
                     SYSTEM
@@ -40,9 +40,9 @@ function(
     scope
     lib)
     # check if this is a target
-    if (TARGET ${lib})
+    if(TARGET ${lib})
         get_target_property(lib_include_dirs ${lib} INTERFACE_INCLUDE_DIRECTORIES)
-        if (lib_include_dirs)
+        if(lib_include_dirs)
             target_include_system_directories(${target} ${scope} ${lib_include_dirs})
         else()
             message(TRACE "${lib} library does not have the INTERFACE_INCLUDE_DIRECTORIES property.")

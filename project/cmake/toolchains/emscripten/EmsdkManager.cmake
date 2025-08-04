@@ -43,7 +43,7 @@ function(ensure_emsdk_available)
         return()
     endif()
     
-    if (ENABLE_EMSDK_AUTO_INSTALL)
+    if(ENABLE_EMSDK_AUTO_INSTALL)
         message(STATUS "EMSDK not found. Automatically installing it locally to ${LOCAL_EMSDK_DIR}")
     else()
         message(FATAL_ERROR "EMSDK not found. Please install it manually or enable ENABLE_EMSDK_AUTO_INSTALL to download it automatically.")

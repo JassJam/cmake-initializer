@@ -53,25 +53,25 @@ function(install_component target)
     cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
 
     # Set defaults
-    if (NOT ARG_INCLUDE_SUBDIR)
+    if(NOT ARG_INCLUDE_SUBDIR)
         set(ARG_INCLUDE_SUBDIR ${target})
     endif()
-    if (NOT ARG_NAMESPACE)
+    if(NOT ARG_NAMESPACE)
         set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
     endif()
-    if (NOT ARG_RUNTIME_DIR)
+    if(NOT ARG_RUNTIME_DIR)
         set(ARG_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR})
     endif()
-    if (NOT ARG_LIBRARY_DIR)
+    if(NOT ARG_LIBRARY_DIR)
         set(ARG_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
     endif()
-    if (NOT ARG_ARCHIVE_DIR)
+    if(NOT ARG_ARCHIVE_DIR)
         set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
     endif()
-    if (NOT ARG_EXPORT_MACRO_NAME)
+    if(NOT ARG_EXPORT_MACRO_NAME)
         set(ARG_EXPORT_MACRO_NAME "${target}_EXPORT")
     endif()
-    if (NOT ARG_EXPORT_FILE_NAME)
+    if(NOT ARG_EXPORT_FILE_NAME)
         set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${target}_export.h")
     endif()
 
@@ -111,7 +111,7 @@ function(install_component target)
     )
 
     # Handle shared library specifics
-    if (${target_type} STREQUAL "SHARED_LIBRARY")
+    if(${target_type} STREQUAL "SHARED_LIBRARY")
         # Generate export headers
         generate_export_header(${target}
             BASE_NAME ${target}

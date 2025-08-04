@@ -6,7 +6,7 @@ function(check_sanitizers_support
 	SUPPORTS_ASAN
 )
 	# UBSan support
-	if ((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*" OR
+	if((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*" OR
 		CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*")
 		AND NOT WIN32)
 		set(${SUPPORTS_UBSAN} ON PARENT_SCOPE)
@@ -15,11 +15,11 @@ function(check_sanitizers_support
 	endif()
 
 	# ASan support - disabled on Windows+GCC due to known issues
-	if ((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*") OR
+	if((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*") OR
 		(CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*" AND NOT WIN32) OR
 		(CMAKE_CXX_COMPILER_ID MATCHES "MSVC"))
 		set(${SUPPORTS_ASAN} ON PARENT_SCOPE)
-	else ()
+	else()
 		set(${SUPPORTS_ASAN} OFF PARENT_SCOPE)
-	endif ()
+	endif()
 endfunction()

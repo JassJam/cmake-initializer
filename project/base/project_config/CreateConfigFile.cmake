@@ -40,26 +40,26 @@ function(_create_config_file version)
 	list(LENGTH version_parts version_parts_count)
 	
 	# if we have at least 1 part, set the major version
-	if (version_parts_count GREATER 0)
+	if(version_parts_count GREATER 0)
 		list(GET version_parts 0 PROJECT_VERSION_MAJOR)
 	else()
 		set(PROJECT_VERSION_MAJOR 0)
 	endif()
 	# if we have at least 2 parts, set the minor version
-	if (version_parts_count GREATER 1)
+	if(version_parts_count GREATER 1)
 		list(GET version_parts 1 PROJECT_VERSION_MINOR)
 	else()
 		set(PROJECT_VERSION_MINOR 0)
 	endif()
 	# if we have at least 3 parts, set the patch version
-	if (version_parts_count GREATER 2)
+	if(version_parts_count GREATER 2)
 		list(GET version_parts 2 PROJECT_VERSION_PATCH)
 	else()
 		set(PROJECT_VERSION_PATCH 0)
 	endif()
 	
 	# Get git commit hash if available
-	if (NOT DEFINED GIT_SHA)
+	if(NOT DEFINED GIT_SHA)
 		find_package(Git QUIET)
 		if(Git_FOUND)
 			execute_process(
@@ -78,7 +78,7 @@ function(_create_config_file version)
 	endif()
 
 	# configure the file commonly used in the project
-	if (ARG_CONFIG_DIR)
+	if(ARG_CONFIG_DIR)
 		set(CONFIG_DIR ${ARG_CONFIG_DIR})
 		message(STATUS "Using custom config generation directory: ${CONFIG_DIR}")
 	else()
