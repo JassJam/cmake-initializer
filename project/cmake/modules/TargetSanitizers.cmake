@@ -19,7 +19,7 @@ function(enable_global_sanitizers)
     endif()
 
     if(ENABLE_LSAN)
-        if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        if(CURRENT_COMPILER STREQUAL "MSVC")
             message(WARNING "Leak sanitizer is not supported on MSVC")
         else()
             list(APPEND LIST_OF_SANITIZERS "leak")
@@ -27,7 +27,7 @@ function(enable_global_sanitizers)
     endif()
 
     if(ENABLE_UBSAN)
-        if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        if(CURRENT_COMPILER STREQUAL "MSVC")
             message(WARNING "Undefined behavior sanitizer is not supported on MSVC")
         else()
             list(APPEND LIST_OF_SANITIZERS "undefined")
@@ -35,7 +35,7 @@ function(enable_global_sanitizers)
     endif()
 
     if(ENABLE_TSAN)
-        if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        if(CURRENT_COMPILER STREQUAL "MSVC")
             message(WARNING "Thread sanitizer is not supported on MSVC")
         else()
             list(APPEND LIST_OF_SANITIZERS "thread")
@@ -43,9 +43,9 @@ function(enable_global_sanitizers)
     endif()
 
     if(ENABLE_MSAN)
-        if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        if(CURRENT_COMPILER STREQUAL "MSVC")
             message(WARNING "Memory sanitizer is not supported on MSVC")
-        elseif("${CURRENT_COMPILER}" MATCHES "CLANG.*")
+        elseif(CURRENT_COMPILER MATCHES "CLANG.*")
             message(WARNING
                 "Memory sanitizer requires all the code (including libc++) to be MSan-instrumented otherwise it reports false positives"
             )
@@ -67,10 +67,10 @@ function(enable_global_sanitizers)
     message(STATUS "** Enabling global sanitizers: ${LIST_OF_SANITIZERS}")
 
     # MSVC sanitizers (including clang-cl with MSVC target)
-    if("${CURRENT_COMPILER}" STREQUAL "MSVC" OR "${CURRENT_COMPILER}" STREQUAL "CLANG-MSVC")
+    if(CURRENT_COMPILER MATCHES "MSVC")
         # Check MSVC version - /fsanitize is only available in VS 2019 16.9+ and VS 2022
         # For clang-cl, we also need to check if it supports MSVC-style sanitizer flags
-        if(MSVC_VERSION GREATER_EQUAL 1928 OR "${CURRENT_COMPILER}" STREQUAL "CLANG-MSVC")  # VS 2019 16.9+
+        if(MSVC_VERSION GREATER_EQUAL 1928 OR CURRENT_COMPILER MATCHES "CLANG")  # VS 2019 16.9+
             # Apply sanitizer flags globally
             foreach(sanitizer ${LIST_OF_SANITIZERS})
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=${sanitizer}" CACHE STRING "Global CXX flags with sanitizers" FORCE)
@@ -84,7 +84,7 @@ function(enable_global_sanitizers)
                 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded" CACHE STRING "MSVC runtime library (overridden for AddressSanitizer compatibility)" FORCE)
                 
                 # Add AddressSanitizer runtime libraries for clang-cl linking (not needed for regular MSVC)
-                if("${CURRENT_COMPILER}" STREQUAL "CLANG-MSVC")
+                if(CURRENT_COMPILER MATCHES "CLANG")
                     message(STATUS "** Adding AddressSanitizer runtime libraries for clang-cl")
                     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} clang_rt.asan-x86_64.lib clang_rt.asan_cxx-x86_64.lib" CACHE STRING "Global linker flags with ASan libs" FORCE)
                     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} clang_rt.asan-x86_64.lib clang_rt.asan_cxx-x86_64.lib" CACHE STRING "Global linker flags with ASan libs" FORCE)
@@ -195,7 +195,7 @@ function(enable_global_sanitizers)
             return()
         endif()
 
-    elseif("${CURRENT_COMPILER}" STREQUAL "CLANG" OR "${CURRENT_COMPILER}" STREQUAL "GCC")
+    elseif(CURRENT_COMPILER MATCHES "CLANG.*|GCC|EMSCRIPTEN")
         # GCC/Clang sanitizers (excluding clang-cl which is handled above)
         string(REPLACE ";" "," SANITIZER_FLAGS "${LIST_OF_SANITIZERS}")
         set(SANITIZER_FLAGS "-fsanitize=${SANITIZER_FLAGS}")

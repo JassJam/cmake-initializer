@@ -53,7 +53,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
         message(FATAL_ERROR "target_add_compiler_warnings() called with invalid SCOPE: ${SCOPE_NAME}")
     endif()
 
-    if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+    if(CURRENT_COMPILER STREQUAL "MSVC")
         if(ARG_MSVC_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_MSVC_WARNINGS}")
         else()
@@ -90,7 +90,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
             list(APPEND PROJECT_WARNINGS_CXX /WX /sdl)
         endif()
 
-    elseif("${CURRENT_COMPILER}" MATCHES "CLANG.*")
+    elseif(CURRENT_COMPILER MATCHES "CLANG.*")
         if(ARG_CLANG_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_CLANG_WARNINGS}")
         else()
@@ -122,7 +122,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
             list(APPEND PROJECT_WARNINGS_CXX -Werror)
         endif()
 
-    elseif("${CURRENT_COMPILER}" STREQUAL "GCC")
+    elseif(CURRENT_COMPILER STREQUAL "GCC")
 
         if(ARG_GCC_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_GCC_WARNINGS}")
@@ -160,7 +160,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
             list(APPEND PROJECT_WARNINGS_CXX -Werror)
         endif()
     
-    elseif("${CURRENT_COMPILER}" STREQUAL "EMSCRIPTEN")
+    elseif(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         if(ARG_EMSCRIPTEN_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_EMSCRIPTEN_WARNINGS}")
         else()
@@ -193,54 +193,13 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
         endif()
     endif()
 
-    # Apply warnings to the target
-    target_compile_options(
-        ${TARGET_NAME}
-        ${SCOPE_NAME}
-        $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
-        $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
-    )
-endfunction()
-
-#
-# Wrapper function for target-specific warning overrides
-# usage:
-# target_set_warnings(
-#   TARGET_NAME
-#   [WARNINGS_AS_ERRORS]
-#   [MSVC_WARNINGS] (string)
-#   [CLANG_WARNINGS] (string)
-#   [GCC_WARNINGS] (string)
-#   [EMSCRIPTEN_WARNINGS] (string)
-# )
-#
-function(target_set_warnings TARGET_NAME)
-    # Parse the options
-    set(oneValueArgs
-        WARNINGS_AS_ERRORS
-    )
-    set(multiValueArgs
-        MSVC_WARNINGS
-        CLANG_WARNINGS
-        GCC_WARNINGS
-        EMSCRIPTEN_WARNINGS
-    )
-    cmake_parse_arguments(
-        ARG
-        ""
-        ${oneValueArgs}
-        ${multiValueArgs}
-        ${ARGN}
-    )
-
-    # Call the existing function
-    target_add_compiler_warnings(
-        ${TARGET_NAME}
-        PRIVATE
-        WARNINGS_AS_ERRORS ${ARG_WARNINGS_AS_ERRORS}
-        MSVC_WARNINGS ${ARG_MSVC_WARNINGS}
-        CLANG_WARNINGS ${ARG_CLANG_WARNINGS}
-        GCC_WARNINGS ${ARG_GCC_WARNINGS}
-        EMSCRIPTEN_WARNINGS ${ARG_EMSCRIPTEN_WARNINGS}
-    )
+    # set the warnings for all targets
+    foreach(target ${ARG_TARGETS})
+        target_compile_options(
+            ${target}
+            PRIVATE
+            $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
+            $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
+        )
+    endforeach()
 endfunction()
