@@ -5,9 +5,8 @@
 # This module provides a streamlined API for creating WebAssembly applications.
 
 include_guard(GLOBAL)
+include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
-include(${CMAKE_SOURCE_DIR}/cmake/toolchains/emscripten/EmsdkManager.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/toolchains/emscripten/EmscriptenTemplate.cmake)
 
 # Initialize Emscripten environment if needed
 function(_ensure_emscripten_ready)
@@ -19,7 +18,7 @@ function(_ensure_emscripten_ready)
 endfunction()
 
 # One-liner function to register an Emscripten/WebAssembly target
-# usage:
+# Usage:
 # register_emscripten(MyWebApp
 #     [SOURCES src1.cpp src2.cpp ...]        # Source files (required)
 #     [HEADERS header1.hpp header2.hpp ...]  # Header files for IDE integration
@@ -217,8 +216,8 @@ function(register_emscripten TARGET_NAME)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
     endif()
     
-    setup_common_project_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
-    
+    target_setup_common_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
+
     # Configure installation
     if(ARG_INSTALL)
         _configure_emscripten_installation(${TARGET_NAME}
@@ -230,7 +229,7 @@ function(register_emscripten TARGET_NAME)
 endfunction()
 
 # Internal function to configure HTML output
-function(_configure_emscripten_html_output target)
+function(_configure_emscripten_html_output TARGET_NAME)
     cmake_parse_arguments(ARG "" "HTML_TEMPLATE;HTML_TITLE;CANVAS_ID;OUTPUT_DIR" "" ${ARGN})
     
     # Set default values
@@ -282,7 +281,7 @@ function(_configure_emscripten_html_output target)
 endfunction()
 
 # Internal function to configure WebAssembly settings
-function(_configure_emscripten_wasm_settings target)
+function(_configure_emscripten_wasm_settings TARGET_NAME)
     cmake_parse_arguments(ARG
         "WASM;STANDALONE_WASM;NODE_JS;PTHREAD;SIMD;ASYNCIFY;ASSERTIONS;SAFE_HEAP;DEMANGLE_SUPPORT;ALLOW_MEMORY_GROWTH;CLOSURE_COMPILER"
         "INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE"
@@ -395,7 +394,7 @@ function(_configure_emscripten_wasm_settings target)
 endfunction()
 
 # Internal function to configure memory settings
-function(_configure_emscripten_memory target)
+function(_configure_emscripten_memory TARGET_NAME)
     cmake_parse_arguments(ARG "ALLOW_MEMORY_GROWTH" "INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE" "" ${ARGN})
     
     # Parse memory sizes (support units like 16MB, 64MB, etc.)
@@ -449,7 +448,7 @@ function(_parse_memory_size size_string output_var)
 endfunction()
 
 # Internal function to configure installation
-function(_configure_emscripten_installation target)
+function(_configure_emscripten_installation TARGET_NAME)
     cmake_parse_arguments(ARG "" "INSTALL_DESTINATION" "" ${ARGN})
     
     if(NOT ARG_INSTALL_DESTINATION)
@@ -633,6 +632,7 @@ function(configure_emscripten_html_generation)
     
     # Create HTML template if it doesn't exist
     if(NOT EXISTS "${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
+        include(toolchains/emscripten/EmscriptenTemplate.cmake)
         create_emscripten_html_template("${EMSCRIPTEN_HTML_SHELL_TEMPLATE}" 
             TITLE "cmake-initializer WebAssembly App"
             CANVAS_ID "canvas"

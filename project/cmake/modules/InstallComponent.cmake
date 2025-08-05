@@ -39,7 +39,11 @@ include(CMakePackageConfigHelpers)
 #       EXPORT_FILE_NAME "my_target_export.h"
 #   )
 #
-function(install_component target)
+function(install_component TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "target_add_compiler_warnings() called without TARGET")
+    endif()
+
     # Parse arguments
     set(oneValueArgs 
         INCLUDE_SUBDIR 
@@ -54,7 +58,7 @@ function(install_component target)
 
     # Set defaults
     if(NOT ARG_INCLUDE_SUBDIR)
-        set(ARG_INCLUDE_SUBDIR ${target})
+        set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})
     endif()
     if(NOT ARG_NAMESPACE)
         set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
@@ -69,18 +73,18 @@ function(install_component target)
         set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
     endif()
     if(NOT ARG_EXPORT_MACRO_NAME)
-        set(ARG_EXPORT_MACRO_NAME "${target}_EXPORT")
+        set(ARG_EXPORT_MACRO_NAME "${TARGET_NAME}_EXPORT")
     endif()
     if(NOT ARG_EXPORT_FILE_NAME)
-        set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${target}_export.h")
+        set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${TARGET_NAME}_export.h")
     endif()
 
     # Get target type
-    get_target_property(target_type ${target} TYPE)
+    get_target_property(target_type ${TARGET_NAME} TYPE)
 
     # Install target with appropriate components
-    install(TARGETS ${target}
-        EXPORT ${target}Targets
+    install(TARGETS ${TARGET_NAME}
+        EXPORT ${TARGET_NAME}Targets
         RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
         LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
         ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
@@ -92,11 +96,11 @@ function(install_component target)
     include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
     if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
-        get_target_property(target_type ${target} TYPE)
+        get_target_property(target_type ${TARGET_NAME} TYPE)
         if(target_type STREQUAL "EXECUTABLE")
             # Install accompanying WASM files for Emscripten executables
             install(FILES 
-                $<TARGET_FILE_DIR:${target}>/$<TARGET_FILE_BASE_NAME:${target}>.wasm
+                $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
                 DESTINATION ${ARG_RUNTIME_DIR}
                 OPTIONAL
             )
@@ -104,8 +108,8 @@ function(install_component target)
     endif()
 
     # Install export configuration
-    install(EXPORT ${target}Targets
-        FILE ${target}Config.cmake
+    install(EXPORT ${TARGET_NAME}Targets
+        FILE ${TARGET_NAME}Config.cmake
         NAMESPACE ${ARG_NAMESPACE}
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
     )
@@ -113,8 +117,8 @@ function(install_component target)
     # Handle shared library specifics
     if(${target_type} STREQUAL "SHARED_LIBRARY")
         # Generate export headers
-        generate_export_header(${target}
-            BASE_NAME ${target}
+        generate_export_header(${TARGET_NAME}
+            BASE_NAME ${TARGET_NAME}
             EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
             EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
         )

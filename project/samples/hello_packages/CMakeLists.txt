@@ -1,1 +1,1 @@
-register_executable(HelloPackages DEPENDENCIES INSTALL)
+register_executable(HelloPackages INSTALL)

@@ -5,8 +5,7 @@
 # executable target registration with full visibility control.
 
 include_guard(GLOBAL)
-include(LoadEnvVariable)
-include(StringListInterpolation)
+include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
 # Comprehensive executable registration with visibility control
@@ -69,7 +68,7 @@ function(register_executable TARGET_NAME)
     if(ARG_SOURCES)
         set(current_visibility "PRIVATE")  # Default visibility for sources
         foreach(item ${ARG_SOURCES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_sources(${TARGET_NAME} ${current_visibility} ${item})
@@ -93,7 +92,7 @@ function(register_executable TARGET_NAME)
     if(ARG_INCLUDES)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_INCLUDES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
@@ -101,13 +100,10 @@ function(register_executable TARGET_NAME)
         endforeach()
     endif()
 
-    # Add libraries with visibility (always include config only, not full common)
-    target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::config)
-    
     if(ARG_LIBRARIES)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_LIBRARIES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_link_libraries(${TARGET_NAME} ${current_visibility} ${item})
@@ -119,7 +115,7 @@ function(register_executable TARGET_NAME)
     if(ARG_COMPILE_DEFINITIONS)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_COMPILE_DEFINITIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_definitions(${TARGET_NAME} ${current_visibility} ${item})
@@ -131,7 +127,7 @@ function(register_executable TARGET_NAME)
     if(ARG_COMPILE_OPTIONS)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_COMPILE_OPTIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_options(${TARGET_NAME} ${current_visibility} ${item})
@@ -143,7 +139,7 @@ function(register_executable TARGET_NAME)
     if(ARG_COMPILE_FEATURES)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_COMPILE_FEATURES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_features(${TARGET_NAME} ${current_visibility} ${item})
@@ -155,7 +151,7 @@ function(register_executable TARGET_NAME)
     if(ARG_LINK_OPTIONS)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_LINK_OPTIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_link_options(${TARGET_NAME} ${current_visibility} ${item})
@@ -182,20 +178,24 @@ function(register_executable TARGET_NAME)
             INSTALL_RPATH "$ORIGIN"
         )
     endif()
-
-    # Handle dependencies
+    
+    # Copy AddressSanitizer runtime DLL to build directory for direct execution
+    include(GetCurrentCompiler)
+    get_current_compiler(CURRENT_COMPILER)
+    if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
+        string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
+        if(NOT ASAN_FLAGS_INDEX EQUAL -1)
+            _copy_asan_dll_to_build_dir(${TARGET_NAME})
+        endif()
+    endif()
+   
+    # Copy shared library dependencies to build directory for direct execution
+    _copy_shared_library_dependencies_to_build_dir(${TARGET_NAME})
+    
+    # Add dependencies
     if(ARG_DEPENDENCIES)
-        # Check if Dependencies.cmake exists and include it
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.cmake")
-            include(Dependencies.cmake)
-        endif()
-        
-        # Check if target_load_dependencies function exists and call it
-        if(COMMAND target_load_dependencies)
-            target_load_dependencies(${TARGET_NAME})
-        else()
-            message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
-        endif()
+        add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
     endif()
 
     # Apply common project options (warnings, sanitizers, static analysis, etc.)
@@ -234,7 +234,7 @@ function(register_executable TARGET_NAME)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
     endif()
     
-    setup_common_project_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
+    target_setup_common_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
 
     # Install if requested
     if(ARG_INSTALL)

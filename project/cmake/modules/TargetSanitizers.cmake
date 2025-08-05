@@ -68,27 +68,25 @@ function(enable_global_sanitizers)
 
     # MSVC sanitizers (including clang-cl with MSVC target)
     if(CURRENT_COMPILER MATCHES "MSVC")
+        # CLANG-MSVC sanitizers is broken, just disable it
+        # https://github.com/google/sanitizers/issues/1006
+        if(CURRENT_COMPILER MATCHES "CLANG")
+            message(WARNING "Clang with MSVC target does not support sanitizers, disabling")
+
         # Check MSVC version - /fsanitize is only available in VS 2019 16.9+ and VS 2022
         # For clang-cl, we also need to check if it supports MSVC-style sanitizer flags
-        if(MSVC_VERSION GREATER_EQUAL 1928 OR CURRENT_COMPILER MATCHES "CLANG")  # VS 2019 16.9+
+        elseif(MSVC_VERSION GREATER_EQUAL 1928)  # VS 2019 16.9+
             # Apply sanitizer flags globally
             foreach(sanitizer ${LIST_OF_SANITIZERS})
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=${sanitizer}" CACHE STRING "Global CXX flags with sanitizers" FORCE)
                 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=${sanitizer}" CACHE STRING "Global C flags with sanitizers" FORCE)
             endforeach()
             
-            # Special handling for AddressSanitizer: it's incompatible with debug runtime for both MSVC and clang-cl
+            # Special handling for AddressSanitizer: it's incompatible with debug runtime for MSVC
             if("address" IN_LIST LIST_OF_SANITIZERS)
                 message(STATUS "** AddressSanitizer detected - forcing release runtime (MultiThreaded instead of MultiThreadedDebug)")
                 # Override CMAKE_MSVC_RUNTIME_LIBRARY to force release runtime for compatibility with AddressSanitizer
                 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded" CACHE STRING "MSVC runtime library (overridden for AddressSanitizer compatibility)" FORCE)
-                
-                # Add AddressSanitizer runtime libraries for clang-cl linking (not needed for regular MSVC)
-                if(CURRENT_COMPILER MATCHES "CLANG")
-                    message(STATUS "** Adding AddressSanitizer runtime libraries for clang-cl")
-                    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} clang_rt.asan-x86_64.lib clang_rt.asan_cxx-x86_64.lib" CACHE STRING "Global linker flags with ASan libs" FORCE)
-                    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} clang_rt.asan-x86_64.lib clang_rt.asan_cxx-x86_64.lib" CACHE STRING "Global linker flags with ASan libs" FORCE)
-                endif()
             endif()
             
             # Disable incremental linking when sanitizers are enabled to avoid LNK4300 warning

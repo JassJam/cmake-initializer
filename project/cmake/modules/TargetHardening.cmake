@@ -44,7 +44,7 @@ endfunction()
 #
 function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEFINITIONS_VAR CURRENT_COMPILER)
     message(STATUS "*** GLIBC++ Assertions (vector[], string[], ...) enabled")
-    list(APPEND ${DEFINITIONS_VAR} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_GLIBCXX_ASSERTIONS)
+    list(APPEND ${DEFINITIONS_VAR} _GLIBCXX_DEBUG _GLIBCXX_DEBUG_PEDANTIC _GLIBCXX_ASSERTIONS)
 
     message(STATUS "*** g++/clang _FORTIFY_SOURCE=3 enabled")
     list(APPEND ${COMPILE_OPTIONS_VAR} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3)
@@ -80,16 +80,21 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
         message(STATUS "*** g++/clang -fstack-clash-protection NOT enabled (not supported)")
     endif()
 
-    # UBSan minimal runtime
-    check_cxx_compiler_flag("-fsanitize=undefined -fno-sanitize-recover=undefined -fsanitize-minimal-runtime"
-                            MINIMAL_RUNTIME)
+    # UBSan minimal runtime - only enable if compatible with other sanitizers
+    _should_enable_ubsan_minimal_runtime(SHOULD_ENABLE_MINIMAL_RUNTIME)
+    if(SHOULD_ENABLE_MINIMAL_RUNTIME)
+        check_cxx_compiler_flag("-fsanitize=undefined -fno-sanitize-recover=undefined -fsanitize-minimal-runtime"
+                                MINIMAL_RUNTIME)
 
-    if(MINIMAL_RUNTIME)
-        list(APPEND ${COMPILE_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
-        list(APPEND ${LINK_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
-        message(STATUS "*** ubsan minimal runtime enabled")
+        if(MINIMAL_RUNTIME)
+            list(APPEND ${COMPILE_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
+            list(APPEND ${LINK_OPTIONS_VAR} -fsanitize=undefined -fsanitize-minimal-runtime -fno-sanitize-recover=undefined)
+            message(STATUS "*** ubsan minimal runtime enabled")
+        else()
+            message(STATUS "*** ubsan minimal runtime NOT enabled (not supported)")
+        endif()
     else()
-        message(STATUS "*** ubsan minimal runtime NOT enabled (not supported)")
+        message(STATUS "*** ubsan minimal runtime NOT enabled (incompatible with other sanitizers)")
     endif()
 
     set(${COMPILE_OPTIONS_VAR} ${${COMPILE_OPTIONS_VAR}} PARENT_SCOPE)
@@ -107,9 +112,9 @@ function(_get_hardening_options COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEFINITIONS
     set(NEW_COMPILE_OPTIONS "")
     set(NEW_CXX_DEFINITIONS "")
 
-    if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+    if("${CURRENT_COMPILER}" MATCHES "MSVC")
         _configure_msvc_hardening(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS)
-    elseif("${CURRENT_COMPILER}" MATCHES "Clang|GCC")
+    elseif("${CURRENT_COMPILER}" MATCHES "CLANG|GCC|EMSCRIPTEN")
         _configure_gcc_clang_hardening(NEW_COMPILE_OPTIONS NEW_LINK_OPTIONS NEW_CXX_DEFINITIONS "${CURRENT_COMPILER}")
     else()
         message(STATUS "*** ubsan minimal runtime NOT enabled (not requested)")

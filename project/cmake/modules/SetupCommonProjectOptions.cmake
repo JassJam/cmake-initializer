@@ -15,7 +15,7 @@ include(StaticLinking)
 
 # Apply common project options to a target
 # Usage:
-# setup_common_project_options(MyTarget
+# target_setup_common_options(MyTarget
 #   [ENABLE_EXCEPTIONS ON/OFF]                    # Override per-target exceptions
 #   [ENABLE_IPO ON/OFF]                          # Enable interprocedural optimization
 #   [WARNINGS_AS_ERRORS ON/OFF]                  # Override warnings as errors setting
@@ -28,7 +28,7 @@ include(StaticLinking)
 #   [ENABLE_CLANG_TIDY ON/OFF]                   # Override clang-tidy setting
 #   [ENABLE_CPPCHECK ON/OFF]                     # Override cppcheck setting
 # )
-function(setup_common_project_options TARGET_NAME)
+function(target_setup_common_options TARGET_NAME)
     # Parse arguments
     set(oneValueArgs
         ENABLE_EXCEPTIONS
@@ -135,7 +135,7 @@ function(setup_common_project_options TARGET_NAME)
     endif()
 
     # Configure hardening (per-target override or use global setting)
-    set(ENABLE_HARDENING_VALUE ${ENABLE_HARDENING})
+    set(ENABLE_HARDENING_VALUE ${ENABLE_GLOBAL_HARDENING})
     if(DEFINED ARG_ENABLE_HARDENING)
         set(ENABLE_HARDENING_VALUE ${ARG_ENABLE_HARDENING})
     endif()
@@ -202,5 +202,20 @@ function(setup_common_project_options TARGET_NAME)
             <utility>
             <algorithm>
         )
+    endif()
+
+    # Link to config TARGET_NAME for project configuration
+    target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::config)
+    
+    # Check if Dependencies.cmake exists and include it
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.cmake")
+        include(Dependencies.cmake)
+    endif()
+    
+    # Check if target_load_dependencies function exists and call it
+    if(COMMAND target_load_dependencies)
+        target_load_dependencies(${TARGET_NAME})
+    else()
+        message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
     endif()
 endfunction()

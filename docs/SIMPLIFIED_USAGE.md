@@ -271,6 +271,11 @@ set(ENABLE_WARNINGS_AS_ERRORS ON)  # Treat warnings as errors
 set(ENABLE_IPO ON)                 # Link-time optimization
 set(ENABLE_UNITY_BUILD ON)         # Unity builds
 set(ENABLE_PCH ON)                 # Precompiled headers
+
+# Debug options
+set(ENABLE_EDIT_AND_CONTINUE ON)   # Edit and Continue (MSVC) - disables Control Flow Guard
+set(ENABLE_DEBUG_INFO ON)          # Debug information
+set(DEBUG_INFO_LEVEL "3")          # Maximum debug info (GCC/Clang)
 ```
 
 ## Real-World Examples

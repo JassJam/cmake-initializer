@@ -82,6 +82,19 @@ runs:
         path: ${{ runner.temp }}/${{ inputs.config-output }}/install/
         retention-days: 7
 
+    - name: Upload CMake error logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cmake-error-logs-${{ inputs.config-name }}-${{ github.run_number }}
+        path: |
+          **/CMakeFiles/CMakeError.log
+          **/CMakeFiles/CMakeConfigureLog.yaml
+          **/CMakeFiles/CMakeOutput.log
+          **/config.log
+        if-no-files-found: ignore
+        retention-days: 7
+
     - name: Cleanup
       if: always()
       shell: pwsh
@@ -94,3 +107,4 @@ runs:
         Remove-Item -Path $INSTALL_DIR -Recurse -Force -ErrorAction SilentlyContinue
         
         Write-Host "Cleanup completed."
+      

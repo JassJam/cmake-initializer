@@ -7,7 +7,7 @@ include(GetCurrentCompiler)
 #
 # Enable exception for the current target
 # usage:
-#   target_configure_exceptions(TARGET_NAME [ON/OFF]
+#   target_configure_exceptions(TARGET_NAME [ON/OFF])
 function(target_configure_exceptions TARGET_NAME ON_OFF)
     if(GLOBAL_EXCEPTIONS_SET)
         message(TRACE "Global exceptions are already enabled, ignoring target-specific settings")

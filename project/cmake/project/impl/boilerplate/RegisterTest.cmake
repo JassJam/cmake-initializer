@@ -3,6 +3,7 @@
 # ==============================================================================
 
 include_guard(GLOBAL)
+include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
 # Configuration Variables:
@@ -17,7 +18,7 @@ set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "")
 
 # Register a test framework globally (call once in main CMakeLists.txt)
-# usage:
+# Usage:
 # register_test_framework("doctest") (or "catch2", "gtest", "boost")
 function(register_test_framework FRAMEWORK_NAME)
     # Skip if testing is disabled
@@ -39,7 +40,7 @@ function(register_test_framework FRAMEWORK_NAME)
         CPMAddPackage(
             NAME doctest
             GITHUB_REPOSITORY doctest/doctest
-            GIT_TAG v2.4.11
+            GIT_TAG v${DOCTEST_VERSION}
             SYSTEM ON
         )
         set(FRAMEWORK_LIBS doctest::doctest)
@@ -49,17 +50,17 @@ function(register_test_framework FRAMEWORK_NAME)
         CPMAddPackage(
             NAME Catch2
             GITHUB_REPOSITORY catchorg/Catch2
-            GIT_TAG v3.5.2
+            GIT_TAG v${CATCH2_VERSION}
             SYSTEM ON
         )
-        set(FRAMEWORK_LIBS Catch2::Catch2WithMain )
+        set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
         set(FRAMEWORK_DEFS "")
         
     elseif(FRAMEWORK_NAME STREQUAL "gtest")
         CPMAddPackage(
             NAME googletest
             GITHUB_REPOSITORY google/googletest
-            GIT_TAG v1.14.0
+            GIT_TAG v${GTEST_VERSION}
             SYSTEM ON
         )
         set(FRAMEWORK_LIBS gtest_main)
@@ -69,7 +70,7 @@ function(register_test_framework FRAMEWORK_NAME)
         CPMAddPackage(
             NAME boost
             GITHUB_REPOSITORY boostorg/boost
-            GIT_TAG boost-1.84.0
+            GIT_TAG ${BOOST_VERSION}
             OPTIONS
                 "BOOST_ENABLE_CMAKE ON"
                 "BOOST_INCLUDE_LIBRARIES test"
@@ -92,7 +93,7 @@ function(register_test_framework FRAMEWORK_NAME)
 endfunction()
 
 # Comprehensive test creation function - uses the registered test framework
-# usage:
+# Usage:
 # register_test(MyTest
 #     SOURCE_DIR "tests"
 #     SOURCES PRIVATE "test_main.cpp" "test_utils.cpp" PUBLIC "api_test.cpp"
@@ -164,7 +165,7 @@ function(register_test TARGET_NAME)
     if(ARG_SOURCES)
         set(current_visibility "PRIVATE")  # Default visibility for sources
         foreach(item ${ARG_SOURCES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_sources(${TARGET_NAME} ${current_visibility} ${item})
@@ -195,22 +196,18 @@ function(register_test TARGET_NAME)
     if(ARG_INCLUDES)
         set(current_visibility "PRIVATE")  # Default visibility for tests
         foreach(item ${ARG_INCLUDES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
             endif()
         endforeach()
     endif()
-
-    # Add libraries with visibility (always include framework and config)
-    target_link_libraries(${TARGET_NAME} PRIVATE 
-        ${framework_libs} ${THIS_PROJECT_NAMESPACE}::config)
     
     if(ARG_LIBRARIES)
         set(current_visibility "PRIVATE")  # Default visibility for tests
         foreach(item ${ARG_LIBRARIES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_link_libraries(${TARGET_NAME} ${current_visibility} ${item})
@@ -222,7 +219,7 @@ function(register_test TARGET_NAME)
     if(ARG_COMPILE_DEFINITIONS)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_COMPILE_DEFINITIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_definitions(${TARGET_NAME} ${current_visibility} ${item})
@@ -234,7 +231,7 @@ function(register_test TARGET_NAME)
     if(ARG_COMPILE_OPTIONS)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_COMPILE_OPTIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_options(${TARGET_NAME} ${current_visibility} ${item})
@@ -246,7 +243,7 @@ function(register_test TARGET_NAME)
     if(ARG_COMPILE_FEATURES)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_COMPILE_FEATURES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_features(${TARGET_NAME} ${current_visibility} ${item})
@@ -258,7 +255,7 @@ function(register_test TARGET_NAME)
     if(ARG_LINK_OPTIONS)
         set(current_visibility "PRIVATE")  # Default visibility
         foreach(item ${ARG_LINK_OPTIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_link_options(${TARGET_NAME} ${current_visibility} ${item})
@@ -270,20 +267,17 @@ function(register_test TARGET_NAME)
     if(ARG_PROPERTIES)
         set_target_properties(${TARGET_NAME} PROPERTIES ${ARG_PROPERTIES})
     endif()
-
-    # Handle dependencies
+    
+    # Add dependencies
     if(ARG_DEPENDENCIES)
-        # Check if Dependencies.cmake exists and include it
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.cmake")
-            include(Dependencies.cmake)
-        endif()
-        
-        # Check if target_load_dependencies function exists and call it
-        if(COMMAND target_load_dependencies)
-            target_load_dependencies(${TARGET_NAME})
-        else()
-            message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
-        endif()
+        add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
+    endif()
+    
+    # Copy shared library dependencies to build directory for direct execution
+    _copy_shared_library_dependencies_to_build_dir(${TARGET_NAME})
+
+    if(framework_libs)
+        target_link_libraries(${TARGET_NAME} PRIVATE ${framework_libs})
     endif()
 
     # Add framework-specific compile definitions
@@ -356,7 +350,7 @@ function(register_test TARGET_NAME)
         # For native builds, run the executable directly
         add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
     endif()
-
+    
     # Apply common project options (warnings, sanitizers, static analysis, etc.)
     set(COMMON_OPTIONS_ARGS)
     if(DEFINED ARG_ENABLE_EXCEPTIONS)
@@ -393,7 +387,7 @@ function(register_test TARGET_NAME)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
     endif()
     
-    setup_common_project_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
+    target_setup_common_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
 
     # Install if requested
     if(ARG_INSTALL)

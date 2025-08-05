@@ -8,7 +8,7 @@ include_guard(GLOBAL)
 include(GetCurrentCompiler)
 
 # Create an Emscripten web page template
-# usage:
+# Usage:
 # create_emscripten_html_template(OUTPUT_FILE 
 #     [TITLE "Page Title"]              # HTML page title
 #     [CANVAS_ID "canvas"]              # Canvas element ID

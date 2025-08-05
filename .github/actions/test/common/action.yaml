@@ -115,6 +115,19 @@ runs:
             Write-Error "❌ CDash submission failed - this usually indicates test failures"
             exit $LASTEXITCODE
         }
+    
+    - name: Upload CMake error logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cmake-error-logs-${{ inputs.config-name }}-${{ github.run_number }}
+        path: |
+          **/CMakeFiles/CMakeError.log
+          **/CMakeFiles/CMakeConfigureLog.yaml
+          **/CMakeFiles/CMakeOutput.log
+          **/config.log
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: Cleanup test environment
       if: always()

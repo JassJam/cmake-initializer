@@ -17,3 +17,10 @@ endif()
 if(POLICY CMP0057)
     cmake_policy(SET CMP0057 NEW)
 endif()
+
+# Handle FetchContent_Populate deprecation warning
+# CPM uses FetchContent_Populate which is deprecated in favor of FetchContent_MakeAvailable
+# Set to OLD to suppress the warning until CPM is updated
+if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()

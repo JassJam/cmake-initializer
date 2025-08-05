@@ -71,6 +71,19 @@ This document lists all available CMake cache variables that can be used in pres
 |----------|------|---------|-------------|
 | `ENABLE_HARDENING` | BOOL | ENABLE_SANITIZERS OR DEV_MODE | Enable security hardening options (stack protection, etc.) |
 
+## Debug Options
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ENABLE_EDIT_AND_CONTINUE` | BOOL | DEV_MODE | Enable Edit and Continue support (MSVC `/ZI` flag, incremental linking). **Disables Control Flow Guard** |
+| `ENABLE_DEBUG_INFO` | BOOL | DEV_MODE | Enable debug information generation (`/Zi` for MSVC, `-g` for GCC/Clang) |
+| `DEBUG_INFO_LEVEL` | STRING | [0/2] (if DEV_MODE is on) | Debug info level for GCC/Clang: `0` (none), `1` (minimal), `2` (default), `3` (maximum) |
+
+> **Note**: Edit and Continue is only supported on MSVC. For GCC/Clang, this option only affects debug information generation.
+> Edit and Continue requires incremental linking, which may conflict with some optimizations and sanitizers.
+> 
+> **Security Note**: When Edit and Continue is enabled, Control Flow Guard (`/guard:cf`) is automatically disabled due to MSVC compiler incompatibility. This reduces security hardening but enables powerful debugging capabilities.
+
 ## Testing Framework
 
 | Variable | Type | Default | Description |
@@ -89,6 +102,19 @@ This document lists all available CMake cache variables that can be used in pres
     "ENABLE_ASAN": true,
     "ENABLE_UBSAN": true,
     "ENABLE_WARNINGS_AS_ERRORS": true
+  }
+}
+```
+
+### Debug Build with Edit and Continue
+```json
+{
+  "cacheVariables": {
+    "CMAKE_BUILD_TYPE": "Debug",
+    "DEV_MODE": true,
+    "ENABLE_EDIT_AND_CONTINUE": true,
+    "ENABLE_DEBUG_INFO": true,
+    "DEBUG_INFO_LEVEL": "3"
   }
 }
 ```

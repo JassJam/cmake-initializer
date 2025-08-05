@@ -28,6 +28,7 @@ runs:
       run: choco install llvm -y
 
     - name: Build Artifacts
+      id: build
       uses: ./.github/actions/build/common
       with:
         config-name: ${{ inputs.config-name }}

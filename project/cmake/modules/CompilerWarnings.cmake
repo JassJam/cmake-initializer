@@ -41,7 +41,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
 
     #
 
-    if(NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
+    if(NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_add_compiler_warnings() called without TARGET")
     endif()
 
@@ -193,13 +193,10 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
         endif()
     endif()
 
-    # set the warnings for all targets
-    foreach(target ${ARG_TARGETS})
-        target_compile_options(
-            ${target}
-            PRIVATE
-            $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
-            $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
-        )
-    endforeach()
+    target_compile_options(
+        ${TARGET_NAME}
+        PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
+        $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
+    )
 endfunction()

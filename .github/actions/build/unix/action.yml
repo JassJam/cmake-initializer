@@ -30,6 +30,7 @@ runs:
         sudo apt-get install -y g++-14
 
     - name: Build Artifacts
+      id: build
       uses: ./.github/actions/build/common
       with:
         config-name: ${{ inputs.config-name }}

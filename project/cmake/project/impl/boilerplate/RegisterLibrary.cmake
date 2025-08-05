@@ -5,8 +5,7 @@
 # library target registration with full visibility control.
 
 include_guard(GLOBAL)
-include(LoadEnvVariable)
-include(StringListInterpolation)
+include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
 # Comprehensive library registration with visibility control
@@ -61,7 +60,7 @@ function(register_library TARGET_NAME)
     else()
         set(LIB_TYPE STATIC)  # Default to static
     endif()
-
+    
     # Handle Emscripten platform limitations
     include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
@@ -82,7 +81,7 @@ function(register_library TARGET_NAME)
 
     # Create library
     add_library(${TARGET_NAME} ${LIB_TYPE})
-
+    
     # Generate export header for shared libraries (or libraries that were originally shared)
     if((ARG_SHARED OR ARG_STATIC) AND ARG_EXPORT_MACRO AND NOT ARG_INTERFACE)
         include(GenerateExportHeader)
@@ -99,6 +98,19 @@ function(register_library TARGET_NAME)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}>)
     endif()
 
+    # Copy AddressSanitizer runtime DLL to build directory for shared libraries
+    if(LIB_TYPE STREQUAL "SHARED")
+        include(GetCurrentCompiler)
+        get_current_compiler(CURRENT_COMPILER)
+        if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+            # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
+            string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
+            if(NOT ASAN_FLAGS_INDEX EQUAL -1)
+                _copy_asan_dll_to_build_dir(${TARGET_NAME})
+            endif()
+        endif()
+    endif()
+
     # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
     set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
     include(LoadEnvVariable)
@@ -109,7 +121,7 @@ function(register_library TARGET_NAME)
         if(ARG_SOURCES)
             set(current_visibility "PRIVATE")  # Default visibility for sources
             foreach(item ${ARG_SOURCES})
-                if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+                if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                     set(current_visibility ${item})
                 else()
                     target_sources(${TARGET_NAME} ${current_visibility} ${item})
@@ -153,7 +165,7 @@ function(register_library TARGET_NAME)
             set(current_visibility "INTERFACE")
         endif()
         foreach(item ${ARG_INCLUDES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
@@ -167,13 +179,10 @@ function(register_library TARGET_NAME)
         set(DEFAULT_LINK_TYPE INTERFACE)
     endif()
     
-    # Always link config library only (not full common)
-    target_link_libraries(${TARGET_NAME} ${DEFAULT_LINK_TYPE} ${THIS_PROJECT_NAMESPACE}::config)
-    
     if(ARG_LIBRARIES)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
         foreach(item ${ARG_LIBRARIES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_link_libraries(${TARGET_NAME} ${current_visibility} ${item})
@@ -185,7 +194,7 @@ function(register_library TARGET_NAME)
     if(ARG_COMPILE_DEFINITIONS)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
         foreach(item ${ARG_COMPILE_DEFINITIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_definitions(${TARGET_NAME} ${current_visibility} ${item})
@@ -197,7 +206,7 @@ function(register_library TARGET_NAME)
     if(ARG_COMPILE_OPTIONS)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
         foreach(item ${ARG_COMPILE_OPTIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_options(${TARGET_NAME} ${current_visibility} ${item})
@@ -209,7 +218,7 @@ function(register_library TARGET_NAME)
     if(ARG_COMPILE_FEATURES)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
         foreach(item ${ARG_COMPILE_FEATURES})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_compile_features(${TARGET_NAME} ${current_visibility} ${item})
@@ -221,7 +230,7 @@ function(register_library TARGET_NAME)
     if(ARG_LINK_OPTIONS)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
         foreach(item ${ARG_LINK_OPTIONS})
-            if(item STREQUAL "PRIVATE" OR item STREQUAL "PUBLIC" OR item STREQUAL "INTERFACE")
+            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else()
                 target_link_options(${TARGET_NAME} ${current_visibility} ${item})
@@ -233,22 +242,15 @@ function(register_library TARGET_NAME)
     if(ARG_PROPERTIES)
         set_target_properties(${TARGET_NAME} PROPERTIES ${ARG_PROPERTIES})
     endif()
-
-    # Handle dependencies
+    
+    # Add dependencies
     if(ARG_DEPENDENCIES)
-        # Check if Dependencies.cmake exists and include it
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.cmake")
-            include(Dependencies.cmake)
-        endif()
-        
-        # Check if target_load_dependencies function exists and call it
-        if(COMMAND target_load_dependencies)
-            target_load_dependencies(${TARGET_NAME})
-        else()
-            message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
-        endif()
+        add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
     endif()
-
+    
+    # Copy shared library dependencies to build directory for direct execution
+    _copy_shared_library_dependencies_to_build_dir(${TARGET_NAME})
+    
     # Apply common project options (warnings, sanitizers, static analysis, etc.)
     set(COMMON_OPTIONS_ARGS)
     if(DEFINED ARG_ENABLE_EXCEPTIONS)
@@ -285,7 +287,7 @@ function(register_library TARGET_NAME)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
     endif()
     
-    setup_common_project_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
+    target_setup_common_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
 
     # Install if requested
     if(ARG_INSTALL)

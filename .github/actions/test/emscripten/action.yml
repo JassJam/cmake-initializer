@@ -51,6 +51,7 @@ runs:
         sudo apt-get install -y build-essential ninja-build git python3
 
     - name: Run Emscripten Tests (Auto-install EMSDK)
+      id: test
       uses: ./.github/actions/test/common
       with:
         config-name: ${{ inputs.config-name }}

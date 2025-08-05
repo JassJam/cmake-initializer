@@ -8,17 +8,14 @@ check_sanitizers_support(SUPPORTS_UBSAN SUPPORTS_ASAN)
 
 #
 
-# === TEST CONFIGURATION OPTIONS ===
-set(BUILD_TESTING ON CACHE BOOL "Build and enable testing")
-
 # === CACHE CONFIGURATION OPTIONS ===
 set(ENABLE_CCACHE ON CACHE BOOL "Enable ccache for faster rebuilds")
 
 mark_as_advanced(ENABLE_CCACHE)
 
 # === PACKAGE MANAGEMENT OPTIONS ===
-set(CPM_DOWNLOAD_VERSION "0.40.8" CACHE STRING "CPM version to download")
-set(CPM_HASH_SUM "78ba32abdf798bc616bab7c73aac32a17bbd7b06ad9e26a6add69de8f3ae4791" CACHE STRING "CPM download hash")
+set(CPM_DOWNLOAD_VERSION "0.42.0" CACHE STRING "CPM version to download")
+set(CPM_HASH_SUM "2020b4fc42dba44817983e06342e682ecfc3d2f484a581f11cc5731fbe4dce8a" CACHE STRING "CPM download hash")
 set(CPM_REPOSITORY_URL "https://github.com/cpm-cmake/CPM.cmake" CACHE STRING "CPM repository URL")
 
 # === MAIN CONFIGURATION OPTIONS ===
@@ -50,6 +47,15 @@ option(ENABLE_UBSAN "Enable undefined behavior sanitizer" ${DEFAULT_UBSAN})
 option(ENABLE_TSAN "Enable thread sanitizer (detects data races)" OFF)
 option(ENABLE_MSAN "Enable memory sanitizer (detects uninitialized reads)" OFF)
 
+# === DEBUG OPTIONS ===
+option(ENABLE_EDIT_AND_CONTINUE "Enable Edit and Continue support (MSVC /ZI)" ${DEV_MODE})
+option(ENABLE_DEBUG_INFO "Enable debug information generation" ${DEV_MODE})
+if(NOT ENABLE_DEBUG_INFO)
+    set(DEBUG_INFO_LEVEL "0" CACHE STRING "Debug information level (0-3 for GCC/Clang, ignored for MSVC)")
+else()
+    set(DEBUG_INFO_LEVEL "2" CACHE STRING "Debug information level (0-3 for GCC/Clang, ignored for MSVC)")
+endif()
+
 # === STATIC ANALYSIS OPTIONS ===
 set(ENABLE_CLANG_TIDY "${ENABLE_GLOBAL_STATIC_ANALYSIS}" CACHE STRING "Enable clang-tidy static analysis" )
 set(ENABLE_CPPCHECK "${ENABLE_GLOBAL_STATIC_ANALYSIS}" CACHE STRING "Enable cppcheck static analysis" ${ENABLE_GLOBAL_STATIC_ANALYSIS})
@@ -60,6 +66,15 @@ option(ENABLE_STATIC_RUNTIME "Statically link runtime libraries for better porta
 # === EMSCRIPTEN OPTIONS ===
 option(ENABLE_EMSDK_AUTO_INSTALL "Automatically install EMSDK locally if not found" ON)
 
+# === TESTING OPTIONS ==
+set(BUILD_TESTING ON CACHE BOOL "Build and enable testing")
+set(DEFAULT_TEST_FRAMEWORK "doctest" CACHE STRING "Test framework to use")
+
+set(DOCTEST_VERSION "2.4.11" CACHE STRING "Doctest framework version")
+set(CATCH2_VERSION "3.5.2" CACHE STRING "Catch2 framework version")
+set(GTEST_VERSION "1.14.0" CACHE STRING "Google Test framework version")
+set(BOOST_VERSION "boost-1.84.0" CACHE STRING "Boost Test framework version")
+
 #
 
 # Mark advanced options
@@ -69,13 +84,21 @@ mark_as_advanced(
     ENABLE_UNITY_BUILD ENABLE_PCH
     ENABLE_EMSDK_AUTO_INSTALL
     ENABLE_EXCEPTIONS
+    ENABLE_EDIT_AND_CONTINUE
 )
 
 # Set up global hardening based on sanitizer settings
 cmake_dependent_option(
-    ENABLE_HARDENING
+    ENABLE_GLOBAL_HARDENING
     "Enable security hardening options (stack protection, etc.)"
     ON "ENABLE_GLOBAL_SANITIZERS OR DEV_MODE" OFF
+)
+
+# ENABLE_EDIT_AND_CONTINUE is not compatible with asan, so disable it if ASan is enabled
+cmake_dependent_option(
+    ENABLE_EDIT_AND_CONTINUE
+    "Enable Edit&Continue for debugging (requires MSVC)"
+    ON "NOT ENABLE_ASAN AND NOT ENABLE_LSAN" OFF
 )
 
 # Apply global hardening immediately if enabled
@@ -123,6 +146,12 @@ endif()
 if(ENABLE_STATIC_RUNTIME)
     include(StaticLinking)
     enable_static_linking()
+endif()
+
+# Apply global debug options if enabled
+if(ENABLE_EDIT_AND_CONTINUE OR ENABLE_DEBUG_INFO)
+    include(TargetDebugOptions)
+    enable_global_debug_options(ENABLE_EDIT_AND_CONTINUE ENABLE_DEBUG_INFO DEBUG_INFO_LEVEL)
 endif()
 
 # Print configuration summary

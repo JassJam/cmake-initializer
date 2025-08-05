@@ -52,6 +52,7 @@ runs:
         sudo apt-get install -y clang
 
     - name: Run Tests
+      id: test
       uses: ./.github/actions/test/common
       with:
         config-name: ${{ inputs.config-name }}
