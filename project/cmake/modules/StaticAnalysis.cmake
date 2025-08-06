@@ -211,6 +211,17 @@ function(_add_clang_tidy_custom_target TARGET_NAME ENABLE_EXCEPTIONS CLANG_TIDY_
         
         list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-unused-command-line-argument")
         list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-unknown-argument")
+        
+        # When using GCC compiler, ignore GCC-specific warning flags that clang-tidy doesn't understand
+        if(CURRENT_COMPILER MATCHES "GCC")
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-error=unknown-warning-option")
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-duplicated-branches")
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-duplicated-cond")
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-logical-op")
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-useless-cast")
+            # Tell clang-tidy to use GCC driver mode for compatibility
+            list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg-before=--driver-mode=g++")
+        endif()
     endif()
     
     set_target_properties(${TARGET_NAME} PROPERTIES

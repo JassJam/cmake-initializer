@@ -122,7 +122,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
             list(APPEND PROJECT_WARNINGS_CXX -Werror)
         endif()
 
-    elseif(CURRENT_COMPILER STREQUAL "GCC")
+    elseif(CURRENT_COMPILER MATCHES "GCC")
 
         if(ARG_GCC_WARNINGS)
             set(PROJECT_WARNINGS_CXX "${ARG_GCC_WARNINGS}")
@@ -149,9 +149,6 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                 -Wduplicated-branches # warn if if / else branches have duplicated code
                 -Wlogical-op # warn about logical operations being used where bitwise were probably wanted
                 -Wuseless-cast # warn if you perform a cast to the same type
-                -Wno-error=unused-command-line-argument # ignore unused command line arguments warning
-                -Wno-error=unknown-argument # ignore unknown command line arguments warning
-                -Wno-c++98-compat -Wno-c++98-compat-pedantic # ignore C++98 compatibility warnings
             )
         endif()
 

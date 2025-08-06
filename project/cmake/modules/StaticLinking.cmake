@@ -70,7 +70,7 @@ function(enable_static_linking)
 
     message(STATUS "Enabling static linking of runtime libraries for ${CURRENT_COMPILER}")
 
-    if(CURRENT_COMPILER STREQUAL "CLANG" OR CURRENT_COMPILER STREQUAL "GCC")
+    if(CURRENT_COMPILER STREQUAL "CLANG" OR CURRENT_COMPILER MATCHES "GCC")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
         message(STATUS "Static linking flags applied for GCC/Clang")
