@@ -6,7 +6,7 @@ include_guard(GLOBAL)
 # First, try to set up EMSDK if it's not available
 if(NOT DEFINED ENV{EMSDK} OR NOT EXISTS "$ENV{EMSDK}")
     # Include the EMSDK manager to install it automatically
-    include(emscripten/EmsdkManager.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/emscripten/EmsdkManager.cmake)
     ensure_emsdk_available()
 endif()
 

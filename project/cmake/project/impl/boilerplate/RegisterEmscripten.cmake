@@ -632,7 +632,7 @@ function(configure_emscripten_html_generation)
     
     # Create HTML template if it doesn't exist
     if(NOT EXISTS "${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
-        include(toolchains/emscripten/EmscriptenTemplate.cmake)
+        include(toolchains/emscripten/EmscriptenTemplate)
         create_emscripten_html_template("${EMSCRIPTEN_HTML_SHELL_TEMPLATE}" 
             TITLE "cmake-initializer WebAssembly App"
             CANVAS_ID "canvas"
