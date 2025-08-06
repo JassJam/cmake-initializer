@@ -151,7 +151,7 @@ endif()
 # Apply global debug options if enabled
 if(ENABLE_EDIT_AND_CONTINUE OR ENABLE_DEBUG_INFO)
     include(TargetDebugOptions)
-    enable_global_debug_options(ENABLE_EDIT_AND_CONTINUE ENABLE_DEBUG_INFO DEBUG_INFO_LEVEL)
+    enable_global_debug_options()
 endif()
 
 # Print configuration summary

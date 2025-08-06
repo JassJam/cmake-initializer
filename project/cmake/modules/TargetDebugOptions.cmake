@@ -61,30 +61,24 @@ endfunction()
 #   [DEBUG_INFO_LEVEL level]
 # )
 function(enable_global_debug_options)
-    cmake_parse_arguments(ARG
-        "ENABLE_EDIT_AND_CONTINUE;ENABLE_DEBUG_INFO"
-        "DEBUG_INFO_LEVEL"
-        ""
-        ${ARGN}
-    )
-    
     # Check if already applied globally
     get_property(already_applied GLOBAL PROPERTY PROJECT_GLOBAL_DEBUG_OPTIONS_ENABLED)
     if(already_applied)
         message(STATUS "Global debug options already applied, skipping")
         return()
     endif()
+
     # Set default debug info level if not specified
     if(NOT DEFINED ARG_DEBUG_INFO_LEVEL)
         set(ARG_DEBUG_INFO_LEVEL 2)
     endif()
     message(STATUS "Applying global debug options for all targets (${CURRENT_COMPILER})")
-    
+
     get_current_compiler(CURRENT_COMPILER)
     if("${CURRENT_COMPILER}" MATCHES "MSVC|CLANG-MSVC")
-        _configure_global_msvc_debug_options(${ARG_ENABLE_EDIT_AND_CONTINUE} ${ARG_ENABLE_DEBUG_INFO})
+        _configure_global_msvc_debug_options()
     elseif("${CURRENT_COMPILER}" MATCHES "CLANG.*|GCC")
-        _configure_global_gcc_clang_debug_options(${ARG_ENABLE_DEBUG_INFO} ${ARG_DEBUG_INFO_LEVEL})
+        _configure_global_gcc_clang_debug_options()
     else()
         message(STATUS "Global debug options not configured for compiler: ${CURRENT_COMPILER}")
     endif()
@@ -163,8 +157,8 @@ endfunction()
 #
 # Private function to configure global MSVC debug options
 #
-function(_configure_global_msvc_debug_options ENABLE_EDIT_AND_CONTINUE ENABLE_DEBUG_INFO)
-    if(ENABLE_EDIT_AND_CONTINUE)
+function(_configure_global_msvc_debug_options)
+    if(${ENABLE_EDIT_AND_CONTINUE})
         # Apply Edit and Continue globally
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI" CACHE STRING "Global CXX Debug flags with Edit and Continue" FORCE)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /ZI" CACHE STRING "Global C Debug flags with Edit and Continue" FORCE)
@@ -176,7 +170,7 @@ function(_configure_global_msvc_debug_options ENABLE_EDIT_AND_CONTINUE ENABLE_DE
         message(STATUS "  - Global Edit and Continue: enabled (/ZI)")
         message(STATUS "  - Global incremental linking: enabled (Debug builds)")
         
-    elseif(ENABLE_DEBUG_INFO)
+    elseif(${ENABLE_DEBUG_INFO})
         # Apply basic debug info globally
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi" CACHE STRING "Global CXX Debug flags with debug info" FORCE)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /Zi" CACHE STRING "Global C Debug flags with debug info" FORCE)
@@ -188,20 +182,20 @@ endfunction()
 #
 # Private function to configure global GCC/Clang debug options
 #
-function(_configure_global_gcc_clang_debug_options ENABLE_DEBUG_INFO DEBUG_INFO_LEVEL)
-    if(ENABLE_DEBUG_INFO)
+function(_configure_global_gcc_clang_debug_options)
+    if(${ENABLE_DEBUG_INFO})
         set(DEBUG_FLAG "")
         
-        if(DEBUG_INFO_LEVEL EQUAL 0)
+        if(${DEBUG_INFO_LEVEL} EQUAL 0)
             set(DEBUG_FLAG "-g0")
             message(STATUS "  - Global debug information: disabled (-g0)")
-        elseif(DEBUG_INFO_LEVEL EQUAL 1)
+        elseif(${DEBUG_INFO_LEVEL} EQUAL 1)
             set(DEBUG_FLAG "-g1")
             message(STATUS "  - Global debug information: minimal (-g1)")
-        elseif(DEBUG_INFO_LEVEL EQUAL 2)
+        elseif(${DEBUG_INFO_LEVEL} EQUAL 2)
             set(DEBUG_FLAG "-g")
             message(STATUS "  - Global debug information: default (-g)")
-        elseif(DEBUG_INFO_LEVEL EQUAL 3)
+        elseif(${DEBUG_INFO_LEVEL} EQUAL 3)
             set(DEBUG_FLAG "-g3")
             message(STATUS "  - Global debug information: maximum (-g3)")
         else()
