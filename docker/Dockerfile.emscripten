@@ -1,0 +1,94 @@
+# Emscripten WebAssembly Docker build for cmake-initializer
+ARG BASE_IMAGE=ubuntu:22.04
+ARG CMAKE_VERSION=3.28.1
+ARG EMSCRIPTEN_VERSION=3.1.51
+ARG BUILD_TYPE=Release
+
+FROM ${BASE_IMAGE} AS base
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=UTC \
+    CMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    TARGET_PLATFORM=emscripten \
+    COMPILER=emcc
+
+# Install base system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    wget \
+    curl \
+    unzip \
+    zip \
+    tar \
+    xz-utils \
+    bzip2 \
+    gzip \
+    pkg-config \
+    ca-certificates \
+    software-properties-common \
+    python3 \
+    python3-pip \
+    nodejs \
+    npm \
+    file \
+    lsb-release \
+    sudo \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install modern CMake from Kitware repository
+ARG CMAKE_VERSION
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null \
+    && apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main' \
+    && apt-get update \
+    && apt-get install -y cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PowerShell for cross-platform scripts
+RUN wget -q "https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb" \
+    && dpkg -i packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get install -y powershell \
+    && rm packages-microsoft-prod.deb \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install Emscripten SDK
+ARG EMSCRIPTEN_VERSION
+WORKDIR /opt
+RUN git clone https://github.com/emscripten-core/emsdk.git \
+    && cd emsdk \
+    && ./emsdk install ${EMSCRIPTEN_VERSION} \
+    && ./emsdk activate ${EMSCRIPTEN_VERSION} \
+    && echo 'source /opt/emsdk/emsdk_env.sh' >> /etc/bash.bashrc
+
+# Set Emscripten environment
+ENV EMSDK=/opt/emsdk \
+    EM_CONFIG=/opt/emsdk/.emscripten \
+    EM_CACHE=/opt/emsdk/.emscripten_cache \
+    EMSDK_NODE=/opt/emsdk/node/16.20.0_64bit/bin/node \
+    PATH="/opt/emsdk:/opt/emsdk/upstream/emscripten:${PATH}"
+
+WORKDIR /workspace
+
+# Copy project files selectively
+COPY project/ project/
+COPY scripts/ scripts/
+COPY docs/ docs/
+COPY LICENSE README.md ./
+
+# Make scripts executable
+RUN chmod +x scripts/*.ps1
+
+# Set up entry point
+COPY docker/docker-entrypoint.ps1 /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.ps1
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.ps1"]
+CMD ["--help"]

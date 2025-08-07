@@ -6,34 +6,26 @@
 
 .DESCRIPTION
     Unified PowerShell script that builds the project on Windows, Linux, and macOS.
-    Supports MSVC, Clang, and GCC compilers with automatic detection.
+    Requires expl    if ($VerboseOutput) {
+        Write-Host "Configure command: $($ConfigureCmd -join ' ')" -ForegroundColor DarkGray
+    }t CMake preset specification for consistent builds.
     
-    This script automatically detects the project structure and uses appropriate CMake presets
-    based on your platform and compiler choice. It supports static runtime linking for 
-    portable builds and provides comprehensive build options.
+    This script uses cmake-initializer's preset-based build system and provides
+    comprehensive build options including static runtime linking for portable builds.
 
 .PARAMETER Preset
-    CMake preset to use for building. If not specified, automatically determined based on
-    platform and configuration:
+    CMake preset to use for building. This parameter is mandatory and must specify
+    a valid preset name such as:
     - Windows: windows-msvc-debug/release, windows-clang-debug/release
     - Unix-like: unixlike-gcc-debug/release, unixlike-clang-debug/release
+    - Emscripten: emscripten-debug/release
 
 .PARAMETER Config
     Build configuration to use. Must be either 'Debug' or 'Release'.
-    Default: Release
+    Default: Release (automatically derived from preset name if preset contains debug/release)
     
     Debug builds include debug symbols and disable optimizations.
     Release builds enable optimizations and may strip debug symbols.
-
-.PARAMETER Compiler
-    Specific compiler to use. Must be one of: 'msvc', 'clang', 'gcc', 'emscripten'.
-    If not specified, uses platform default (MSVC on Windows, GCC on Unix-like).
-    
-    This parameter changes the CMake preset to use the specified compiler.
-    - msvc: Only available on Windows, uses Visual Studio compiler
-    - clang: Uses Clang/Clang-cl compiler
-    - gcc: Uses GNU Compiler Collection
-    - emscripten: WebAssembly compiler (auto-installs EMSDK if needed)
 
 .PARAMETER Static
     Enable static runtime linking for portable builds. When enabled, links against
@@ -86,7 +78,7 @@
     Useful for discovering what targets are available in the project.
     Default: false
 
-.PARAMETER Verbose
+.PARAMETER VerboseOutput
     Enable verbose build output. Shows detailed compilation commands and progress
     information. Useful for debugging build issues.
     Default: false
@@ -97,25 +89,25 @@
     Example: @("-DBUILD_TESTING=ON", "-DCMAKE_VERBOSE_MAKEFILE=ON")
 
 .EXAMPLE
-    .\scripts\build.ps1
+    .\scripts\build.ps1 -Preset unixlike-gcc-release
     
-    Build with default settings (Release configuration, auto-detected compiler,
-    dynamic linking). This is the most common usage for development builds.
+    Build with default settings using GCC Release preset.
+    This is the most common usage for development builds.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Config Debug -Static -Verbose
+    .\scripts\build.ps1 -Preset windows-msvc-debug -Static -VerboseOutput
     
     Build Debug configuration with static runtime linking and verbose output.
     Useful for creating portable debug builds with detailed build information.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Compiler clang -Verbose
+    .\scripts\build.ps1 -Preset unixlike-clang-release -VerboseOutput
     
     Build with Clang compiler and verbose output.
     Good for testing with different compilers or debugging build issues.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Config Release -Static -Jobs 16
+    .\scripts\build.ps1 -Preset unixlike-gcc-release -Static -Jobs 16
     
     Build optimized release version with static linking using 16 parallel jobs.
     Ideal for creating fast, portable release builds on high-core-count systems.
@@ -129,18 +121,17 @@
     https://github.com/01Pollux/cmake-initializer
 #>
 param(
-    [string]$Preset = "",
+    [Parameter(Mandatory=$true)]
+    [string]$Preset,
     [ValidateSet("Debug", "Release")]
     [string]$Config = "Release",
-    [ValidateSet("msvc", "clang", "gcc", "emscripten", "")]
-    [string]$Compiler = "",
     [string[]]$Targets = @(),
     [string[]]$ExcludeTargets = @(),
     [string]$BuildDir = "out",
     [switch]$Static,
     [int]$Jobs = 0,
     [switch]$ListTargets,
-    [switch]$Verbose,
+    [switch]$VerboseOutput,
     [string[]]$ExtraArgs = @()
 )
 
@@ -177,27 +168,10 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
 Write-Host "🔨 cmake-initializer Build Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 
-# Determine preset if not specified
-if (-not $Preset) {
-    if ($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) {
-        $Preset = "windows-msvc-debug"
-        if ($Config -eq "Release") { $Preset = "windows-msvc-release" }
-    } elseif ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT") {
-        $Preset = "windows-msvc-debug"
-        if ($Config -eq "Release") { $Preset = "windows-msvc-release" }
-    } else {
-        $Preset = "unixlike-gcc-debug"
-        if ($Config -eq "Release") { $Preset = "unixlike-gcc-release" }
-    }
-}
-
 # Derive build configuration from preset name
 if ($Preset -match "debug") {
     $Config = "Debug"
 } elseif ($Preset -match "release") {
-    $Config = "Release"
-} else {
-    # Default fallback
     $Config = "Release"
 }
 
@@ -219,52 +193,8 @@ if ($Static) {
     Write-Host "Static linking: Enabled" -ForegroundColor Yellow
 }
 
-# Add compiler-specific settings
-if ($Compiler) {
-    switch ($Compiler.ToLower()) {
-        "msvc" {
-            if (-not ($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) -and -not ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT")) {
-                throw "MSVC compiler is only available on Windows"
-            }
-            if ($Config -eq "Debug") {
-                $Preset = "windows-msvc-debug"
-            } else {
-                $Preset = "windows-msvc-release"
-            }
-        }
-        "clang" {
-            if (($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) -or ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT")) {
-                if ($Config -eq "Debug") {
-                    $Preset = "windows-clang-debug"
-                } else {
-                    $Preset = "windows-clang-release"
-                }
-            } else {
-                if ($Config -eq "Debug") {
-                    $Preset = "unixlike-clang-debug"
-                } else {
-                    $Preset = "unixlike-clang-release"
-                }
-            }
-        }
-        "gcc" {
-            if ($Config -eq "Debug") {
-                $Preset = "unixlike-gcc-debug"
-            } else {
-                $Preset = "unixlike-gcc-release"
-            }
-        }
-        "emscripten" {
-            if ($Config -eq "Debug") {
-                $Preset = "emscripten-debug"
-            } else {
-                $Preset = "emscripten-release"
-            }
-            Write-Host "Emscripten compiler selected - EMSDK will be installed automatically if needed" -ForegroundColor Yellow
-        }
-    }
-    Write-Host "Compiler: $Compiler" -ForegroundColor Green
-}
+Write-Host "Configuration: $Config" -ForegroundColor Green
+Write-Host "Preset: $Preset" -ForegroundColor Green
 
 # Change to project directory
 Push-Location $ProjectDir
@@ -290,7 +220,7 @@ try {
     $ConfigCmd = @("cmake", "-S", ".", "-B", $BuildOutputDir, "--preset", $Preset)
     $ConfigCmd += $ConfigArgs
     
-    if ($Verbose) {
+    if ($VerboseOutput) {
         Write-Host "Command: $($ConfigCmd -join ' ')" -ForegroundColor DarkGray
     }
     
@@ -304,7 +234,7 @@ try {
         
         # Add --fresh and try again
         $FreshConfigCmd = $ConfigCmd + @("--fresh")
-        if ($Verbose) {
+        if ($VerboseOutput) {
             Write-Host "Retry command: $($FreshConfigCmd -join ' ')" -ForegroundColor DarkGray
         }
         
@@ -412,7 +342,7 @@ try {
             foreach ($Target in $TargetsToBuild) {
                 Write-Host "  Building $Target..." -ForegroundColor DarkCyan
                 $TargetBuildCmd = @("cmake", "--build", $BuildOutputDir, "--config", $Config, "--parallel", $Jobs, "--target", $Target)
-                if ($Verbose) {
+                if ($VerboseOutput) {
                     $TargetBuildCmd += "--verbose"
                 }
                 
@@ -439,10 +369,9 @@ try {
     } elseif ($ExcludeTargets.Count -gt 0) {
         Write-Host "Excluded targets: $($ExcludeTargets -join ', ')" -ForegroundColor Yellow
         Write-Host "Building all targets except excluded ones..." -ForegroundColor Blue
-        # Note: CMake doesn't have native exclude functionality, so we build all targets and let it handle what exists
     }
     
-    if ($Verbose) {
+    if ($VerboseOutput) {
         $BuildCmd += "--verbose"
         Write-Host "Command: $($BuildCmd -join ' ')" -ForegroundColor DarkGray
     }

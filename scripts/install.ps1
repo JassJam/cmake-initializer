@@ -10,7 +10,7 @@
         Write-Host "🔧 Building target '$Target' before installation..." -ForegroundColor Blue
         $BuildCmd = @("cmake", "--build", $ActualBuildPath, "--config", $Config, "--target", $Target)
         
-        if ($Verbose) {
+        if ($VerboseOutput) {
             Write-Host "Build command: $($BuildCmd -join ' ')" -ForegroundColor DarkGray
         }
         
@@ -169,16 +169,15 @@
 param(
     [ValidateSet("Debug", "Release")]
     [string]$Config = "Release",
-    [ValidateSet("msvc", "clang", "gcc", "emscripten")]
-    [string]$Compiler = "",
-    [string]$Preset = "",
+    [Parameter(Mandatory=$true)]
+    [string]$Preset,
     [string[]]$Targets = @(),
     [string[]]$ExcludeTargets = @(),
     [string]$Prefix = "",
     [string]$Component = "",
     [string]$BuildDir = "out",
     [switch]$ListTargets,
-    [switch]$Verbose,
+    [switch]$VerboseOutput,
     [switch]$DryRun,
     [switch]$Force,
     [string[]]$ExtraArgs = @()
@@ -211,33 +210,15 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
 Write-Host "📦 cmake-initializer Install Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 
-# Determine preset based on platform and configuration
-if (-not $Preset) {
-    if ($Compiler -eq "emscripten") {
-        $Preset = "emscripten-$($Config.ToLower())"
-        Write-Host "Emscripten compiler selected" -ForegroundColor Yellow
-    } elseif ($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) {
-        $Preset = "windows-msvc-$($Config.ToLower())"
-    } elseif ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT") {
-        $Preset = "windows-msvc-$($Config.ToLower())"
-    } else {
-        $Preset = "unixlike-gcc-$($Config.ToLower())"
-    }
-}
-
 # Derive build configuration from preset name if preset was provided
-if ($PSBoundParameters.ContainsKey('Preset')) {
-    if ($Preset -match "debug") {
-        $Config = "Debug"
-    } elseif ($Preset -match "release") {
-        $Config = "Release"
-    }
+if ($Preset -match "debug") {
+    $Config = "Debug"
+} elseif ($Preset -match "release") {
+    $Config = "Release"
 }
 
 Write-Host "Configuration: $Config" -ForegroundColor Green
 Write-Host "Preset: $Preset" -ForegroundColor Green
-
-Write-Host "Using preset: $Preset" -ForegroundColor Green
 
 # Change to project directory
 Push-Location $ProjectDir
@@ -257,7 +238,7 @@ try {
             throw "No preset specified and build directory not found. Please specify a preset or run build script first."
         }
         
-        if ($Verbose) {
+        if ($VerboseOutput) {
             Write-Host "Configure command: $($ConfigureCmd -join ' ')" -ForegroundColor DarkGray
         }
         
@@ -353,7 +334,7 @@ try {
             Write-Host "  Building $Target..." -ForegroundColor DarkCyan
             $BuildCmd = @("cmake", "--build", $ActualBuildPath, "--config", $Config, "--target", $Target)
             
-            if ($Verbose) {
+            if ($VerboseOutput) {
                 Write-Host "Build command: $($BuildCmd -join ' ')" -ForegroundColor DarkGray
             }
             
@@ -393,12 +374,12 @@ try {
         Write-Host "Component: $Component" -ForegroundColor Green
     }
 
-    if ($Verbose) {
+    if ($VerboseOutput) {
         $InstallArgs += "--verbose"
     }
 
     # Show what will be installed
-    if ($DryRun -or $Verbose) {
+    if ($DryRun -or $VerboseOutput) {
         Write-Host "Installation command:" -ForegroundColor Yellow
         Write-Host "  cmake $($InstallArgs -join ' ')" -ForegroundColor DarkGray
         Write-Host ""
@@ -445,7 +426,7 @@ try {
     Write-Host "📦 Installing project..." -ForegroundColor Blue
     $InstallCmd = @("cmake") + $InstallArgs
     
-    if ($Verbose) {
+    if ($VerboseOutput) {
         Write-Host "Command: $($InstallCmd -join ' ')" -ForegroundColor DarkGray
     }
     
@@ -469,7 +450,7 @@ try {
             $BaseInstallCmd += "--prefix"
             $BaseInstallCmd += $Prefix
         }
-        if ($Verbose) {
+        if ($VerboseOutput) {
             $BaseInstallCmd += "--verbose"
         }
         
@@ -489,7 +470,7 @@ try {
                     $ComponentInstallCmd += "--prefix"
                     $ComponentInstallCmd += $Prefix
                 }
-                if ($Verbose) {
+                if ($VerboseOutput) {
                     $ComponentInstallCmd += "--verbose"
                 }
                 
@@ -540,7 +521,7 @@ try {
                     if ($Prefix) {
                         $DirInstallCmd += "--prefix", $Prefix
                     }
-                    if ($Verbose) {
+                    if ($VerboseOutput) {
                         $DirInstallCmd += "--verbose"
                     }
                     
@@ -562,7 +543,7 @@ try {
                     if ($Prefix) {
                         $TargetInstallCmd += "--prefix", $Prefix
                     }
-                    if ($Verbose) {
+                    if ($VerboseOutput) {
                         $TargetInstallCmd += "--verbose"
                     }
                     
@@ -577,7 +558,7 @@ try {
                         if ($Prefix) {
                             $TargetInstallCmd += "--prefix", $Prefix
                         }
-                        if ($Verbose) {
+                        if ($VerboseOutput) {
                             $TargetInstallCmd += "--verbose"
                         }
                         
@@ -608,7 +589,7 @@ try {
             # Standard full project installation
             $InstallCmd = @("cmake") + $InstallArgs
             
-            if ($Verbose) {
+            if ($VerboseOutput) {
                 Write-Host "Command: $($InstallCmd -join ' ')" -ForegroundColor DarkGray
             }
             
@@ -653,7 +634,7 @@ try {
         Write-Host "  Files: $($InstalledFiles.Count)" -ForegroundColor Cyan
         Write-Host "  Size: ${InstalledSizeMB} MB" -ForegroundColor Cyan
         
-        if ($Verbose) {
+        if ($VerboseOutput) {
             Write-Host "  Installed files:" -ForegroundColor Cyan
             foreach ($File in $InstalledFiles | Select-Object -First 10) {
                 $RelativePath = $File.FullName.Replace($Prefix, "")

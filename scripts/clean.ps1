@@ -89,7 +89,7 @@ param(
     [string]$BuildDir = "out",
     [switch]$Cache,
     [switch]$Force,
-    [switch]$Verbose
+    [switch]$VerboseOutput
 )
 
 # Set error action preference
@@ -178,7 +178,7 @@ try {
     }
     
     # Show what will be cleaned
-    if ($Verbose -or -not $Force) {
+    if ($VerboseOutput -or -not $Force) {
         Write-Host "The following items will be removed:" -ForegroundColor Yellow
         foreach ($Path in $PathsToClean) {
             $RelativePath = Resolve-Path -Relative $Path
@@ -215,7 +215,7 @@ try {
                 }
                 $TotalSize += $Size
                 
-                if ($Verbose) {
+                if ($VerboseOutput) {
                     $RelativePath = Resolve-Path -Relative $Path
                     $SizeMB = [math]::Round($Size / 1MB, 2)
                     Write-Host "  Removing $RelativePath (${SizeMB} MB)..." -ForegroundColor DarkGray

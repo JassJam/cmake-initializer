@@ -1,0 +1,158 @@
+services:
+  # Linux GCC Platform Services
+  project-linux-gcc:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.linux-gcc
+    image: project:linux-gcc
+    container_name: project-linux-gcc
+    volumes:
+      - .:/workspace
+      - project-cache-linux-gcc:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - COMPILER=gcc
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - linux-gcc
+      - linux
+
+  # Linux Clang Platform Services
+  project-linux-clang:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.linux-clang
+    image: project:linux-clang
+    container_name: project-linux-clang
+    volumes:
+      - .:/workspace
+      - project-cache-linux-clang:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - COMPILER=clang
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - linux-clang
+      - linux
+
+  # Windows MSVC Platform Services  
+  project-windows-msvc:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.windows-msvc
+    image: project:windows-msvc
+    container_name: project-windows-msvc
+    volumes:
+      - .:/workspace
+      - project-cache-windows-msvc:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - COMPILER=msvc
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - windows-msvc
+      - windows
+
+  # Windows Clang Platform Services  
+  project-windows-clang:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.windows-clang
+    image: project:windows-clang
+    container_name: project-windows-clang
+    volumes:
+      - .:/workspace
+      - project-cache-windows-clang:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - COMPILER=clang
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - windows-clang
+      - windows
+
+  # Emscripten Platform Services
+  project-emscripten:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.emscripten
+    image: project:emscripten
+    container_name: project-emscripten
+    volumes:
+      - .:/workspace
+      - project-cache-emscripten:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - emscripten
+
+  # macOS GCC Platform Services
+  project-macos-gcc:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.macos-gcc
+    image: project:macos-gcc
+    container_name: project-macos-gcc
+    volumes:
+      - .:/workspace
+      - project-cache-macos-gcc:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - COMPILER=gcc
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - macos-gcc
+      - macos
+
+  # macOS Clang Platform Services
+  project-macos-clang:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.macos-clang
+    image: project:macos-clang
+    container_name: project-macos-clang
+    volumes:
+      - .:/workspace
+      - project-cache-macos-clang:/workspace/out
+    working_dir: /workspace
+    environment:
+      - CMAKE_BUILD_TYPE=Release
+      - CMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - COMPILER=clang
+    entrypoint: ["pwsh", "/workspace/docker/docker-entrypoint.ps1"]
+    profiles:
+      - macos-clang
+      - macos
+
+volumes:
+  project-cache-linux-gcc:
+    driver: local
+  project-cache-linux-clang:
+    driver: local
+  project-cache-windows-msvc:
+    driver: local
+  project-cache-windows-clang:
+    driver: local
+  project-cache-emscripten:
+    driver: local
+  project-cache-macos-gcc:
+    driver: local
+  project-cache-macos-clang:
+    driver: local
+
+networks:
+  default:
+    name: project-network

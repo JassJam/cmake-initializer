@@ -40,7 +40,7 @@ Cross-platform build script that works on Windows, Linux, and macOS.
 .\scripts\build.ps1 -Preset windows-clang-debug
 
 # Build with verbose output and custom build directory
-.\scripts\build.ps1 -Preset windows-msvc-debug -Verbose -BuildDir "custom/build"
+.\scripts\build.ps1 -Preset windows-msvc-debug -VerboseOutput -BuildDir "custom/build"
 ```
 
 **Parameters:**
@@ -49,7 +49,7 @@ Cross-platform build script that works on Windows, Linux, and macOS.
 - `Clean` - Clean build directory before building
 - `Install` - Run installation after successful build
 - `Jobs` - Number of parallel build jobs (default: CPU cores)
-- `Verbose` - Enable verbose build output
+- `VerboseOutput` - Enable verbose build output
 
 ### `test.ps1` - Test Script
 Cross-platform test execution script with comprehensive testing features.
@@ -60,7 +60,7 @@ Cross-platform test execution script with comprehensive testing features.
 .\scripts\test.ps1 -Preset windows-msvc-debug
 
 # Run tests with verbose output
-.\scripts\test.ps1 -Preset windows-msvc-debug -Verbose
+.\scripts\test.ps1 -Preset windows-msvc-debug -VerboseOutput
 
 # Run specific tests with pattern matching
 .\scripts\test.ps1 -Preset windows-msvc-debug -Filter "Unit.*"
@@ -81,7 +81,7 @@ Cross-platform test execution script with comprehensive testing features.
 - `Repeat` - Number of times to repeat the test suite
 - `Timeout` - Maximum time per test in seconds (default: 300)
 - `Valgrind` - Run tests under Valgrind (Linux/macOS only)
-- `Verbose` - Enable verbose test output
+- `VerboseOutput` - Enable verbose test output
 
 ### `clean.ps1` - Clean Script
 Removes build artifacts and generated files.
@@ -103,7 +103,7 @@ Removes build artifacts and generated files.
 - `BuildDir` - Specific build directory to clean (default: "out")
 - `Cache` - Only clean CMake cache files
 - `Force` - Force removal without confirmation prompts
-- `Verbose` - Enable verbose output showing what's being removed
+- `VerboseOutput` - Enable verbose output showing what's being removed
 
 ### `install.ps1` - Install Script
 Installs built artifacts to a specified location.
@@ -125,7 +125,7 @@ Installs built artifacts to a specified location.
 - `Prefix` - Installation prefix directory (default: ./install)
 - `Component` - Specific component to install (default: all)
 - `BuildDir` - Build directory containing artifacts (default: "out")
-- `Verbose` - Enable verbose installation output
+- `VerboseOutput` - Enable verbose installation output
 - `DryRun` - Show what would be installed without actually installing
 - `Force` - Force installation even if target already exists
 
@@ -164,7 +164,7 @@ pwsh ./scripts/build.ps1 -Preset linux-gcc-debug
 ```powershell
 # Build and test in Debug mode
 .\scripts\build.ps1 -Preset windows-msvc-debug
-.\scripts\test.ps1 -Preset windows-msvc-debug -Verbose
+.\scripts\test.ps1 -Preset windows-msvc-debug -VerboseOutput
 ```
 
 **Complete development cycle:**

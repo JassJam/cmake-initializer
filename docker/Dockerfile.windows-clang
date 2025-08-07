@@ -1,0 +1,46 @@
+# Windows Clang Docker build for cmake-initializer
+# Using Windows Server Core with Clang/LLVM
+
+# escape=`
+FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS development
+
+# Set environment variables
+ENV TARGET_PLATFORM=windows \
+    COMPILER=clang \
+    CMAKE_BUILD_TYPE=Release
+
+# Create working directory
+RUN mkdir C:\workspace
+WORKDIR C:\workspace
+
+# Install PowerShell 7 first
+RUN powershell -Command \
+    "Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v7.4.0/PowerShell-7.4.0-win-x64.msi -OutFile C:\TEMP\PowerShell.msi; \
+    Start-Process msiexec.exe -Wait -ArgumentList '/I C:\TEMP\PowerShell.msi /quiet'"
+
+# Install Chocolatey for package management
+RUN powershell -Command \
+    "Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# Install LLVM/Clang, CMake, Git, and other tools via Chocolatey
+RUN choco install llvm cmake git ninja -y
+
+# Add LLVM to PATH
+RUN setx PATH "%PATH%;C:\Program Files\LLVM\bin" /M
+
+# Copy project files
+COPY project/ project/
+COPY scripts/ scripts/
+COPY docs/ docs/
+COPY LICENSE README.md ./
+
+# Copy and set up entry point
+COPY docker/docker-entrypoint.ps1 C:/entrypoint.ps1
+
+EXPOSE 8080
+
+# Use PowerShell as the entrypoint
+ENTRYPOINT ["pwsh", "C:/entrypoint.ps1"]
+CMD ["--help"]

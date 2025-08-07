@@ -145,9 +145,8 @@
 param(
     [ValidateSet("Debug", "Release")]
     [string]$Config = "Release",
-    [string]$Preset = "",
-    [ValidateSet("msvc", "clang", "gcc", "")]
-    [string]$Compiler = "",
+    [Parameter(Mandatory=$true)]
+    [string]$Preset,
     [string[]]$Targets = @(),
     [string[]]$ExcludeTargets = @(),
     [string]$BuildDir = "out",
@@ -161,7 +160,7 @@ param(
     [switch]$Coverage,
     [switch]$Valgrind,
     [switch]$StopOnFailure,
-    [switch]$Verbose,
+    [switch]$VerboseOutput,
     [string[]]$ExtraArgs = @()
 )
 
@@ -198,51 +197,14 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
 Write-Host "🧪 cmake-initializer Test Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 
-# Determine preset if not specified
-if (-not $Preset) {
-    if ($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) {
-        $Preset = "windows-msvc-$($Config.ToLower())"
-    } elseif ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT") {
-        $Preset = "windows-msvc-$($Config.ToLower())"
-    } else {
-        $Preset = "unixlike-gcc-$($Config.ToLower())"
-    }
-}
-
-# Derive build configuration from preset name if preset was provided
-if ($PSBoundParameters.ContainsKey('Preset')) {
-    if ($Preset -match "debug") {
-        $Config = "Debug"
-    } elseif ($Preset -match "release") {
-        $Config = "Release"
-    }
+# Derive build configuration from preset name
+if ($Preset -match "debug") {
+    $Config = "Debug"
+} elseif ($Preset -match "release") {
+    $Config = "Release"
 }
 
 Write-Host "Configuration: $Config" -ForegroundColor Green
-
-# Override preset based on compiler selection
-if ($Compiler) {
-    switch ($Compiler.ToLower()) {
-        "msvc" {
-            if (-not ($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) -and -not ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT")) {
-                throw "MSVC compiler is only available on Windows"
-            }
-            $Preset = "windows-msvc-$($Config.ToLower())"
-        }
-        "clang" {
-            if (($PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows) -or ($PSVersionTable.PSVersion.Major -lt 6 -and $env:OS -eq "Windows_NT")) {
-                $Preset = "windows-clang-$($Config.ToLower())"
-            } else {
-                $Preset = "unixlike-clang-$($Config.ToLower())"
-            }
-        }
-        "gcc" {
-            $Preset = "unixlike-gcc-$($Config.ToLower())"
-        }
-    }
-    Write-Host "Compiler: $Compiler" -ForegroundColor Green
-}
-
 Write-Host "Test Preset: $Preset" -ForegroundColor Green
 
 # Change to project directory
@@ -337,7 +299,7 @@ try {
                 Write-Host "Building target: $Target" -ForegroundColor Yellow
                 $BuildCmd = @("cmake", "--build", $FullBuildDir, "--config", $Config, "--target", $Target)
                 
-                if ($Verbose) {
+                if ($VerboseOutput) {
                     Write-Host "Build command: $($BuildCmd -join ' ')" -ForegroundColor DarkGray
                 }
                 
@@ -465,7 +427,7 @@ try {
     }
     
     # Add verbose output
-    if ($Verbose) {
+    if ($VerboseOutput) {
         $CTestCmd += @("--verbose")
         Write-Host "Command: $($CTestCmd -join ' ')" -ForegroundColor DarkGray
     }

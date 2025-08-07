@@ -409,3 +409,11 @@ project/CMakeFiles/
 # Ignore local EMSDK installation
 /.emsdk/
 /project/.emsdk/
+
+# Ignore environment files that might contain secrets
+.env
+.env.*
+!.env.example
+
+# Ignore artifact directories
+**/_assets

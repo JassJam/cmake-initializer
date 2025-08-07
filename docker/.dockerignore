@@ -1,0 +1,106 @@
+# Docker ignore file for cmake-initializer
+# Ignore build artifacts and caches
+out/
+build/
+.cache/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.ninja
+.ninja_deps
+.ninja_log
+compile_commands.json
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.user
+*.suo
+*.vcxproj.user
+
+# Ignore version control and CI files
+.git/
+.gitignore
+.github/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+buildkite.yml
+
+# Ignore documentation build artifacts
+docs/build/
+docs/_build/
+*.pdf
+*.html
+*.md.bak
+
+# Ignore package manager and dependency files
+node_modules/
+packages/
+vcpkg_installed/
+conan_imports_manifest.txt
+conanbuildinfo.*
+
+# Ignore temporary and log files
+*.tmp
+*.temp
+*.log
+*.bak
+*.orig
+*.rej
+.DS_Store_*
+
+# Ignore environment files that might contain secrets
+.env
+.env.*
+!.env.example
+
+# Ignore test results and coverage
+test-results/
+coverage/
+*.gcov
+*.gcda
+*.gcno
+lcov.info
+coverage.xml
+
+# Ignore platform-specific and build output files
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.obj
+*.o
+
+# Ignore Docker-specific files from root
+Dockerfile.old
+docker-compose.override.yml
+.dockerignore.old
+
+# Ignore archives and compressed files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# Keep important files explicitly
+!project/
+!scripts/
+!docs/DOCKER_GUIDE.md
+!docs/CMAKE_VARIABLES.md
+!docs/PRESET_FEATURES.md
+!LICENSE
+!README.md
