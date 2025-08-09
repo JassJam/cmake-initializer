@@ -13,7 +13,7 @@ function(target_load_dependencies TARGET_NAME)
 		SYSTEM ON
 	)
 
-	target_link_dependencies_auto(${TARGET_NAME}
+	target_link_dependencies(${TARGET_NAME}
 		PRIVATE
 			spdlog::spdlog
 	)
