@@ -5,6 +5,7 @@ include(GenerateExportHeader)
 
 include(${CMAKE_CURRENT_LIST_DIR}/Options.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/impl/CPM.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/impl/XMake.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/impl/CompilerCache.cmake)
 
 include(${CMAKE_CURRENT_LIST_DIR}/impl/Testing.cmake)
