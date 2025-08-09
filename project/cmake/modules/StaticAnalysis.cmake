@@ -180,7 +180,13 @@ function(_add_clang_tidy_custom_target TARGET_NAME ENABLE_EXCEPTIONS CLANG_TIDY_
     # Build clang-tidy arguments
     set(CXX_CLANG_TIDY_ARGS "${CLANG_TIDY_EXE}")
     list(APPEND CXX_CLANG_TIDY_ARGS "--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
-    list(APPEND CXX_CLANG_TIDY_ARGS "--header-filter=^${CMAKE_SOURCE_DIR}/(?!out/build/.*/_deps/).*")
+    
+    # Create .clang-tidy file for generated files directory to disable all checks
+    get_target_property(TARGET_BINARY_DIR ${TARGET_NAME} BINARY_DIR)
+    if(TARGET_BINARY_DIR)
+        set(CLANG_TIDY_DISABLE_CONTENT "# Auto-generated .clang-tidy for generated files\n# Disable all clang-tidy checks\nChecks: '-*'\n")
+        file(WRITE "${TARGET_BINARY_DIR}/.clang-tidy" "${CLANG_TIDY_DISABLE_CONTENT}")
+    endif()
     
     if(WIN32)
         list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-dll-attribute-on-redeclaration")
