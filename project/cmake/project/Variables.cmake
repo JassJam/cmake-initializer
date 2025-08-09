@@ -15,3 +15,6 @@ set(CMAKE_CXX_FILE_EXTENSION cpp cxx cc c++ m mm)
 
 # Set C++ headers extensions
 set(CMAKE_CXX_HEADER_EXTENSION h hh hpp hxx h++ ixx inc)
+
+# Valid package managers
+set(VALID_PACKAGE_MANAGERS CPM XMake)

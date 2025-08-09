@@ -1,0 +1,17 @@
+if("CPM" IN_LIST PACKAGE_MANAGERS)
+    set(CPM_DOWNLOAD_VERSION "0.42.0" CACHE STRING "CPM version to download")
+    set(CPM_HASH_SUM "2020b4fc42dba44817983e06342e682ecfc3d2f484a581f11cc5731fbe4dce8a" CACHE STRING "CPM download hash")
+    set(CPM_REPOSITORY_URL "https://github.com/cpm-cmake/CPM.cmake" CACHE STRING "CPM repository URL")
+
+    message(STATUS "Enabling CPM package manager")
+    include(${CMAKE_CURRENT_LIST_DIR}/CPM/CPMDownloader.cmake)
+else()
+    message(STATUS "CPM package manager disabled")
+endif()
+
+if("XMake" IN_LIST PACKAGE_MANAGERS)
+    message(STATUS "Enabling XMake package manager")
+    include(${CMAKE_CURRENT_LIST_DIR}/XMake/XMake.cmake)
+else()
+    message(STATUS "XMake package manager disabled")
+endif()

@@ -1,3 +1,9 @@
+# Note: XMake package manager works with Emscripten, but XMake itself must be built with host compiler
+# Store cross-compilation environment variables to restore later
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR CMAKE_CROSSCOMPILING)
+    message(STATUS "Cross-compilation detected - XMake will be built with host compiler")
+endif()
+
 option(XREPO_PACKAGE_DISABLE "Disable Xrepo Packages" OFF)
 option(XREPO_PACKAGE_VERBOSE "Enable verbose output for Xrepo Packages" OFF)
 option(XREPO_BOOTSTRAP_XMAKE "Bootstrap Xmake automatically" ON)
@@ -118,33 +124,137 @@ function(_install_xmake_program)
         endif()
     else()
         set(XMAKE_SOURCE_DIR ${XMAKE_BINARY_DIR}/xmake-${XMAKE_RELEASE_LATEST})
-        message(STATUS "Configuring xmake")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD ./configure
+        message(STATUS "Configuring xmake with host compiler (not cross-compilation toolchain)")
+        
+        # For cross-compilation, we need to use the host compiler to build XMake itself
+        # Detect if we have a host compiler available
+        find_program(HOST_CC NAMES gcc clang cc)
+        find_program(HOST_CXX NAMES g++ clang++ c++)
+        
+        # If we can't find explicit host compilers, try system defaults
+        if(NOT HOST_CC AND NOT CMAKE_CROSSCOMPILING)
+            set(HOST_CC cc)
+        endif()
+        if(NOT HOST_CXX AND NOT CMAKE_CROSSCOMPILING)
+            set(HOST_CXX c++)
+        endif()
+        
+        # For Ubuntu/Linux CI, ensure we have system GCC available
+        if(NOT HOST_CC)
+            find_program(HOST_CC NAMES gcc-11 gcc-12 gcc-13 gcc)
+        endif()
+        if(NOT HOST_CXX)
+            find_program(HOST_CXX NAMES g++-11 g++-12 g++-13 g++)
+        endif()
+        
+        message(STATUS "Host C compiler: ${HOST_CC}")
+        message(STATUS "Host C++ compiler: ${HOST_CXX}")
+        
+        # Build environment for XMake configuration - use host compiler
+        set(XMAKE_BUILD_ENV ${CMAKE_COMMAND} -E env)
+        
+        # Unset all cross-compilation and Emscripten related environment variables
+        list(APPEND XMAKE_BUILD_ENV --unset=EMSCRIPTEN --unset=EM_CONFIG --unset=EM_CACHE --unset=EM_PORTS)
+        list(APPEND XMAKE_BUILD_ENV --unset=EMSDK --unset=EMSDK_NODE --unset=EMSDK_PYTHON)
+        list(APPEND XMAKE_BUILD_ENV --unset=CMAKE_TOOLCHAIN_FILE --unset=CMAKE_SYSTEM_NAME)
+        list(APPEND XMAKE_BUILD_ENV --unset=CMAKE_CROSSCOMPILING --unset=CMAKE_C_COMPILER --unset=CMAKE_CXX_COMPILER)
+        
+        # Force use of host compiler explicitly - this is critical
+        if(HOST_CC)
+            list(APPEND XMAKE_BUILD_ENV CC=${HOST_CC})
+            message(STATUS "Using host C compiler: ${HOST_CC}")
+        else()
+            message(WARNING "No host C compiler found - this may cause build failures")
+            list(APPEND XMAKE_BUILD_ENV --unset=CC)
+        endif()
+        
+        if(HOST_CXX)
+            list(APPEND XMAKE_BUILD_ENV CXX=${HOST_CXX})
+            message(STATUS "Using host C++ compiler: ${HOST_CXX}")
+        else()
+            message(WARNING "No host C++ compiler found - this may cause build failures")
+            list(APPEND XMAKE_BUILD_ENV --unset=CXX)
+        endif()
+        
+        # Unset other cross-compilation related variables
+        list(APPEND XMAKE_BUILD_ENV --unset=LD --unset=AR --unset=AS --unset=RANLIB --unset=STRIP)
+        
+        # Force the platform detection to use host system
+        list(APPEND XMAKE_BUILD_ENV --unset=TARGET_PLATFORM --unset=TARGET_ARCH --unset=CROSS_COMPILE)
+        
+        # Clean PATH to remove Emscripten tools - get system PATH without EMSDK
+        if(DEFINED ENV{PATH})
+            string(REPLACE "$ENV{EMSDK}" "" CLEAN_PATH "$ENV{PATH}")
+            string(REPLACE "$ENV{EMSDK}/upstream/emscripten" "" CLEAN_PATH "${CLEAN_PATH}")
+            string(REPLACE "$ENV{EMSDK}/node" "" CLEAN_PATH "${CLEAN_PATH}")
+            # Remove double path separators
+            if(WIN32)
+                string(REPLACE ";;" ";" CLEAN_PATH "${CLEAN_PATH}")
+            else()
+                string(REPLACE "::" ":" CLEAN_PATH "${CLEAN_PATH}")
+            endif()
+            list(APPEND XMAKE_BUILD_ENV PATH=${CLEAN_PATH})
+        endif()
+        
+        # Determine host platform for XMake configure
+        if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+            set(XMAKE_HOST_PLAT "linux")
+        elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+            set(XMAKE_HOST_PLAT "macosx")
+        elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+            set(XMAKE_HOST_PLAT "windows")
+        else()
+            set(XMAKE_HOST_PLAT "linux")  # Default fallback
+        endif()
+        
+        # Determine host architecture for XMake configure
+        if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+            set(XMAKE_HOST_ARCH "x86_64")
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "i[3-6]86")
+            set(XMAKE_HOST_ARCH "i386")
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+            set(XMAKE_HOST_ARCH "arm64")
+        else()
+            set(XMAKE_HOST_ARCH "x86_64")  # Default fallback
+        endif()
+        
+        message(STATUS "Configuring XMake for host platform: ${XMAKE_HOST_PLAT} ${XMAKE_HOST_ARCH}")
+        execute_process(COMMAND ${XMAKE_BUILD_ENV} ./configure --plat=${XMAKE_HOST_PLAT} --arch=${XMAKE_HOST_ARCH}
             WORKING_DIRECTORY ${XMAKE_SOURCE_DIR}
             RESULT_VARIABLE exit_code)
         if(NOT "${exit_code}" STREQUAL "0")
-            message(FATAL_ERROR "Configure xmake failed, exit code: ${exit_code}")
+            message(WARNING "Configure xmake failed, exit code: ${exit_code} - XMake will be disabled for this build")
+            set(XMAKE_AVAILABLE FALSE PARENT_SCOPE)
+            return()
         endif()
 
-        message(STATUS "Building xmake")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD make -j4
+        message(STATUS "Building xmake with host compiler")
+        execute_process(COMMAND ${XMAKE_BUILD_ENV} make -j4
             WORKING_DIRECTORY ${XMAKE_SOURCE_DIR}
             RESULT_VARIABLE exit_code)
         if(NOT "${exit_code}" STREQUAL "0")
-            message(FATAL_ERROR "Build xmake failed, exit code: ${exit_code}")
+            message(WARNING "Build xmake failed, exit code: ${exit_code} - XMake will be disabled for this build")
+            set(XMAKE_AVAILABLE FALSE PARENT_SCOPE)
+            return()
         endif()
 
         message(STATUS "Installing xmake")
-        execute_process(COMMAND make install PREFIX=${XMAKE_BINARY_DIR}/install
+        execute_process(COMMAND ${XMAKE_BUILD_ENV} make install PREFIX=${XMAKE_BINARY_DIR}/install
             WORKING_DIRECTORY ${XMAKE_SOURCE_DIR}
             RESULT_VARIABLE exit_code)
         if(NOT "${exit_code}" STREQUAL "0")
-            message(FATAL_ERROR "Install xmake failed, exit code: ${exit_code}")
+            message(WARNING "Install xmake failed, exit code: ${exit_code} - XMake will be disabled for this build")
+            set(XMAKE_AVAILABLE FALSE PARENT_SCOPE)
+            return()
         endif()
 
         set(XMAKE_BINARY ${XMAKE_BINARY_DIR}/install/bin/xmake)
         if(EXISTS ${XMAKE_BINARY})
             set(XMAKE_CMD ${XMAKE_BINARY} PARENT_SCOPE)
+            set(XMAKE_AVAILABLE TRUE PARENT_SCOPE)
+        else()
+            message(WARNING "XMake binary not found after installation - XMake will be disabled for this build")
+            set(XMAKE_AVAILABLE FALSE PARENT_SCOPE)
         endif()
     endif()
 endfunction()
@@ -167,15 +277,26 @@ macro(_detect_xmake_cmd)
             set(XMAKE_CMD ${XMAKE_BINARY})
         endif()
     endif()
+    
     if(NOT XMAKE_CMD AND XREPO_BOOTSTRAP_XMAKE)
+        set(XMAKE_AVAILABLE TRUE)  # Initialize as available
         _install_xmake_program()
+        # Check if XMake installation failed
+        if(NOT XMAKE_AVAILABLE)
+            message(WARNING "XMake build failed - XMake package manager will be disabled for this build")
+            return()
+        endif()
     endif()
+    
     if(NOT XMAKE_CMD)
-        message(FATAL_ERROR "xmake not found, Please install it first from https://xmake.io")
+        message(WARNING "xmake not found and could not be built - XMake package manager disabled. Please install it manually from https://xmake.io")
+        set(XMAKE_AVAILABLE FALSE)
+        return()
     endif()
 
     message(STATUS "xmake command: ${XMAKE_CMD}")
     set(XREPO_CMD ${XMAKE_CMD} lua private.xrepo)
+    set(XMAKE_AVAILABLE TRUE)
 endmacro()
 
 function(_xrepo_detect_json_support)
@@ -238,6 +359,12 @@ if(NOT XREPO_PACKAGE_DISABLE)
     # Setup for xmake.
     _detect_xmake_cmd()
 
+    # Check if XMake detection was successful
+    if(NOT XMAKE_AVAILABLE)
+        message(WARNING "XMake package manager not available - XMake functions will be disabled")
+        return()
+    endif()
+
     # Some cmake find module code may use pkgconfig to find header, library, etc.
     # Refer to https://cmake.org/cmake/help/latest/manual/cmake-developer.7.html#a-sample-find-module
     # If CMAKE_MINIMUM_REQUIRED_VERSION is 3.1 or later, paths in CMAKE_PREFIX_PATH are added to pkg-config
@@ -258,6 +385,12 @@ endif()
 
 function(xrepo_package package)
     if(XREPO_PACKAGE_DISABLE)
+        return()
+    endif()
+    
+    # Check if XMake is available before proceeding
+    if(NOT XMAKE_AVAILABLE)
+        message(STATUS "XMake not available - skipping package ${package}")
         return()
     endif()
 
@@ -399,8 +532,8 @@ function(xrepo_target_packages target)
 
     foreach(package_name IN LISTS ARG_UNPARSED_ARGUMENTS)
         if(DEFINED ${package_name}_INCLUDE_DIRS)
-            message(STATUS "xrepo: target_include_directories(${target} ${_visibility} ${${package_name}_INCLUDE_DIRS})")
-            target_include_directories(${target} ${_visibility} ${${package_name}_INCLUDE_DIRS})
+            message(STATUS "xrepo: target_include_directories(${target} SYSTEM ${_visibility} ${${package_name}_INCLUDE_DIRS})")
+            target_include_directories(${target} SYSTEM ${_visibility} ${${package_name}_INCLUDE_DIRS})
         endif()
         if(DEFINED ${package_name}_LIBRARY_DIRS)
             message(STATUS "xrepo: target_link_directories(${target} ${_visibility} ${${package_name}_LIBRARY_DIRS})")

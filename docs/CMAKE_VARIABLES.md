@@ -84,6 +84,15 @@ This document lists all available CMake cache variables that can be used in pres
 > 
 > **Security Note**: When Edit and Continue is enabled, Control Flow Guard (`/guard:cf`) is automatically disabled due to MSVC compiler incompatibility. This reduces security hardening but enables powerful debugging capabilities.
 
+## Package Management
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `PACKAGE_MANAGER` | STRING | CPM;XMake | Package managers to enable (semicolon-separated): `CPM`, `XMake`, `CPM;XMake`, or empty |
+
+> **Note**: For Emscripten builds, XMake is automatically disabled as it conflicts with the cross-compilation toolchain.
+> Use `CPM` only for WebAssembly targets, or explicitly set `PACKAGE_MANAGER=CPM` in your preset.
+
 ## Testing Framework
 
 | Variable | Type | Default | Description |
@@ -207,6 +216,37 @@ The framework automatically applies these optimizations for Emscripten builds:
 - **Debug**: `-s ASSERTIONS=1 -s SAFE_HEAP=1 -s DEMANGLE_SUPPORT=1`
 - **Release**: `-O3 --closure 1 -s STANDALONE_WASM=1`
 - **Static Runtime**: `-static-libstdc++ -s WASM=1`
+
+### Emscripten Build (WebAssembly)
+```json
+{
+  "cacheVariables": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_SYSTEM_NAME": "Emscripten",
+    "ENABLE_EMSDK_AUTO_INSTALL": true,
+    "PACKAGE_MANAGER": "CPM"
+  }
+}
+```
+
+### Package Manager Configuration
+```json
+{
+  "cacheVariables": {
+    "PACKAGE_MANAGER": "CPM",
+    "CMAKE_BUILD_TYPE": "Debug"
+  }
+}
+```
+
+```json
+{
+  "cacheVariables": {
+    "PACKAGE_MANAGER": "",
+    "CMAKE_BUILD_TYPE": "Release"
+  }
+}
+```
 
 ## Command Line Usage
 

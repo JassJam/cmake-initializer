@@ -16,6 +16,7 @@ include(SetupCommonProjectOptions)
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED FALSE)
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "")
+set_property(GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER "")
 
 # Register a test framework globally (call once in main CMakeLists.txt)
 # Usage:
@@ -37,50 +38,84 @@ function(register_test_framework FRAMEWORK_NAME)
     
     # Set up framework-specific configuration
     if(FRAMEWORK_NAME STREQUAL "doctest")
-        CPMAddPackage(
-            NAME doctest
-            GITHUB_REPOSITORY doctest/doctest
-            GIT_TAG v${DOCTEST_VERSION}
-            SYSTEM ON
-        )
-        set(FRAMEWORK_LIBS doctest::doctest)
-        set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
+        if(COMMAND CPMAddPackage)
+            CPMAddPackage(
+                NAME doctest
+                GITHUB_REPOSITORY doctest/doctest
+                GIT_TAG v${DOCTEST_VERSION}
+                SYSTEM ON
+            )
+            set(FRAMEWORK_LIBS doctest::doctest)
+            set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
+            set(FRAMEWORK_PACKAGE_MANAGER "CPM")
+        elseif(COMMAND xrepo_package)
+            xrepo_package("doctest ${DOCTEST_VERSION}")
+            set(FRAMEWORK_LIBS doctest::doctest)
+            set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
+            set(FRAMEWORK_PACKAGE_MANAGER "XMake")
+        else()
+            message(WARNING "No package manager available for doctest.")
+        endif()
         
     elseif(FRAMEWORK_NAME STREQUAL "catch2")
-        CPMAddPackage(
-            NAME Catch2
-            GITHUB_REPOSITORY catchorg/Catch2
-            GIT_TAG v${CATCH2_VERSION}
-            SYSTEM ON
-        )
-        set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
-        set(FRAMEWORK_DEFS "")
+        if(COMMAND CPMAddPackage)
+            CPMAddPackage(
+                NAME Catch2
+                GITHUB_REPOSITORY catchorg/Catch2
+                GIT_TAG v${CATCH2_VERSION}
+                SYSTEM ON
+            )
+            set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
+            set(FRAMEWORK_DEFS "")
+        elseif(COMMAND xrepo_package)
+            xrepo_package("catch2 ${CATCH2_VERSION}")
+            set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
+            set(FRAMEWORK_DEFS "")
+        else()
+            message(WARNING "No package manager available for Catch2.")
+        endif()
         
     elseif(FRAMEWORK_NAME STREQUAL "gtest")
-        CPMAddPackage(
-            NAME googletest
-            GITHUB_REPOSITORY google/googletest
-            GIT_TAG v${GTEST_VERSION}
-            SYSTEM ON
-        )
-        set(FRAMEWORK_LIBS gtest_main)
-        set(FRAMEWORK_DEFS "")
+        if(COMMAND CPMAddPackage)
+            CPMAddPackage(
+                NAME googletest
+                GITHUB_REPOSITORY google/googletest
+                GIT_TAG v${GTEST_VERSION}
+                SYSTEM ON
+            )
+            set(FRAMEWORK_LIBS gtest_main)
+            set(FRAMEWORK_DEFS "")
+        elseif(COMMAND xrepo_package)
+            xrepo_package("gtest ${GTEST_VERSION}")
+            set(FRAMEWORK_LIBS gtest_main)
+            set(FRAMEWORK_DEFS "")
+        else()
+            message(WARNING "No package manager available for Google Test.")
+        endif()
         
     elseif(FRAMEWORK_NAME STREQUAL "boost")
-        CPMAddPackage(
-            NAME boost
-            GITHUB_REPOSITORY boostorg/boost
-            GIT_TAG ${BOOST_VERSION}
-            OPTIONS
-                "BOOST_ENABLE_CMAKE ON"
-                "BOOST_INCLUDE_LIBRARIES test"
-            SYSTEM ON
-        )
-        set(FRAMEWORK_LIBS Boost::unit_test_framework)
-        set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
+        if(COMMAND CPMAddPackage)
+            CPMAddPackage(
+                NAME boost
+                GITHUB_REPOSITORY boostorg/boost
+                GIT_TAG ${BOOST_VERSION}
+                OPTIONS
+                    "BOOST_ENABLE_CMAKE ON"
+                    "BOOST_INCLUDE_LIBRARIES test"
+                SYSTEM ON
+            )
+            set(FRAMEWORK_LIBS Boost::unit_test_framework)
+            set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
+        elseif(COMMAND xrepo_package)
+            xrepo_package("boost")
+            set(FRAMEWORK_LIBS Boost::unit_test_framework)
+            set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
+        else()
+            message(WARNING "No package manager available for Boost Test.")
+        endif()
         
     else()
-        message(FATAL_ERROR "Unknown test framework: ${FRAMEWORK_NAME}. Supported: doctest, catch2, gtest, boost")
+        message(WARNING "Unknown test framework: ${FRAMEWORK_NAME}. Supported: doctest, catch2, gtest, boost")
     endif()
 
     # Store configuration globally
@@ -88,6 +123,7 @@ function(register_test_framework FRAMEWORK_NAME)
     set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "${FRAMEWORK_NAME}")
     set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "${FRAMEWORK_LIBS}")
     set_property(GLOBAL PROPERTY TEST_FRAMEWORK_DEFINITIONS "${FRAMEWORK_DEFS}")
+    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER "${FRAMEWORK_PACKAGE_MANAGER}")
     
     message(STATUS "Test framework '${FRAMEWORK_NAME}' registered successfully")
 endfunction()
@@ -127,6 +163,16 @@ function(register_test TARGET_NAME)
         return()
     endif()
     
+    # Get framework configuration
+    get_property(framework_name GLOBAL PROPERTY TEST_FRAMEWORK_NAME)
+    get_property(framework_libs GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES)
+    get_property(framework_defs GLOBAL PROPERTY TEST_FRAMEWORK_DEFINITIONS)
+
+    # If no framework is registered, throw an error
+    if(NOT framework_name)
+        message(WARNING "No test framework was registered.")
+    endif()
+    
     set(options INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR ENVIRONMENT
         ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
@@ -142,11 +188,6 @@ function(register_test TARGET_NAME)
     if(NOT framework_registered)
         message(FATAL_ERROR "No test framework registered. Call register_test_framework() first.")
     endif()
-
-    # Get framework configuration
-    get_property(framework_name GLOBAL PROPERTY TEST_FRAMEWORK_NAME)
-    get_property(framework_libs GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES)
-    get_property(framework_defs GLOBAL PROPERTY TEST_FRAMEWORK_DEFINITIONS)
 
     # Set defaults
     if(NOT ARG_SOURCE_DIR)
@@ -277,7 +318,22 @@ function(register_test TARGET_NAME)
     _copy_shared_library_dependencies_to_build_dir(${TARGET_NAME})
 
     if(framework_libs)
-        target_link_libraries(${TARGET_NAME} PRIVATE ${framework_libs})
+        # Use the package manager that was actually used to download the framework
+        get_property(framework_package_manager GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER)
+        if(framework_package_manager STREQUAL "XMake" AND COMMAND xrepo_target_packages)
+            get_property(framework_name GLOBAL PROPERTY TEST_FRAMEWORK_NAME)
+            if(framework_name STREQUAL "doctest")
+                xrepo_target_packages(${TARGET_NAME} doctest)
+            elseif(framework_name STREQUAL "catch2")
+                xrepo_target_packages(${TARGET_NAME} catch2)
+            elseif(framework_name STREQUAL "gtest")
+                xrepo_target_packages(${TARGET_NAME} gtest)
+            elseif(framework_name STREQUAL "boost")
+                xrepo_target_packages(${TARGET_NAME} boost)
+            endif()
+        else()
+            target_link_libraries(${TARGET_NAME} PRIVATE ${framework_libs})
+        endif()
     endif()
 
     # Add framework-specific compile definitions

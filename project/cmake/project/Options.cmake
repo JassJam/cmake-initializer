@@ -14,9 +14,7 @@ set(ENABLE_CCACHE ON CACHE BOOL "Enable ccache for faster rebuilds")
 mark_as_advanced(ENABLE_CCACHE)
 
 # === PACKAGE MANAGEMENT OPTIONS ===
-set(CPM_DOWNLOAD_VERSION "0.42.0" CACHE STRING "CPM version to download")
-set(CPM_HASH_SUM "2020b4fc42dba44817983e06342e682ecfc3d2f484a581f11cc5731fbe4dce8a" CACHE STRING "CPM download hash")
-set(CPM_REPOSITORY_URL "https://github.com/cpm-cmake/CPM.cmake" CACHE STRING "CPM repository URL")
+set(PACKAGE_MANAGERS "CPM;XMake" CACHE STRING "Package managers to enable (semicolon-separated list: CPM, XMake)")
 
 # === MAIN CONFIGURATION OPTIONS ===
 option(DEV_MODE "Enable development mode (all quality tools)" ON)
