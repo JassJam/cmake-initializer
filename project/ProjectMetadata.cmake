@@ -13,4 +13,5 @@ set(THIS_PROJECT_HOMEPAGE_URL "https://github.com/01Pollux/cmake-initializer")
 # Project license
 set(THIS_PROJECT_LICENSE "MIT")
 
+# C++ standard
 set(CMAKE_CXX_STANDARD "23")

@@ -5,7 +5,6 @@ message(STATUS "Using C++ standard: ${CMAKE_CXX_STANDARD}")
 
 #
 
-# Add our cmake modules early for EMSDK setup
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
