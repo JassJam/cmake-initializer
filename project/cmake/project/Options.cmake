@@ -56,10 +56,6 @@ else()
     set(DEBUG_INFO_LEVEL "2" CACHE STRING "Debug information level (0-3 for GCC/Clang, ignored for MSVC)")
 endif()
 
-# === STATIC ANALYSIS OPTIONS ===
-set(ENABLE_CLANG_TIDY "${ENABLE_GLOBAL_STATIC_ANALYSIS}" CACHE STRING "Enable clang-tidy static analysis" )
-set(ENABLE_CPPCHECK "${ENABLE_GLOBAL_STATIC_ANALYSIS}" CACHE STRING "Enable cppcheck static analysis" ${ENABLE_GLOBAL_STATIC_ANALYSIS})
-
 # === LINKING OPTIONS ===
 option(ENABLE_STATIC_RUNTIME "Statically link runtime libraries for better portability" OFF)
 
@@ -128,17 +124,6 @@ endif()
 # Apply global static analysis if enabled
 if(ENABLE_GLOBAL_STATIC_ANALYSIS)
     include(StaticAnalysis)
-    set(STATIC_ANALYSIS_ARGS)
-    if(ENABLE_CLANG_TIDY_VALUE)
-        list(APPEND STATIC_ANALYSIS_ARGS ENABLE_CLANG_TIDY)
-    endif()
-    if(ENABLE_CPPCHECK_VALUE)
-        list(APPEND STATIC_ANALYSIS_ARGS ENABLE_CPPCHECK)
-    endif()
-    if(ENABLE_EXCEPTIONS)
-        list(APPEND STATIC_ANALYSIS_ARGS ENABLE_EXCEPTIONS)
-    endif()
-
     enable_global_static_analysis()
 endif()
 
@@ -161,7 +146,7 @@ message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "DEV_MODE: ${DEV_MODE}")
 message(STATUS "RELEASE_MODE: ${RELEASE_MODE}")
 message(STATUS "Sanitizers: ${ENABLE_GLOBAL_SANITIZERS} (ASan:${ENABLE_ASAN}, UBSan:${ENABLE_UBSAN})")
-message(STATUS "Static analysis: ${ENABLE_GLOBAL_STATIC_ANALYSIS} (clang-tidy:${ENABLE_CLANG_TIDY}, cppcheck:${ENABLE_CPPCHECK})")
+message(STATUS "Static analysis: ${ENABLE_GLOBAL_STATIC_ANALYSIS}")
 message(STATUS "Debug options: Edit&Continue:${ENABLE_EDIT_AND_CONTINUE}, DebugInfo:${ENABLE_DEBUG_INFO} (level:${DEBUG_INFO_LEVEL})")
 message(STATUS "Static linking: runtime:${ENABLE_STATIC_RUNTIME}")
 message(STATUS "=== End of Configuration ===")
