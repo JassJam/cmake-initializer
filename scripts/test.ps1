@@ -4,16 +4,6 @@
 .SYNOPSIS
     Cross-platform test script for cmake-initializer projects
 
-.DESCRIPTION
-    Unified PowerShell script that runs tests on Windows, Linux, and macOS.
-    Supports comprehensive test execution with detailed reporting, parallel execution,
-    and integration with various testing frameworks including doctest, Catch2, Google Test, and Boost.Test.
-    
-    This script automatically detects the project structure, discovers available tests,
-    and provides detailed output including test results, coverage information, and
-    performance metrics. It integrates seamlessly with cmake-initializer's preset-based
-    build system and CI/CD pipelines.
-
 .PARAMETER Config
     Build configuration to test. Must be either 'Debug' or 'Release'.
     Default: Release

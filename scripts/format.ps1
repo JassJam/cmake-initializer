@@ -4,15 +4,6 @@
 .SYNOPSIS
     Cross-platform code formatting script using clang-format
 
-.DESCRIPTION
-    Unified PowerShell script that formats C/C++ source files using clang-format.
-    Supports recursive directory traversal and handles multiple file extensions.
-    Provides comprehensive formatting options with safety features and detailed reporting.
-    
-    This script automatically discovers C/C++ source files and applies clang-format
-    using your project's .clang-format configuration file. It includes dry-run
-    capabilities, verbose output, and comprehensive error handling.
-
 .PARAMETER Path
     Root directory path to search for source files. The script will search this
     directory for files matching the specified extensions.

@@ -1,5 +1,4 @@
 # CTest Script for CDash Submission with Authentication
-# Production script for cmake-initializer project
 
 # Validate required environment variables
 if(NOT DEFINED ENV{CTEST_SOURCE_DIRECTORY})

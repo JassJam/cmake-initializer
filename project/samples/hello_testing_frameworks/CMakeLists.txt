@@ -1,15 +1,4 @@
 # Hello Testing Frameworks Sample
-# Choose testing framework: doctest (default), gtest, catch2, or boost
-
-set(TEST_FRAMEWORK "doctest" CACHE STRING "Testing framework")
-set_property(CACHE TEST_FRAMEWORK PROPERTY STRINGS "doctest" "gtest" "catch2" "boost")
-
-message(STATUS "Using testing framework: ${TEST_FRAMEWORK}")
-
-# Register the test framework globally
-# NOTE: If DEFAULT_TEST_FRAMEWORK is defined in your preset, this registration
-# is automatic and this call can be omitted
-register_test_framework(${TEST_FRAMEWORK})
 
 # Create library to test
 register_library(MathUtils STATIC INSTALL)

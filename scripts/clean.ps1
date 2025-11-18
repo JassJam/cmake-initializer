@@ -4,14 +4,6 @@
 .SYNOPSIS
     Cross-platform clean script for cmake-initializer projects
 
-.DESCRIPTION
-    Unified PowerShell script that cleans build artifacts on Windows, Linux, and macOS.
-    Removes build directories, cache files, and generated artifacts to ensure clean builds.
-    
-    This script provides granular control over what gets cleaned, from just CMake cache
-    files to complete removal of all build artifacts including install directories.
-    It includes safety features like confirmation prompts and detailed reporting.
-
 .PARAMETER All
     Remove all build artifacts including install directory and testing artifacts.
     This performs the most comprehensive cleanup, removing:
