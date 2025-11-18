@@ -2,11 +2,6 @@
 
 CDash integration for automated test result submission in CI/CD pipelines.
 
-## Overview
-
-The cmake-initializer provides CDash integration designed for CI/CD environments with secure authentication support. Test results are automatically submitted to your CDash dashboard during continuous integration processes.
-
-
 ## Required Configuration
 
 ### Environment Variables
@@ -15,8 +10,8 @@ Configure these secrets in your CI/CD environment for CDash submission:
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `CTEST_DASHBOARD_SITE` | CDash server URL (e.g., `my.cdash.org`) | ✅ Required | None |
-| `CTEST_DASHBOARD_LOCATION` | Submit endpoint (e.g., `/submit.php?project=MyProject`) | ✅ Required | None |
+| `CTEST_DASHBOARD_SITE` | CDash server URL (e.g., `my.cdash.org`) | Required | None |
+| `CTEST_DASHBOARD_LOCATION` | Submit endpoint (e.g., `/submit.php?project=MyProject`) | Required | None |
 | `CDASH_AUTH_TOKEN` | Bearer token for authentication | Optional | None (no auth) |
 | `CTEST_DASHBOARD_MODEL` | Dashboard model: `Experimental`, `Nightly`, `Experimental` | Optional | `Experimental` |
 | `CTEST_DROP_METHOD` | Upload protocol | Optional | `https` |

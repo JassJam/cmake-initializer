@@ -4,15 +4,6 @@
 .SYNOPSIS
     Cross-platform build script for cmake-initializer projects
 
-.DESCRIPTION
-    Unified PowerShell script that builds the project on Windows, Linux, and macOS.
-    Requires expl    if ($VerboseOutput) {
-        Write-Host "Configure command: $($ConfigureCmd -join ' ')" -ForegroundColor DarkGray
-    }t CMake preset specification for consistent builds.
-    
-    This script uses cmake-initializer's preset-based build system and provides
-    comprehensive build options including static runtime linking for portable builds.
-
 .PARAMETER Preset
     CMake preset to use for building. This parameter is mandatory and must specify
     a valid preset name such as:
@@ -26,17 +17,6 @@
     
     Debug builds include debug symbols and disable optimizations.
     Release builds enable optimizations and may strip debug symbols.
-
-.PARAMETER Static
-    Enable static runtime linking for portable builds. When enabled, links against
-    static versions of runtime libraries to reduce external dependencies.
-    Default: false (uses dynamic linking)
-    
-    Automatically applies correct flags based on compiler:
-    - MSVC: /MT (static CRT)
-    - GCC/Clang: -static-libstdc++ -static-libgcc
-    - Intel: -static-intel
-    - Emscripten: -static-libstdc++ with standalone WASM output
 
 .PARAMETER BuildDir
     Base directory for build outputs. The actual build directory will be
@@ -62,11 +42,6 @@
     Build directory name relative to project root. By default uses 'out' which
     matches the cmake-initializer preset configuration.
     Default: "out"
-
-.PARAMETER Static
-    Enable static runtime linking for portable builds. When enabled, links against
-    static versions of runtime libraries to reduce external dependencies.
-    Default: false (uses dynamic linking)
 
 .PARAMETER Jobs
     Number of parallel build jobs to use during compilation. Higher values can
@@ -95,9 +70,9 @@
     This is the most common usage for development builds.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Preset windows-msvc-debug -Static -VerboseOutput
+    .\scripts\build.ps1 -Preset windows-msvc-debug -VerboseOutput
     
-    Build Debug configuration with static runtime linking and verbose output.
+    Build Debug configuration with a verbose output.
     Useful for creating portable debug builds with detailed build information.
 
 .EXAMPLE
@@ -107,9 +82,9 @@
     Good for testing with different compilers or debugging build issues.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Preset unixlike-gcc-release -Static -Jobs 16
+    .\scripts\build.ps1 -Preset unixlike-gcc-release -Jobs 16
     
-    Build optimized release version with static linking using 16 parallel jobs.
+    Build optimized release version with 16 parallel jobs.
     Ideal for creating fast, portable release builds on high-core-count systems.
 
 .NOTES
@@ -128,7 +103,6 @@ param(
     [string[]]$Targets = @(),
     [string[]]$ExcludeTargets = @(),
     [string]$BuildDir = "out",
-    [switch]$Static,
     [int]$Jobs = 0,
     [switch]$ListTargets,
     [switch]$VerboseOutput,
@@ -185,12 +159,6 @@ $ConfigArgs = @()
 if ($ExtraArgs -and $ExtraArgs.Count -gt 0) {
     $ConfigArgs += $ExtraArgs
     Write-Host "Extra CMake args: $($ExtraArgs -join ' ')" -ForegroundColor Yellow
-}
-
-# Add static linking if requested
-if ($Static) {
-    $ConfigArgs += "-DENABLE_STATIC_RUNTIME=ON"
-    Write-Host "Static linking: Enabled" -ForegroundColor Yellow
 }
 
 Write-Host "Configuration: $Config" -ForegroundColor Green
