@@ -181,6 +181,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                     -Wno-unused-command-line-argument # ignore unused command line arguments warning
                     -Wno-unknown-argument # ignore unknown command line arguments warning
                     -Wno-c++98-compat -Wno-c++98-compat-pedantic # ignore C++98 compatibility warnings
+                    -Wno-c++2y-extensions # ignore C2y extension warnings
             )
         endif ()
 
@@ -192,7 +193,7 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
 
     target_compile_options(
             ${TARGET_NAME}
-            PRIVATE
+            ${SCOPE_NAME}
             $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>
             $<$<COMPILE_LANGUAGE:C>:${PROJECT_WARNINGS_CXX}>
     )
