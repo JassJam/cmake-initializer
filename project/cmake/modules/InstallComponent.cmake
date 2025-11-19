@@ -40,93 +40,93 @@ include(CMakePackageConfigHelpers)
 #   )
 #
 function(install_component TARGET_NAME)
-    if(NOT TARGET ${TARGET_NAME})
+    if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_add_compiler_warnings() called without TARGET")
-    endif()
+    endif ()
 
     # Parse arguments
-    set(oneValueArgs 
-        INCLUDE_SUBDIR 
-        NAMESPACE 
-        RUNTIME_DIR 
-        LIBRARY_DIR 
-        ARCHIVE_DIR
-        EXPORT_MACRO_NAME
-        EXPORT_FILE_NAME
+    set(oneValueArgs
+            INCLUDE_SUBDIR
+            NAMESPACE
+            RUNTIME_DIR
+            LIBRARY_DIR
+            ARCHIVE_DIR
+            EXPORT_MACRO_NAME
+            EXPORT_FILE_NAME
     )
     cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
 
     # Set defaults
-    if(NOT ARG_INCLUDE_SUBDIR)
+    if (NOT ARG_INCLUDE_SUBDIR)
         set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})
-    endif()
-    if(NOT ARG_NAMESPACE)
+    endif ()
+    if (NOT ARG_NAMESPACE)
         set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
-    endif()
-    if(NOT ARG_RUNTIME_DIR)
+    endif ()
+    if (NOT ARG_RUNTIME_DIR)
         set(ARG_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR})
-    endif()
-    if(NOT ARG_LIBRARY_DIR)
+    endif ()
+    if (NOT ARG_LIBRARY_DIR)
         set(ARG_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
-    endif()
-    if(NOT ARG_ARCHIVE_DIR)
+    endif ()
+    if (NOT ARG_ARCHIVE_DIR)
         set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
-    endif()
-    if(NOT ARG_EXPORT_MACRO_NAME)
+    endif ()
+    if (NOT ARG_EXPORT_MACRO_NAME)
         set(ARG_EXPORT_MACRO_NAME "${TARGET_NAME}_EXPORT")
-    endif()
-    if(NOT ARG_EXPORT_FILE_NAME)
+    endif ()
+    if (NOT ARG_EXPORT_FILE_NAME)
         set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${TARGET_NAME}_export.h")
-    endif()
+    endif ()
 
     # Get target type
     get_target_property(target_type ${TARGET_NAME} TYPE)
 
     # Install target with appropriate components
     install(TARGETS ${TARGET_NAME}
-        EXPORT ${TARGET_NAME}Targets
-        RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
-        LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
-        ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            EXPORT ${TARGET_NAME}Targets
+            RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
+            LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
+            ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
-    
+
     # Handle Emscripten WebAssembly files
     include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
-    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
+    if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         get_target_property(target_type ${TARGET_NAME} TYPE)
-        if(target_type STREQUAL "EXECUTABLE")
+        if (target_type STREQUAL "EXECUTABLE")
             # Install accompanying WASM files for Emscripten executables
-            install(FILES 
-                $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
-                DESTINATION ${ARG_RUNTIME_DIR}
-                OPTIONAL
+            install(FILES
+                    $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
+                    DESTINATION ${ARG_RUNTIME_DIR}
+                    OPTIONAL
             )
-        endif()
-    endif()
+        endif ()
+    endif ()
 
     # Install export configuration
     install(EXPORT ${TARGET_NAME}Targets
-        FILE ${TARGET_NAME}Config.cmake
-        NAMESPACE ${ARG_NAMESPACE}
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
+            FILE ${TARGET_NAME}Config.cmake
+            NAMESPACE ${ARG_NAMESPACE}
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
     )
 
     # Handle shared library specifics
-    if(${target_type} STREQUAL "SHARED_LIBRARY")
+    if (${target_type} STREQUAL "SHARED_LIBRARY")
         # Generate export headers
         generate_export_header(${TARGET_NAME}
-            BASE_NAME ${TARGET_NAME}
-            EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
-            EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
+                BASE_NAME ${TARGET_NAME}
+                EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
+                EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
         )
 
         # Install export headers
-        install(FILES 
-            ${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
+        install(FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
         )
-    endif()
+    endif ()
 endfunction()

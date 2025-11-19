@@ -31,7 +31,7 @@ TEST_CASE("Math Utils Divide Function", "[divide]")
     REQUIRE(math_utils::Divide(10, 2) == 5);
     REQUIRE(math_utils::Divide(-10, 2) == -5);
     REQUIRE(math_utils::Divide(-10, -2) == 5);
-    REQUIRE(math_utils::Divide(7, 3) == 2); // Integer division
+    REQUIRE(math_utils::Divide(7, 3) == 2);
 
     SECTION("Division by zero throws exception")
     {
