@@ -8,34 +8,39 @@ include_guard(GLOBAL)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
-# Comprehensive executable registration with visibility control
+# Register an executable target with extensive configuration options
 # usage:
 # register_executable(MyExecutable
-#     SOURCE_DIR "src"
-#     INCLUDE_DIR "include"
-#     SOURCES PRIVATE "main.cpp" "utils.cpp" PUBLIC "api.cpp"
-#     INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"
-#     LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"
-#     DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"
-#     COMPILE_DEFINITIONS PRIVATE "PRIVATE_DEF" PUBLIC "PUBLIC_DEF" INTERFACE "INTERFACE_DEF"
-#     COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"
-#     COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"
-#     LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"
-#     PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"
-#     ENVIRONMENT [dev|prod|test|...]
-#     INSTALL
-#     # Project options (override global defaults)
-#     ENABLE_EXCEPTIONS [ON|OFF]
-#     ENABLE_IPO [ON|OFF]
-#     WARNINGS_AS_ERRORS [ON|OFF]
-#     ENABLE_SANITIZER_ADDRESS [ON|OFF]
-#     ENABLE_SANITIZER_LEAK [ON|OFF]
-#     ENABLE_SANITIZER_UNDEFINED_BEHAVIOR [ON|OFF]
-#     ENABLE_SANITIZER_THREAD [ON|OFF]
-#     ENABLE_SANITIZER_MEMORY [ON|OFF]
-#     ENABLE_HARDENING [ON|OFF]
-#     ENABLE_CLANG_TIDY [ON|OFF]
-#     ENABLE_CPPCHECK [ON|OFF]
+#     # Source and include directories
+#     [SOURCE_DIR "src"]
+#     [INCLUDE_DIR "include"]
+#
+#     # project files and settings with visibility
+#     [SOURCES PRIVATE main.cpp utils.cpp PUBLIC api.cpp]
+#     [INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"]
+#     [LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"]
+#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"]
+#     [COMPILE_DEFINITIONS PRIVATE "PRIVATE_DEF" PUBLIC "PUBLIC_DEF" INTERFACE "INTERFACE_DEF"]
+#     [COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"]
+#     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
+#     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
+#     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
+#     [ENVIRONMENT dev|prod|test|...]
+#
+#     # Sanity and analysis options
+#     [ENABLE_EXCEPTIONS ON|OFF]
+#     [ENABLE_IPO ON|OFF]
+#     [WARNINGS_AS_ERRORS ON|OFF]
+#     [ENABLE_SANITIZER_ADDRESS ON|OFF]
+#     [ENABLE_SANITIZER_LEAK ON|OFF]
+#     [ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ON|OFF]
+#     [ENABLE_SANITIZER_THREAD ON|OFF]
+#     [ENABLE_SANITIZER_MEMORY ON|OFF]
+#     [ENABLE_HARDENING ON|OFF]
+#     [ENABLE_CLANG_TIDY ON|OFF]
+#     [ENABLE_CPPCHECK ON|OFF]
+#
+#     [INSTALL]
 # )
 function(register_executable TARGET_NAME)
     set(options INSTALL DEPENDENCIES)

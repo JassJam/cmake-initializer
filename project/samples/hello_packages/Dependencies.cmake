@@ -1,10 +1,10 @@
 #
-# loads dependencies for the target
+# loads dependencies for the HelloPackages
 # adds:
 #   - spdlog:
 #     used for logging
 #
-function(target_load_dependencies TARGET_NAME)
+function(HelloPackages_load_dependencies)
     if (COMMAND CPMAddPackage)
         CPMAddPackage(
                 NAME spdlog
@@ -14,14 +14,14 @@ function(target_load_dependencies TARGET_NAME)
                 SYSTEM ON
         )
 
-        target_link_dependencies(${TARGET_NAME}
+        target_link_dependencies(HelloPackages
                 PRIVATE
                 spdlog::spdlog
         )
     elseif (COMMAND xrepo_package)
         xrepo_package("spdlog"
                 CONFIGS "std_format=true")
-        xrepo_target_packages(${TARGET_NAME} spdlog)
+        xrepo_target_packages(HelloPackages spdlog)
     else ()
         message(FATAL_ERROR
                 "CPMAddPackage command not available. "
@@ -34,3 +34,4 @@ function(target_load_dependencies TARGET_NAME)
         target_compile_options(${TARGET_NAME} PRIVATE /utf-8)
     endif ()
 endfunction()
+HelloPackages_load_dependencies()

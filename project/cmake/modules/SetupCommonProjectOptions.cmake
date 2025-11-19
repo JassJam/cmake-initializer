@@ -205,16 +205,4 @@ function(target_setup_common_options TARGET_NAME)
 
     # Link to config TARGET_NAME for project configuration
     target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::config)
-
-    # Check if Dependencies.cmake exists and include it
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.cmake")
-        include(Dependencies.cmake)
-    endif ()
-
-    # Check if target_load_dependencies function exists and call it
-    if (COMMAND target_load_dependencies)
-        target_load_dependencies(${TARGET_NAME})
-    else ()
-        message(WARNING "DEPENDENCIES option specified but target_load_dependencies function not found. Make sure Dependencies.cmake is present and defines this function.")
-    endif ()
 endfunction()

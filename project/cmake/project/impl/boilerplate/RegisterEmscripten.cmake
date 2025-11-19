@@ -17,7 +17,7 @@ function(_ensure_emscripten_ready)
     endif ()
 endfunction()
 
-# One-liner function to register an Emscripten/WebAssembly target
+# Register an Emscripten/WebAssembly target
 # Usage:
 # register_emscripten(MyWebApp
 #     [SOURCES src1.cpp src2.cpp ...]        # Source files (required)
