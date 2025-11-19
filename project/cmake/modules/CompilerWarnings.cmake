@@ -63,11 +63,9 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                     /w14242 # 'identifier': conversion from 'type1' to 'type2', possible loss of data
                     /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
                     /w14263 # 'function': member function does not override any base class virtual member function
-                    /w14265 # 'classname': class has virtual functions, but destructor is not virtual instances of this class may not
-                    # be destructed correctly
+                    /w14265 # 'classname': class has virtual functions, but destructor is not virtual instances of this class may not be destructed correctly
                     /w14287 # 'operator': unsigned/negative constant mismatch
-                    /we4289 # nonstandard extension used: 'variable': loop control variable declared in the for-loop is used outside
-                    # the for-loop scope
+                    /we4289 # nonstandard extension used: 'variable': loop control variable declared in the for-loop is used outside the for-loop scope
                     /w14296 # 'operator': expression is always 'boolean_value'
                     /w14311 # 'variable': pointer truncation from 'type1' to 'type2'
                     /w14545 # expression before comma evaluates to a function which is missing an argument list
@@ -99,12 +97,10 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                     -Wextra # reasonable and standard
                     -Wshadow # warn the user if a variable declaration shadows one from a parent context
                     -Wnon-virtual-dtor # warn the user if a class with virtual functions has a non-virtual destructor. This helps
-                    # catch hard to track down memory errors
                     -Wold-style-cast # warn for c-style casts
                     -Wcast-align # warn for potential performance problem casts
                     -Wunused # warn on anything being unused
                     -Woverloaded-virtual # warn if you overload (not override) a virtual function
-                    -Wpedantic # warn if non-standard C++ is used
                     -Wconversion # warn on type conversions that may lose data
                     -Wsign-conversion # warn on sign conversions
                     -Wnull-dereference # warn if a null dereference is detected
@@ -132,12 +128,10 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                     -Wextra # reasonable and standard
                     -Wshadow # warn the user if a variable declaration shadows one from a parent context
                     -Wnon-virtual-dtor # warn the user if a class with virtual functions has a non-virtual destructor. This helps
-                    # catch hard to track down memory errors
                     -Wold-style-cast # warn for c-style casts
                     -Wcast-align # warn for potential performance problem casts
                     -Wunused # warn on anything being unused
                     -Woverloaded-virtual # warn if you overload (not override) a virtual function
-                    -Wpedantic # warn if non-standard C++ is used
                     -Wconversion # warn on type conversions that may lose data
                     -Wsign-conversion # warn on sign conversions
                     -Wnull-dereference # warn if a null dereference is detected
@@ -170,7 +164,6 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                     -Wcast-align # warn for potential performance problem casts
                     -Wunused # warn on anything being unused
                     -Woverloaded-virtual # warn if you overload (not override) a virtual function
-                    -Wpedantic # warn if non-standard C++ is used
                     -Wconversion # warn on type conversions that may lose data
                     -Wsign-conversion # warn on sign conversions
                     -Wnull-dereference # warn if a null dereference is detected
@@ -181,7 +174,6 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
                     -Wno-unused-command-line-argument # ignore unused command line arguments warning
                     -Wno-unknown-argument # ignore unknown command line arguments warning
                     -Wno-c++98-compat -Wno-c++98-compat-pedantic # ignore C++98 compatibility warnings
-                    -Wno-c++2y-extensions # ignore C2y extension warnings
             )
         endif ()
 
