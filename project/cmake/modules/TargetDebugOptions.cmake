@@ -72,7 +72,6 @@ function(enable_global_debug_options)
     if (NOT DEFINED ARG_DEBUG_INFO_LEVEL)
         set(ARG_DEBUG_INFO_LEVEL 2)
     endif ()
-    message(STATUS "Applying global debug options for all targets (${CURRENT_COMPILER})")
 
     get_current_compiler(CURRENT_COMPILER)
     if ("${CURRENT_COMPILER}" MATCHES "MSVC|CLANG-MSVC")

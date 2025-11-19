@@ -14,7 +14,7 @@ set(ENABLE_CCACHE ON CACHE BOOL "Enable ccache for faster rebuilds")
 mark_as_advanced(ENABLE_CCACHE)
 
 # === PACKAGE MANAGEMENT OPTIONS ===
-set(PACKAGE_MANAGERS "CPM;XMake" CACHE STRING "Package managers to enable (semicolon-separated list: CPM, XMake)")
+set(PACKAGE_MANAGERS "CPM" CACHE STRING "Package managers to enable (semicolon-separated list: CPM, XMake)")
 
 # === MAIN CONFIGURATION OPTIONS ===
 option(DEV_MODE "Enable development mode (all quality tools)" ON)
