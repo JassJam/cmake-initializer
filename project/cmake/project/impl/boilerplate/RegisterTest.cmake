@@ -131,30 +131,36 @@ endfunction()
 # Comprehensive test creation function - uses the registered test framework
 # Usage:
 # register_test(MyTest
-#     SOURCE_DIR "tests"
-#     SOURCES PRIVATE "test_main.cpp" "test_utils.cpp" PUBLIC "api_test.cpp"
-#     INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"
-#     LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"
-#     DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"
-#     COMPILE_DEFINITIONS PRIVATE "TEST_PRIVATE" PUBLIC "TEST_PUBLIC" INTERFACE "TEST_INTERFACE"
-#     COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"
-#     COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"
-#     LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"
-#     PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"
-#     ENVIRONMENT [dev|prod|test|...]
-#     INSTALL
+#     # Source and include directories
+#     [SOURCE_DIR "tests"]
+#     [INCLUDE_DIR "tests-include"]
+#
+#     # project files and settings with visibility
+#     [SOURCES PRIVATE "test_main.cpp" "test_utils.cpp" PUBLIC "api_test.cpp"]
+#     [INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"]
+#     [LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"]
+#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"]
+#     [COMPILE_DEFINITIONS PRIVATE "TEST_PRIVATE" PUBLIC "TEST_PUBLIC" INTERFACE "TEST_INTERFACE"]
+#     [COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"]
+#     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
+#     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
+#     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
+#     [ENVIRONMENT dev|prod|test|...]
+#
 #     # Project options (override global defaults)
-#     ENABLE_EXCEPTIONS [ON|OFF]
-#     ENABLE_IPO [ON|OFF]
-#     WARNINGS_AS_ERRORS [ON|OFF]
-#     ENABLE_SANITIZER_ADDRESS [ON|OFF]
-#     ENABLE_SANITIZER_LEAK [ON|OFF]
-#     ENABLE_SANITIZER_UNDEFINED_BEHAVIOR [ON|OFF]
-#     ENABLE_SANITIZER_THREAD [ON|OFF]
-#     ENABLE_SANITIZER_MEMORY [ON|OFF]
-#     ENABLE_HARDENING [ON|OFF]
-#     ENABLE_CLANG_TIDY [ON|OFF]
-#     ENABLE_CPPCHECK [ON|OFF]
+#     [ENABLE_EXCEPTIONS ON|OFF]
+#     [ENABLE_IPO ON|OFF]
+#     [WARNINGS_AS_ERRORS ON|OFF]
+#     [ENABLE_SANITIZER_ADDRESS ON|OFF]
+#     [ENABLE_SANITIZER_LEAK ON|OFF]
+#     [ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ON|OFF]
+#     [ENABLE_SANITIZER_THREAD ON|OFF]
+#     [ENABLE_SANITIZER_MEMORY ON|OFF]
+#     [ENABLE_HARDENING ON|OFF]
+#     [ENABLE_CLANG_TIDY ON|OFF]
+#     [ENABLE_CPPCHECK ON|OFF]
+#
+#     [INSTALL]
 # )
 function(register_test TARGET_NAME)
     # Skip if testing is disabled
@@ -191,7 +197,10 @@ function(register_test TARGET_NAME)
 
     # Set defaults
     if (NOT ARG_SOURCE_DIR)
-        set(ARG_SOURCE_DIR ".")  # Default to current directory
+        set(ARG_SOURCE_DIR "tests")  # Default to current directory
+    endif ()
+    if (NOT ARG_INCLUDE_DIR)
+        set(ARG_INCLUDE_DIR "include")
     endif ()
 
     # Create test executable
@@ -233,6 +242,12 @@ function(register_test TARGET_NAME)
         endif ()
     endif ()
 
+    # Add default include directory
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}")
+        target_include_directories(${TARGET_NAME} PRIVATE
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>)
+    endif ()
+    
     # Add includes with visibility
     if (ARG_INCLUDES)
         set(current_visibility "PRIVATE")  # Default visibility for tests

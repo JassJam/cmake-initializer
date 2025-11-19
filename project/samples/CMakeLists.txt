@@ -1,5 +1,5 @@
 
-register_project(SUBDIRS
+set(SUBDIRS
         hello_world
         hello_packages
         hello_shared_library
@@ -7,3 +7,7 @@ register_project(SUBDIRS
         hello_testing_frameworks
         hello_emscripten
 )
+
+foreach(subdir ${SUBDIRS})
+    add_subdirectory(${subdir})
+endforeach()
