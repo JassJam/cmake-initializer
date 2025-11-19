@@ -21,40 +21,40 @@ include(GetCurrentCompiler)
 # - Include {{{ SCRIPT }}} where Emscripten should inject the generated JavaScript
 function(create_emscripten_html_template output_file)
     cmake_parse_arguments(ARG "" "TITLE;CANVAS_ID;TEMPLATE_FILE" "" ${ARGN})
-    
-    if(NOT ARG_TITLE)
+
+    if (NOT ARG_TITLE)
         set(ARG_TITLE "WebAssembly Application")
-    endif()
-    
-    if(NOT ARG_CANVAS_ID)
+    endif ()
+
+    if (NOT ARG_CANVAS_ID)
         set(ARG_CANVAS_ID "canvas")
-    endif()
-    
+    endif ()
+
     # Check if custom template file is provided and exists
-    if(ARG_TEMPLATE_FILE AND EXISTS "${ARG_TEMPLATE_FILE}")
+    if (ARG_TEMPLATE_FILE AND EXISTS "${ARG_TEMPLATE_FILE}")
         message(STATUS "Using custom HTML template: ${ARG_TEMPLATE_FILE}")
-        
+
         # Read the template file
         file(READ "${ARG_TEMPLATE_FILE}" HTML_CONTENT)
-        
+
         # Perform variable substitutions
         string(REPLACE "{{TITLE}}" "${ARG_TITLE}" HTML_CONTENT "${HTML_CONTENT}")
         string(REPLACE "{{CANVAS_ID}}" "${ARG_CANVAS_ID}" HTML_CONTENT "${HTML_CONTENT}")
-        
+
         # Validate that the template has the required {{{ SCRIPT }}} placeholder
-        if(NOT HTML_CONTENT MATCHES "\\{\\{\\{ SCRIPT \\}\\}\\}")
+        if (NOT HTML_CONTENT MATCHES "\\{\\{\\{ SCRIPT \\}\\}\\}")
             message(WARNING "Custom template file '${ARG_TEMPLATE_FILE}' does not contain '{{{ SCRIPT }}}' placeholder. Emscripten may not work properly.")
-        endif()
-        
-    else()
+        endif ()
+
+    else ()
         # Use default template if no custom template provided or file doesn't exist
-        if(ARG_TEMPLATE_FILE)
+        if (ARG_TEMPLATE_FILE)
             message(WARNING "Custom template file '${ARG_TEMPLATE_FILE}' not found. Using default template.")
-        endif()
-        
+        endif ()
+
         _create_default_emscripten_template(HTML_CONTENT "${ARG_TITLE}" "${ARG_CANVAS_ID}")
-    endif()
-    
+    endif ()
+
     # Write the final HTML content
     file(WRITE "${output_file}" "${HTML_CONTENT}")
     message(STATUS "Created Emscripten HTML template: ${output_file}")
@@ -176,6 +176,6 @@ function(_create_default_emscripten_template output_var title canvas_id)
     {{{ SCRIPT }}}
 </body>
 </html>")
-    
+
     set(${output_var} "${HTML_CONTENT}" PARENT_SCOPE)
 endfunction()

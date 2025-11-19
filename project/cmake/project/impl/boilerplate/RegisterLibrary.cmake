@@ -42,74 +42,74 @@ include(SetupCommonProjectOptions)
 function(register_library TARGET_NAME)
     set(options SHARED STATIC INTERFACE INSTALL DEPENDENCIES)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR EXPORT_MACRO ENVIRONMENT
-        ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
-        ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
-        ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
-        ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
+            ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
+            ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
+            ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
+            ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
-        COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
+            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Determine library type
-    if(ARG_SHARED)
+    if (ARG_SHARED)
         set(LIB_TYPE SHARED)
-    elseif(ARG_STATIC)
+    elseif (ARG_STATIC)
         set(LIB_TYPE STATIC)
-    elseif(ARG_INTERFACE)
+    elseif (ARG_INTERFACE)
         set(LIB_TYPE INTERFACE)
-    else()
+    else ()
         set(LIB_TYPE STATIC)  # Default to static
-    endif()
-    
+    endif ()
+
     # Handle Emscripten platform limitations
     include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
-    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN" AND LIB_TYPE STREQUAL "SHARED")
+    if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN" AND LIB_TYPE STREQUAL "SHARED")
         message(STATUS "Converting shared library '${TARGET_NAME}' to static for Emscripten platform")
         set(LIB_TYPE STATIC)
         set(ARG_SHARED FALSE)
         set(ARG_STATIC TRUE)
-    endif()
+    endif ()
 
     # Set defaults
-    if(NOT ARG_SOURCE_DIR)
+    if (NOT ARG_SOURCE_DIR)
         set(ARG_SOURCE_DIR "src")
-    endif()
-    if(NOT ARG_INCLUDE_DIR)
+    endif ()
+    if (NOT ARG_INCLUDE_DIR)
         set(ARG_INCLUDE_DIR "include")
-    endif()
+    endif ()
 
     # Create library
     add_library(${TARGET_NAME} ${LIB_TYPE})
-    
+
     # Generate export header for shared libraries (or libraries that were originally shared)
-    if((ARG_SHARED OR ARG_STATIC) AND ARG_EXPORT_MACRO AND NOT ARG_INTERFACE)
+    if ((ARG_SHARED OR ARG_STATIC) AND ARG_EXPORT_MACRO AND NOT ARG_INTERFACE)
         include(GenerateExportHeader)
-        
+
         # For Emscripten, we still generate export headers for compatibility but they'll be empty
         generate_export_header(${TARGET_NAME}
-            BASE_NAME ${TARGET_NAME}
-            EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO}
-            EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}/${TARGET_NAME}/${TARGET_NAME}_export.h"
+                BASE_NAME ${TARGET_NAME}
+                EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO}
+                EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}/${TARGET_NAME}/${TARGET_NAME}_export.h"
         )
-        
+
         # Ensure the export header directory is in the include path
-        target_include_directories(${TARGET_NAME} PUBLIC 
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}>)
-    endif()
+        target_include_directories(${TARGET_NAME} PUBLIC
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}>)
+    endif ()
 
     # Copy AddressSanitizer runtime DLL to build directory for shared libraries
-    if(LIB_TYPE STREQUAL "SHARED")
+    if (LIB_TYPE STREQUAL "SHARED")
         include(GetCurrentCompiler)
         get_current_compiler(CURRENT_COMPILER)
-        if("${CURRENT_COMPILER}" STREQUAL "MSVC")
+        if ("${CURRENT_COMPILER}" STREQUAL "MSVC")
             # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
             string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-            if(NOT ASAN_FLAGS_INDEX EQUAL -1)
+            if (NOT ASAN_FLAGS_INDEX EQUAL -1)
                 _copy_asan_dll_to_build_dir(${TARGET_NAME})
-            endif()
-        endif()
-    endif()
+            endif ()
+        endif ()
+    endif ()
 
     # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
     set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
@@ -117,186 +117,186 @@ function(register_library TARGET_NAME)
     target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
 
     # Add sources with visibility (only for non-interface libraries)
-    if(NOT ARG_INTERFACE)
-        if(ARG_SOURCES)
+    if (NOT ARG_INTERFACE)
+        if (ARG_SOURCES)
             set(current_visibility "PRIVATE")  # Default visibility for sources
-            foreach(item ${ARG_SOURCES})
-                if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+            foreach (item ${ARG_SOURCES})
+                if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                     set(current_visibility ${item})
-                else()
+                else ()
                     target_sources(${TARGET_NAME} ${current_visibility} ${item})
-                endif()
-            endforeach()
-        else()
+                endif ()
+            endforeach ()
+        else ()
             # Auto-discover sources
             file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c")
-            if(SOURCES)
+            if (SOURCES)
                 target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
-            endif()
-        endif()
+            endif ()
+        endif ()
 
         # Add headers for shared libraries
-        if(ARG_SHARED)
+        if (ARG_SHARED)
             file(GLOB_RECURSE HEADERS "${ARG_INCLUDE_DIR}/*.hpp" "${ARG_INCLUDE_DIR}/*.h")
-            if(HEADERS)
+            if (HEADERS)
                 set_target_properties(${TARGET_NAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
-            endif()
-        endif()
-    endif()
+            endif ()
+        endif ()
+    endif ()
 
     # Add default include directory
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}")
-        if(ARG_INTERFACE)
-            target_include_directories(${TARGET_NAME} INTERFACE 
-                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${TARGET_NAME}>)
-        else()
-            target_include_directories(${TARGET_NAME} PUBLIC 
-                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>
-                $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}>
-                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${TARGET_NAME}>)
-        endif()
-    endif()
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}")
+        if (ARG_INTERFACE)
+            target_include_directories(${TARGET_NAME} INTERFACE
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${TARGET_NAME}>)
+        else ()
+            target_include_directories(${TARGET_NAME} PUBLIC
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${ARG_INCLUDE_DIR}>
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${TARGET_NAME}>)
+        endif ()
+    endif ()
 
     # Add includes with visibility
-    if(ARG_INCLUDES)
+    if (ARG_INCLUDES)
         set(current_visibility "PUBLIC")  # Default visibility for libraries
-        if(ARG_INTERFACE)
+        if (ARG_INTERFACE)
             set(current_visibility "INTERFACE")
-        endif()
-        foreach(item ${ARG_INCLUDES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        endif ()
+        foreach (item ${ARG_INCLUDES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add libraries with visibility
     set(DEFAULT_LINK_TYPE PUBLIC)
-    if(ARG_INTERFACE)
+    if (ARG_INTERFACE)
         set(DEFAULT_LINK_TYPE INTERFACE)
-    endif()
-    
-    if(ARG_LIBRARIES)
+    endif ()
+
+    if (ARG_LIBRARIES)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
-        foreach(item ${ARG_LIBRARIES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_LIBRARIES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_link_libraries(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add compile definitions with visibility
-    if(ARG_COMPILE_DEFINITIONS)
+    if (ARG_COMPILE_DEFINITIONS)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
-        foreach(item ${ARG_COMPILE_DEFINITIONS})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_COMPILE_DEFINITIONS})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_compile_definitions(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add compile options with visibility
-    if(ARG_COMPILE_OPTIONS)
+    if (ARG_COMPILE_OPTIONS)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
-        foreach(item ${ARG_COMPILE_OPTIONS})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_COMPILE_OPTIONS})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_compile_options(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add compile features with visibility
-    if(ARG_COMPILE_FEATURES)
+    if (ARG_COMPILE_FEATURES)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
-        foreach(item ${ARG_COMPILE_FEATURES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_COMPILE_FEATURES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_compile_features(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add link options with visibility
-    if(ARG_LINK_OPTIONS)
+    if (ARG_LINK_OPTIONS)
         set(current_visibility ${DEFAULT_LINK_TYPE})  # Default visibility
-        foreach(item ${ARG_LINK_OPTIONS})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_LINK_OPTIONS})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_link_options(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Set target properties
-    if(ARG_PROPERTIES)
+    if (ARG_PROPERTIES)
         set_target_properties(${TARGET_NAME} PROPERTIES ${ARG_PROPERTIES})
-    endif()
-    
+    endif ()
+
     # Add dependencies
-    if(ARG_DEPENDENCIES)
+    if (ARG_DEPENDENCIES)
         add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
-    endif()
-    
+    endif ()
+
     # Copy shared library dependencies to build directory for direct execution
     _copy_shared_library_dependencies_to_build_dir(${TARGET_NAME})
-    
+
     # Apply common project options (warnings, sanitizers, static analysis, etc.)
     set(COMMON_OPTIONS_ARGS)
-    if(DEFINED ARG_ENABLE_EXCEPTIONS)
+    if (DEFINED ARG_ENABLE_EXCEPTIONS)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_EXCEPTIONS ${ARG_ENABLE_EXCEPTIONS})
-    endif()
-    if(DEFINED ARG_ENABLE_IPO)
+    endif ()
+    if (DEFINED ARG_ENABLE_IPO)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_IPO ${ARG_ENABLE_IPO})
-    endif()
-    if(DEFINED ARG_WARNINGS_AS_ERRORS)
+    endif ()
+    if (DEFINED ARG_WARNINGS_AS_ERRORS)
         list(APPEND COMMON_OPTIONS_ARGS WARNINGS_AS_ERRORS ${ARG_WARNINGS_AS_ERRORS})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_ADDRESS)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_ADDRESS)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_ADDRESS ${ARG_ENABLE_SANITIZER_ADDRESS})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_LEAK)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_LEAK)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_LEAK ${ARG_ENABLE_SANITIZER_LEAK})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ${ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_THREAD)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_THREAD)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_THREAD ${ARG_ENABLE_SANITIZER_THREAD})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_MEMORY)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_MEMORY)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_MEMORY ${ARG_ENABLE_SANITIZER_MEMORY})
-    endif()
-    if(DEFINED ARG_ENABLE_HARDENING)
+    endif ()
+    if (DEFINED ARG_ENABLE_HARDENING)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_HARDENING ${ARG_ENABLE_HARDENING})
-    endif()
-    if(DEFINED ARG_ENABLE_CLANG_TIDY)
+    endif ()
+    if (DEFINED ARG_ENABLE_CLANG_TIDY)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CLANG_TIDY ${ARG_ENABLE_CLANG_TIDY})
-    endif()
-    if(DEFINED ARG_ENABLE_CPPCHECK)
+    endif ()
+    if (DEFINED ARG_ENABLE_CPPCHECK)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
-    endif()
-    
+    endif ()
+
     target_setup_common_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
 
     # Install if requested
-    if(ARG_INSTALL)
-        if(ARG_EXPORT_MACRO)
-            install_component(${TARGET_NAME} 
-                INCLUDE_SUBDIR ${TARGET_NAME}
-                EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO})
-        else()
+    if (ARG_INSTALL)
+        if (ARG_EXPORT_MACRO)
+            install_component(${TARGET_NAME}
+                    INCLUDE_SUBDIR ${TARGET_NAME}
+                    EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO})
+        else ()
             install_component(${TARGET_NAME} INCLUDE_SUBDIR ${TARGET_NAME})
-        endif()
-    endif()
+        endif ()
+    endif ()
 endfunction()

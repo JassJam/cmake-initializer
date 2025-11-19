@@ -55,7 +55,6 @@ BOOST_AUTO_TEST_CASE(TestPrimeChecking)
     BOOST_CHECK(!math_utils::IsPrime(9));
     BOOST_CHECK(!math_utils::IsPrime(10));
 
-    // Test negative numbers and zero
     BOOST_CHECK(!math_utils::IsPrime(0));
     BOOST_CHECK(!math_utils::IsPrime(-1));
     BOOST_CHECK(!math_utils::IsPrime(-5));
