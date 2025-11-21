@@ -31,7 +31,7 @@ function(HelloPackages_load_dependencies)
 
     # MSVC requires UTF-8 flag for spdlog Unicode support
     if (MSVC)
-        target_compile_options(${TARGET_NAME} PRIVATE /utf-8)
+        target_compile_options(HelloPackages PRIVATE /utf-8)
     endif ()
 endfunction()
 HelloPackages_load_dependencies()
