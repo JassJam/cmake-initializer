@@ -1,6 +1,159 @@
 include(CMakePackageConfigHelpers)
 
-# Function to copy shared library dependencies to build directory for direct execution
+#
+# usage:
+# install_component(TARGET_NAME
+#     [INCLUDE_SUBDIR <subdir>] # The subdirectory under the include directory where the public headers will be installed
+#     [NAMESPACE <namespace>] # The namespace to use for the exported targets
+#     [RUNTIME_DIR <RUNTIME_DIR>] # The directory where runtime files (DLLs and executables) will be installed
+#     [LIBRARY_DIR <library_dir>] # The directory where library files (shared libraries) will be installed
+#     [ARCHIVE_DIR <archive_dir>] # The directory where archive files (static/import libraries) will be installed
+#     [EXPORT_MACRO_NAME <macro_name>] # The name of the export define for the TARGET_NAME
+#     [EXPORT_FILE_NAME <file_name>] # The name of the export file to be generated
+# )
+#
+# Example:
+#   install_component(my_target
+#       INCLUDE_SUBDIR "my_subdir"
+#       NAMESPACE "my_namespace::"
+#       RUNTIME_DIR "bin"
+#       LIBRARY_DIR "lib"
+#       ARCHIVE_DIR "lib"
+#       EXPORT_MACRO_NAME "MYTARGET_EXPORT"
+#       EXPORT_FILE_NAME "my_target_export.h"
+#   )
+#
+function(install_component TARGET_NAME)
+    set(oneValueArgs
+            INCLUDE_SUBDIR
+            NAMESPACE
+            RUNTIME_DIR
+            LIBRARY_DIR
+            ARCHIVE_DIR
+            EXPORT_MACRO_NAME
+            EXPORT_FILE_NAME
+    )
+
+    cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
+
+    #
+
+    # Set defaults
+    if (NOT ARG_INCLUDE_SUBDIR)
+        set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})
+    endif ()
+    if (NOT ARG_NAMESPACE)
+        set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
+    endif ()
+    if (NOT ARG_RUNTIME_DIR)
+        set(ARG_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR})
+    endif ()
+    if (NOT ARG_LIBRARY_DIR)
+        set(ARG_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
+    endif ()
+    if (NOT ARG_ARCHIVE_DIR)
+        set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
+    endif ()
+    if (NOT ARG_EXPORT_MACRO_NAME)
+        set(ARG_EXPORT_MACRO_NAME "${TARGET_NAME}_EXPORT")
+    endif ()
+    if (NOT ARG_EXPORT_FILE_NAME)
+        set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${TARGET_NAME}_export.h")
+    endif ()
+
+    # Get TARGET_NAME type
+    get_target_property(target_type ${TARGET_NAME} TYPE)
+
+    # Install TARGET_NAME with appropriate components
+    install(TARGETS ${TARGET_NAME}
+            EXPORT ${TARGET_NAME}Targets
+            RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
+            LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
+            ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    # Install shared library dependencies for executables and shared libraries
+    get_target_property(target_type ${TARGET_NAME} TYPE)
+    if (target_type STREQUAL "EXECUTABLE" OR target_type STREQUAL "SHARED_LIBRARY")
+        _target_install_shared_library_dependencies(${TARGET_NAME} ${ARG_RUNTIME_DIR})
+
+        # Install AddressSanitizer runtime DLL if needed
+        _install_asan_runtime_dll(${TARGET_NAME} ${ARG_RUNTIME_DIR})
+    endif ()
+
+    # Handle Emscripten WebAssembly files
+    include(GetCurrentCompiler)
+    get_current_compiler(CURRENT_COMPILER)
+    if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
+        get_target_property(target_type ${TARGET_NAME} TYPE)
+        if (target_type STREQUAL "EXECUTABLE")
+            # Install accompanying WASM files for Emscripten executables
+            install(FILES
+                    $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
+                    DESTINATION ${ARG_RUNTIME_DIR}
+                    OPTIONAL
+            )
+        endif ()
+    endif ()
+
+    # Install export configuration (only if it's safe to do so)
+    # Skip export for targets that have external dependencies not in our project
+    get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
+    set(CAN_EXPORT TRUE)
+
+    if (TARGET_LINK_LIBS)
+        foreach (LIB ${TARGET_LINK_LIBS})
+            if (TARGET ${LIB})
+                # Check if this is an external target (not part of our project)
+                get_target_property(LIB_SOURCE_DIR ${LIB} SOURCE_DIR)
+                get_target_property(LIB_BINARY_DIR ${LIB} BINARY_DIR)
+
+                # If the target doesn't have a source/binary dir in our project tree, it's external
+                if (NOT LIB_SOURCE_DIR OR NOT LIB_BINARY_DIR)
+                    set(CAN_EXPORT FALSE)
+                    break()
+                endif ()
+
+                # Check if it's a CPM-managed dependency (usually under _deps)
+                string(FIND "${LIB_SOURCE_DIR}" "_deps/" DEPS_FOUND)
+                if (NOT DEPS_FOUND EQUAL -1)
+                    set(CAN_EXPORT FALSE)
+                    break()
+                endif ()
+            endif ()
+        endforeach ()
+    endif ()
+
+    if (CAN_EXPORT)
+        install(EXPORT ${TARGET_NAME}Targets
+                FILE ${TARGET_NAME}Config.cmake
+                NAMESPACE ${ARG_NAMESPACE}
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
+        )
+    else ()
+        message(STATUS "** Skipping export for ${TARGET_NAME} due to external dependencies")
+    endif ()
+
+    # Handle shared library specifics
+    if (${target_type} STREQUAL "SHARED_LIBRARY")
+        # Generate export headers
+        generate_export_header(${TARGET_NAME}
+                BASE_NAME ${TARGET_NAME}
+                EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
+                EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
+        )
+
+        # Install export headers
+        install(FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
+        )
+    endif ()
+endfunction()
+
+# Helper function to copy shared library dependencies to build directory for direct execution
 function(_copy_shared_library_dependencies_to_build_dir TARGET_NAME)
     # Get the target's link libraries
     get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
@@ -79,7 +232,7 @@ function(_copy_shared_library_dependencies_to_build_dir_recursive MAIN_TARGET LI
     endforeach ()
 endfunction()
 
-# Function to copy AddressSanitizer runtime DLL to build directory for direct execution
+# Helper function to copy AddressSanitizer runtime DLL to build directory for direct execution
 function(_copy_asan_dll_to_build_dir TARGET_NAME)
     # Only handle this for MSVC with AddressSanitizer enabled
     include(GetCurrentCompiler)
@@ -95,7 +248,7 @@ function(_copy_asan_dll_to_build_dir TARGET_NAME)
         return()
     endif ()
 
-    # Find the AddressSanitizer DLL using the same logic as install_asan_runtime_dll
+    # Find the AddressSanitizer DLL using the same logic as _install_asan_runtime_dll
     _find_asan_dll_path(ASAN_DLL_PATH)
 
     if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
@@ -222,8 +375,8 @@ function(_find_asan_dll_path OUTPUT_VAR)
     set(${OUTPUT_VAR} "${ASAN_DLL_PATH}" PARENT_SCOPE)
 endfunction()
 
-# Function to install AddressSanitizer runtime DLL if needed
-function(install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
+# Helper function to install AddressSanitizer runtime DLL alongside the executable
+function(_install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
     # Only handle this for MSVC with AddressSanitizer enabled
     include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
@@ -280,8 +433,8 @@ function(install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
     endif ()
 endfunction()
 
-# Function to install shared library dependencies cross-platform
-function(target_install_shared_library_dependencies TARGET_NAME RUNTIME_DIR)
+# Helper function to install shared library dependencies cross-platform
+function(_target_install_shared_library_dependencies TARGET_NAME RUNTIME_DIR)
     # Get TARGET_NAME type
     get_target_property(target_type ${TARGET_NAME} TYPE)
     if (NOT target_type STREQUAL "EXECUTABLE" AND NOT target_type STREQUAL "SHARED_LIBRARY")
@@ -532,172 +685,5 @@ endif()
                 endif ()
             endif ()
         endforeach ()
-    endif ()
-endfunction()
-
-#
-# Helper function to install a TARGET_NAME with specific components
-# This function installs a TARGET_NAME with the specified components and options.
-# It handles the installation of runtime, library, and archive files,
-# as well as public headers and export configuration.
-# It also generates export headers for shared libraries.
-#
-# usage:
-# install_component(TARGET_NAME
-#     [INCLUDE_SUBDIR <subdir>]
-#     [NAMESPACE <namespace>]
-#     [RUNTIME_DIR <RUNTIME_DIR>]
-#     [LIBRARY_DIR <library_dir>]
-#     [ARCHIVE_DIR <archive_dir>]
-#     [EXPORT_MACRO_NAME <macro_name>]
-#     [EXPORT_FILE_NAME <file_name>]
-# )
-#
-# Arguments:
-#   TARGET_NAME: The TARGET_NAME to install.
-#   INCLUDE_SUBDIR: The subdirectory under the include directory where the public headers will be installed.
-#   NAMESPACE: The namespace to use for the exported targets.
-#   RUNTIME_DIR: The directory where runtime files (DLLs and executables) will be installed.
-#   LIBRARY_DIR: The directory where library files (shared libraries) will be installed.
-#   ARCHIVE_DIR: The directory where archive files (static/import libraries) will be installed.
-#   EXPORT_MACRO_NAME: The name of the export define for the TARGET_NAME.
-#   EXPORT_FILE_NAME: The name of the export file to be generated.
-#
-# Example:
-#   install_component(my_target
-#       INCLUDE_SUBDIR "my_subdir"
-#       NAMESPACE "my_namespace::"
-#       RUNTIME_DIR "bin"
-#       LIBRARY_DIR "lib"
-#       ARCHIVE_DIR "lib"
-#       EXPORT_MACRO_NAME "MYTARGET_EXPORT"
-#       EXPORT_FILE_NAME "my_target_export.h"
-#   )
-#
-function(install_component TARGET_NAME)
-    # Parse arguments
-    set(oneValueArgs
-            INCLUDE_SUBDIR
-            NAMESPACE
-            RUNTIME_DIR
-            LIBRARY_DIR
-            ARCHIVE_DIR
-            EXPORT_MACRO_NAME
-            EXPORT_FILE_NAME
-    )
-    cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
-
-    # Set defaults
-    if (NOT ARG_INCLUDE_SUBDIR)
-        set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})
-    endif ()
-    if (NOT ARG_NAMESPACE)
-        set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
-    endif ()
-    if (NOT ARG_RUNTIME_DIR)
-        set(ARG_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR})
-    endif ()
-    if (NOT ARG_LIBRARY_DIR)
-        set(ARG_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
-    endif ()
-    if (NOT ARG_ARCHIVE_DIR)
-        set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
-    endif ()
-    if (NOT ARG_EXPORT_MACRO_NAME)
-        set(ARG_EXPORT_MACRO_NAME "${TARGET_NAME}_EXPORT")
-    endif ()
-    if (NOT ARG_EXPORT_FILE_NAME)
-        set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${TARGET_NAME}_export.h")
-    endif ()
-
-    # Get TARGET_NAME type
-    get_target_property(target_type ${TARGET_NAME} TYPE)
-
-    # Install TARGET_NAME with appropriate components
-    install(TARGETS ${TARGET_NAME}
-            EXPORT ${TARGET_NAME}Targets
-            RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
-            LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
-            ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
-            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
-            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-
-    # Install shared library dependencies for executables and shared libraries
-    get_target_property(target_type ${TARGET_NAME} TYPE)
-    if (target_type STREQUAL "EXECUTABLE" OR target_type STREQUAL "SHARED_LIBRARY")
-        target_install_shared_library_dependencies(${TARGET_NAME} ${ARG_RUNTIME_DIR})
-
-        # Install AddressSanitizer runtime DLL if needed
-        install_asan_runtime_dll(${TARGET_NAME} ${ARG_RUNTIME_DIR})
-    endif ()
-
-    # Handle Emscripten WebAssembly files
-    include(GetCurrentCompiler)
-    get_current_compiler(CURRENT_COMPILER)
-    if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
-        get_target_property(target_type ${TARGET_NAME} TYPE)
-        if (target_type STREQUAL "EXECUTABLE")
-            # Install accompanying WASM files for Emscripten executables
-            install(FILES
-                    $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
-                    DESTINATION ${ARG_RUNTIME_DIR}
-                    OPTIONAL
-            )
-        endif ()
-    endif ()
-
-    # Install export configuration (only if it's safe to do so)
-    # Skip export for targets that have external dependencies not in our project
-    get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
-    set(CAN_EXPORT TRUE)
-
-    if (TARGET_LINK_LIBS)
-        foreach (LIB ${TARGET_LINK_LIBS})
-            if (TARGET ${LIB})
-                # Check if this is an external target (not part of our project)
-                get_target_property(LIB_SOURCE_DIR ${LIB} SOURCE_DIR)
-                get_target_property(LIB_BINARY_DIR ${LIB} BINARY_DIR)
-
-                # If the target doesn't have a source/binary dir in our project tree, it's external
-                if (NOT LIB_SOURCE_DIR OR NOT LIB_BINARY_DIR)
-                    set(CAN_EXPORT FALSE)
-                    break()
-                endif ()
-
-                # Check if it's a CPM-managed dependency (usually under _deps)
-                string(FIND "${LIB_SOURCE_DIR}" "_deps/" DEPS_FOUND)
-                if (NOT DEPS_FOUND EQUAL -1)
-                    set(CAN_EXPORT FALSE)
-                    break()
-                endif ()
-            endif ()
-        endforeach ()
-    endif ()
-
-    if (CAN_EXPORT)
-        install(EXPORT ${TARGET_NAME}Targets
-                FILE ${TARGET_NAME}Config.cmake
-                NAMESPACE ${ARG_NAMESPACE}
-                DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
-        )
-    else ()
-        message(STATUS "** Skipping export for ${TARGET_NAME} due to external dependencies")
-    endif ()
-
-    # Handle shared library specifics
-    if (${target_type} STREQUAL "SHARED_LIBRARY")
-        # Generate export headers
-        generate_export_header(${TARGET_NAME}
-                BASE_NAME ${TARGET_NAME}
-                EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
-                EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
-        )
-
-        # Install export headers
-        install(FILES
-                ${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}
-                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
-        )
     endif ()
 endfunction()

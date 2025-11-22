@@ -1,8 +1,3 @@
-# Emscripten toolchain file for WebAssembly builds
-# This toolchain includes the official Emscripten toolchain and adds project-specific settings
-
-include_guard(GLOBAL)
-
 # First, try to set up EMSDK if it's not available
 if (NOT DEFINED ENV{EMSDK} OR NOT EXISTS "$ENV{EMSDK}")
     # Include the EMSDK manager to install it automatically

@@ -1,8 +1,10 @@
 include_guard(GLOBAL)
 
-include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
+include(GetCurrentCompiler)
 include(SetupCommonProjectOptions)
+include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 
+#
 # Register a library target
 # usage:
 # register_library(MyLibrary
@@ -39,16 +41,19 @@ include(SetupCommonProjectOptions)
 #
 #     [INSTALL]
 # )
+#
 function(register_library TARGET_NAME)
-    set(options SHARED STATIC INTERFACE INSTALL DEPENDENCIES)
+    set(options SHARED STATIC INTERFACE INSTALL)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR EXPORT_MACRO
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
             ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
-            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
+            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES DEPENDENCIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    #
 
     # Determine library type
     if (ARG_SHARED)
@@ -62,8 +67,6 @@ function(register_library TARGET_NAME)
     endif ()
 
     # Handle Emscripten platform limitations
-    include(GetCurrentCompiler)
-    get_current_compiler(CURRENT_COMPILER)
     if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN" AND LIB_TYPE STREQUAL "SHARED")
         message(STATUS "Converting shared library '${TARGET_NAME}' to static for Emscripten platform")
         set(LIB_TYPE STATIC)

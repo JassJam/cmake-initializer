@@ -1,19 +1,13 @@
-# ==============================================================================
-# Simple Target Link Dependencies Module
-# ==============================================================================
-# This module provides a simple target_link_dependencies function that:
-# 1. Links dependencies to the target
-# 2. Automatically copies shared libraries (.dll on Windows, .so on Linux, .dylib on macOS)
-# 3. Installs shared libraries alongside the target
-
-# Simple function to link dependencies and handle all shared library management
+#
+# Helper function to link dependencies and handle all shared library management
 # Usage:
 #     target_link_dependencies(target_name
 #         [PRIVATE|PUBLIC|INTERFACE] 
-#         dependency1 dependency2 ...
+#         [dependency1 dependency2 ...]
 #         [PRIVATE|PUBLIC|INTERFACE] 
-#         dependency3 ...
+#         [dependency3 ...]
 #     )
+#
 function(target_link_dependencies TARGET_NAME)
     if (NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_link_dependencies: Target '${TARGET_NAME}' does not exist")
@@ -40,6 +34,8 @@ function(target_link_dependencies TARGET_NAME)
     # Second pass: handle shared library copying and installation for specified targets only
     _target_copy_all_dependencies(${TARGET_NAME} ${specified_targets})
 endfunction()
+
+#
 
 # Internal function to handle all dependency copying (shared libs and external DLLs)
 function(_target_copy_all_dependencies TARGET_NAME)
@@ -73,9 +69,6 @@ function(_target_copy_all_dependencies TARGET_NAME)
             if (target_type STREQUAL "SHARED_LIBRARY")
                 list(APPEND shared_deps ${target_name})
             endif ()
-
-            # Check for external DLL dependencies based on target properties
-            _check_external_dlls(${target_name})
 
             # Check this target's dependencies
             get_target_property(target_deps ${target_name} LINK_LIBRARIES)
@@ -150,61 +143,4 @@ function(_target_copy_all_dependencies TARGET_NAME)
                 COMPONENT Runtime
         )
     endforeach ()
-endfunction()
-
-# Internal function to check for external DLL dependencies
-function(_check_external_dlls target_name)
-    if (NOT TARGET ${target_name})
-        return()
-    endif ()
-
-    # Check for known libraries with external DLL dependencies
-    get_target_property(target_alias ${target_name} ALIASED_TARGET)
-    if (target_alias)
-        set(check_target ${target_alias})
-    else ()
-        set(check_target ${target_name})
-    endif ()
-
-    # Get target name for comparison
-    get_target_property(actual_name ${check_target} NAME)
-    if (NOT actual_name)
-        set(actual_name ${check_target})
-    endif ()
-
-    # Check for DPP library (Discord++)
-    if (actual_name MATCHES "dpp" OR check_target MATCHES "dpp")
-        get_target_property(dpp_source_dir ${check_target} SOURCE_DIR)
-        if (dpp_source_dir)
-            # Look for the win32/bin directory relative to DPP source
-            set(dpp_dll_dir "${dpp_source_dir}/../win32/bin")
-            get_filename_component(dpp_dll_dir "${dpp_dll_dir}" ABSOLUTE)
-
-            if (EXISTS "${dpp_dll_dir}")
-                # List of DPP required DLLs
-                set(required_dlls
-                        "libcrypto-1_1-x64.dll"
-                        "libssl-1_1-x64.dll"
-                        "libsodium.dll"
-                        "opus.dll"
-                        "zlib1.dll"
-                )
-
-                foreach (dll_name ${required_dlls})
-                    set(dll_path "${dpp_dll_dir}/${dll_name}")
-                    if (EXISTS "${dll_path}")
-                        list(APPEND external_dlls "${dll_path}|${dll_name}")
-                    endif ()
-                endforeach ()
-            endif ()
-        endif ()
-    endif ()
-
-    # Add more libraries here as needed
-    # Example for future libraries:
-    # elseif(actual_name MATCHES "some_other_lib")
-    #     # Handle some_other_lib external DLLs
-
-    # Propagate results back to parent scope
-    set(external_dlls ${external_dlls} PARENT_SCOPE)
 endfunction()

@@ -1,8 +1,8 @@
-include_guard(GLOBAL)
-
-include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
+include(GetCurrentCompiler)
 include(SetupCommonProjectOptions)
+include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 
+#
 # Register an Emscripten/WebAssembly target
 # Usage:
 # register_emscripten(MyWebApp
@@ -46,9 +46,9 @@ include(SetupCommonProjectOptions)
 #     [INSTALL]                              # Install target to CMAKE_INSTALL_PREFIX
 #     [INSTALL_DESTINATION path]             # Custom install destination
 # )
+#
 function(register_emscripten TARGET_NAME)
-    # Early return if not building with Emscripten
-    include(GetCurrentCompiler)
+    # early exit if not using Emscripten compiler
     get_current_compiler(CURRENT_COMPILER)
     if (NOT CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         message(STATUS "Skipping Emscripten target '${TARGET_NAME}' - not building with Emscripten compiler")
@@ -56,7 +56,7 @@ function(register_emscripten TARGET_NAME)
     endif ()
 
     set(options WASM STANDALONE_WASM NODE_JS PTHREAD SIMD ASYNCIFY ASSERTIONS
-        SAFE_HEAP DEMANGLE_SUPPORT ALLOW_MEMORY_GROWTH CLOSURE_COMPILER INSTALL)
+            SAFE_HEAP DEMANGLE_SUPPORT ALLOW_MEMORY_GROWTH CLOSURE_COMPILER INSTALL)
     set(oneValueArgs HTML_TEMPLATE HTML_TITLE CANVAS_ID OUTPUT_DIR INITIAL_MEMORY
             MAXIMUM_MEMORY STACK_SIZE INSTALL_DESTINATION
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
@@ -67,6 +67,8 @@ function(register_emscripten TARGET_NAME)
             EXPORTED_RUNTIME_METHODS PRELOAD_FILES EMBED_FILES)
 
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    # 
 
     # Validate arguments
     if (NOT ARG_SOURCES)
@@ -208,7 +210,9 @@ function(register_emscripten TARGET_NAME)
     message(STATUS "Emscripten target '${TARGET_NAME}' configured successfully")
 endfunction()
 
-# Internal function to configure HTML output
+#
+
+# Helper function to configure HTML output
 function(_configure_emscripten_html_output TARGET_NAME)
     cmake_parse_arguments(ARG "" "HTML_TEMPLATE;HTML_TITLE;CANVAS_ID;OUTPUT_DIR" "" ${ARGN})
 
@@ -260,7 +264,7 @@ function(_configure_emscripten_html_output TARGET_NAME)
     message(STATUS "  - HTML template: ${ARG_HTML_TEMPLATE}")
 endfunction()
 
-# Internal function to configure WebAssembly settings
+# Helper function to configure WebAssembly settings
 function(_configure_emscripten_wasm_settings TARGET_NAME)
     cmake_parse_arguments(ARG
             "WASM;STANDALONE_WASM;NODE_JS;PTHREAD;SIMD;ASYNCIFY;ASSERTIONS;SAFE_HEAP;DEMANGLE_SUPPORT;ALLOW_MEMORY_GROWTH;CLOSURE_COMPILER"
@@ -373,7 +377,7 @@ function(_configure_emscripten_wasm_settings TARGET_NAME)
     endif ()
 endfunction()
 
-# Internal function to configure memory settings
+# Helper function to configure memory settings
 function(_configure_emscripten_memory TARGET_NAME)
     cmake_parse_arguments(ARG "ALLOW_MEMORY_GROWTH" "INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE" "" ${ARGN})
 
@@ -402,7 +406,7 @@ function(_configure_emscripten_memory TARGET_NAME)
     endif ()
 endfunction()
 
-# Internal function to parse memory sizes with units
+# Helper function to parse memory sizes with units
 function(_parse_memory_size size_string output_var)
     string(TOUPPER "${size_string}" size_upper)
 
@@ -427,7 +431,7 @@ function(_parse_memory_size size_string output_var)
     endif ()
 endfunction()
 
-# Internal function to configure installation
+# Helper function to configure installation
 function(_configure_emscripten_installation TARGET_NAME)
     cmake_parse_arguments(ARG "" "INSTALL_DESTINATION" "" ${ARGN})
 
@@ -447,7 +451,7 @@ function(_configure_emscripten_installation TARGET_NAME)
     message(STATUS "  - Installation: ${ARG_INSTALL_DESTINATION}")
 endfunction()
 
-# Internal function to create HTML template from file or default
+# Helper function to create HTML template from file or default
 function(_create_emscripten_html_template output_file)
     cmake_parse_arguments(ARG "" "TITLE;CANVAS_ID;TEMPLATE_FILE" "" ${ARGN})
 
@@ -475,7 +479,7 @@ function(_create_emscripten_html_template output_file)
     endif ()
 endfunction()
 
-# Internal function to create default HTML template
+# Helper function to create default HTML template
 function(_create_default_html_template output_file title canvas_id)
     set(HTML_CONTENT "<!DOCTYPE html>
 <html lang=\"en\">
@@ -602,7 +606,7 @@ function(_create_default_html_template output_file title canvas_id)
 endfunction()
 
 # Configure HTML generation for Emscripten builds
-function(configure_emscripten_html_generation)
+function(_configure_emscripten_html_generation)
     if (NOT EMSCRIPTEN_GENERATE_HTML)
         return()
     endif ()
@@ -630,7 +634,7 @@ endfunction()
 function(_ensure_emscripten_ready)
     if (NOT DEFINED EMSDK_INITIALIZED)
         verify_and_setup_emscripten_compilers()
-        configure_emscripten_html_generation()
+        _configure_emscripten_html_generation()
         set(EMSDK_INITIALIZED TRUE CACHE INTERNAL "EMSDK has been initialized")
     endif ()
 endfunction()

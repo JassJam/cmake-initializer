@@ -14,7 +14,7 @@ function(check_sanitizers_support
         set(${SUPPORTS_UBSAN} OFF PARENT_SCOPE)
     endif ()
 
-    # ASan support - disabled on Windows+GCC due to known issues
+    # ASan support - disabled on Windows+GCC
     if ((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*") OR
     (CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*" AND NOT WIN32) OR
     (CMAKE_CXX_COMPILER_ID MATCHES "MSVC"))

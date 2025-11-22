@@ -1,10 +1,8 @@
-# ==============================================================================
-# Load environment variables from .env files
-# ==============================================================================
-
+#
 # usage:
 #  target_load_env_variable(TARGET VARIABLE VALUE)
 #  If VALUE is empty, tries to get it from system environment
+#
 function(target_load_env_variable TARGET_NAME VARIABLE VALUE)
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_load_env_file: Target '${TARGET_NAME}' does not exist")
@@ -23,8 +21,10 @@ function(target_load_env_variable TARGET_NAME VARIABLE VALUE)
     target_compile_definitions(${TARGET_NAME} PRIVATE "${VARIABLE}=${VALUE}")
 endfunction()
 
+#
 # usage:
 #  target_load_env_file(TARGET FILENAME)
+#
 function(target_load_env_file TARGET_NAME FILENAME)
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_load_env_file: Target '${TARGET_NAME}' does not exist")
@@ -49,9 +49,11 @@ function(target_load_env_file TARGET_NAME FILENAME)
     endforeach ()
 endfunction()
 
+#
 # usage:
 #  target_load_env_files(
 #   TARGET FILENAMES...)
+#
 function(target_load_env_files TARGET_NAME)
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_load_env_files: Target '${TARGET_NAME}' does not exist")
@@ -104,9 +106,11 @@ function(target_load_env_files TARGET_NAME)
 
 endfunction()
 
+#
 # usage:
 #  target_load_env_files_with_fallback(TARGET BASE_PATH)
 #  Automatically loads .env.<config> based on CMAKE_BUILD_TYPE, with fallback to .env
+#
 function(target_load_env_files_with_fallback TARGET_NAME BASE_PATH)
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_load_env_files_with_fallback: Target '${TARGET_NAME}' does not exist")
@@ -135,9 +139,11 @@ function(target_load_env_files_with_fallback TARGET_NAME BASE_PATH)
     target_load_env_files(${TARGET_NAME} ${ENV_FILES_TO_LOAD})
 endfunction()
 
+#
 # usage:
 #  load_env_file(FILE_PATH OUT_VARS)
 # loads environment variables from a .env file into a list of strings in the format KEY=VALUE
+#
 function(load_env_file FILE_PATH OUT_KEYS OUT_VALUES)
     if (EXISTS "${FILE_PATH}")
         file(READ "${FILE_PATH}" ENV_CONTENTS)

@@ -3,6 +3,7 @@ include_guard(GLOBAL)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
+#
 # Register a test target using the registered framework
 # Usage:
 # register_test(MyTest
@@ -36,6 +37,7 @@ include(SetupCommonProjectOptions)
 #
 #     [INSTALL]
 # )
+#
 function(register_test TARGET_NAME)
     # Skip if testing is disabled
     if (NOT BUILD_TESTING)
@@ -53,16 +55,18 @@ function(register_test TARGET_NAME)
         message(WARNING "No test framework was registered.")
     endif ()
 
-    set(options INSTALL DEPENDENCIES)
+    set(options INSTALL)
     set(oneValueArgs SOURCE_DIR
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
             ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
-            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
+            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES DEPENDENCIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+    #
+    
     # Check if test framework is registered
     get_property(framework_registered GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED)
     if (NOT framework_registered)
@@ -206,15 +210,7 @@ function(register_test TARGET_NAME)
         get_property(framework_package_manager GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER)
         if (framework_package_manager STREQUAL "XMake" AND COMMAND xrepo_target_packages)
             get_property(framework_name GLOBAL PROPERTY TEST_FRAMEWORK_NAME)
-            if (framework_name STREQUAL "doctest")
-                xrepo_target_packages(${TARGET_NAME} doctest)
-            elseif (framework_name STREQUAL "catch2")
-                xrepo_target_packages(${TARGET_NAME} catch2)
-            elseif (framework_name STREQUAL "gtest")
-                xrepo_target_packages(${TARGET_NAME} gtest)
-            elseif (framework_name STREQUAL "boost")
-                xrepo_target_packages(${TARGET_NAME} boost)
-            endif ()
+            xrepo_target_packages(${TARGET_NAME} ${framework_name})
         else ()
             target_link_libraries(${TARGET_NAME} PRIVATE ${framework_libs})
         endif ()

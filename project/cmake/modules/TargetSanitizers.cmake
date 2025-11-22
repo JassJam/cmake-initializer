@@ -1,6 +1,6 @@
-
 #
-# Enable sanitizers globally for all targets and dependencies
+# usage:
+# enable_global_sanitizers()
 #
 function(enable_global_sanitizers)
     include(GetCurrentCompiler)

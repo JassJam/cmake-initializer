@@ -1,22 +1,13 @@
-# ==============================================================================
-# Static Linking Module
-# ==============================================================================
-# This module provides functions to enable static linking of runtime libraries
-# with automatic compiler detection for better portability across different systems.
-# 
-# Supports MSVC, GCC, Clang, Intel, and Emscripten compilers with appropriate
-# static linking flags for each platform.
-
 include_guard(GLOBAL)
 include(GetCurrentCompiler)
 
-# Enable static runtime linking for a specific target with auto-detection
 #
 # usage:
 # target_enable_static_linking(
 #   TARGET_NAME
 #   [PRIVATE|PUBLIC|INTERFACE]
 # )
+#
 function(target_enable_static_linking TARGET_NAME SCOPE_NAME)
     # if STATIC_LINKING_ENABLED is already set, skip re-enabling
     if (DEFINED STATIC_LINKING_ENABLED AND STATIC_LINKING_ENABLED)
@@ -61,11 +52,11 @@ function(target_enable_static_linking TARGET_NAME SCOPE_NAME)
     endif ()
 endfunction()
 
-# Enable static linking of runtime libraries globally
+#
 # usage:
 # enable_static_linking()
+#
 function(enable_static_linking)
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
 
     message(STATUS "Enabling static linking of runtime libraries for ${CURRENT_COMPILER}")

@@ -1,10 +1,3 @@
-# ==============================================================================
-# Common Project Options Setup
-# ==============================================================================
-# This function applies all common project options (warnings, sanitizers, 
-# static analysis, hardening, etc.) directly to targets, replacing the need
-# for a separate project_options interface library.
-
 include_guard(GLOBAL)
 
 include(CompilerWarnings)
@@ -13,10 +6,11 @@ include(TargetSanitizers)
 include(StaticAnalysis)
 include(StaticLinking)
 
+#
 # Apply common project options to a target
 # Usage:
 # target_setup_common_options(MyTarget
-#   [ENABLE_EXCEPTIONS ON/OFF]                    # Override per-target exceptions
+#   [ENABLE_EXCEPTIONS ON/OFF]                   # Override per-target exceptions
 #   [ENABLE_IPO ON/OFF]                          # Enable interprocedural optimization
 #   [WARNINGS_AS_ERRORS ON/OFF]                  # Override warnings as errors setting
 #   [ENABLE_SANITIZER_ADDRESS ON/OFF]            # Override address sanitizer setting
@@ -28,8 +22,8 @@ include(StaticLinking)
 #   [ENABLE_CLANG_TIDY ON/OFF]                   # Override clang-tidy setting
 #   [ENABLE_CPPCHECK ON/OFF]                     # Override cppcheck setting
 # )
+#
 function(target_setup_common_options TARGET_NAME)
-    # Parse arguments
     set(oneValueArgs
             ENABLE_EXCEPTIONS
             ENABLE_IPO
@@ -45,6 +39,7 @@ function(target_setup_common_options TARGET_NAME)
             ENABLE_PCH
             ENABLE_UNITY_BUILD
     )
+
     cmake_parse_arguments(
             ARG
             ""
@@ -53,6 +48,8 @@ function(target_setup_common_options TARGET_NAME)
             ${ARGN}
     )
 
+    #
+    
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
     endif ()
@@ -153,7 +150,6 @@ function(target_setup_common_options TARGET_NAME)
     if (DEFINED ARG_ENABLE_CPPCHECK)
         set(ENABLE_CPPCHECK_VALUE ${ARG_ENABLE_CPPCHECK})
     endif ()
-
 
     if (ENABLE_CLANG_TIDY_VALUE OR ENABLE_CPPCHECK_VALUE)
         include(StaticAnalysis)
