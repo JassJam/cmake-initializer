@@ -46,8 +46,10 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
     message(STATUS "*** GLIBC++ Assertions (vector[], string[], ...) enabled")
     list(APPEND ${DEFINITIONS_VAR} _GLIBCXX_DEBUG _GLIBCXX_DEBUG_PEDANTIC _GLIBCXX_ASSERTIONS)
 
-    #    message(STATUS "*** g++/clang _FORTIFY_SOURCE=3 enabled")
-    #    list(APPEND ${COMPILE_OPTIONS_VAR} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3)
+    if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+        message(STATUS "*** g++/clang _FORTIFY_SOURCE=3 enabled")
+        list(APPEND ${COMPILE_OPTIONS_VAR} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3)
+    endif()
 
     # Stack protector
     check_cxx_compiler_flag(-fstack-protector-strong STACK_PROTECTOR)
