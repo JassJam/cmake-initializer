@@ -1,10 +1,3 @@
-#
-# RegisterAssets.cmake
-# 
-# Provides functions for registering and bundling assets with targets.
-# Assets are copied to the target's output directory during build.
-#
-
 include_guard(GLOBAL)
 
 #

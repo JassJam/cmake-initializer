@@ -1,8 +1,4 @@
-# ==============================================================================
-# Preset Configuration
-# ==============================================================================
-# This file handles all preset-based configuration to keep the main 
-# CMakeLists.txt clean and focused.
+include(${CMAKE_CURRENT_LIST_DIR}/RegisterTestFramework.cmake)
 
 # Auto-register test framework if DEFAULT_TEST_FRAMEWORK is defined in preset
 function(configure_preset_test_framework)
@@ -20,14 +16,11 @@ function(configure_preset_test_framework)
         if (NOT already_registered)
             register_test_framework(${DEFAULT_TEST_FRAMEWORK})
         else ()
-            message(STATUS "Test framework already registered, skipping auto-registration")
+            message(STATUS "Test frameworkCopySharedLibrary already registered, skipping auto-registration")
         endif ()
     endif ()
 endfunction()
 
-# Main preset configuration function - call this to apply all preset-based settings
 message(STATUS "Configuring project from preset variables...")
-
 configure_preset_test_framework()
-
 message(STATUS "Preset configuration completed")

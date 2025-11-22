@@ -1,14 +1,9 @@
-# ==============================================================================
-# Executable Registration Module
-# ==============================================================================
-# This module provides the register_executable function for comprehensive
-# executable target registration with full visibility control.
-
 include_guard(GLOBAL)
+
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
-# Register an executable target with extensive configuration options
+# Register an executable target
 # usage:
 # register_executable(MyExecutable
 #     # Source and include directories

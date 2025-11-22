@@ -1,14 +1,9 @@
-# ==============================================================================
-# Library Registration Module
-# ==============================================================================
-# This module provides the register_library function for comprehensive
-# library target registration with full visibility control.
-
 include_guard(GLOBAL)
+
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
-# Comprehensive library registration with visibility control
+# Register a library target
 # usage:
 # register_library(MyLibrary
 #     SHARED|STATIC|INTERFACE
