@@ -3,6 +3,7 @@ include_guard(GLOBAL)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
+#
 # Register an executable target
 # usage:
 # register_executable(MyExecutable
@@ -36,15 +37,16 @@ include(SetupCommonProjectOptions)
 #
 #     [INSTALL]
 # )
+#
 function(register_executable TARGET_NAME)
-    set(options INSTALL DEPENDENCIES)
+    set(options INSTALL)
     set(oneValueArgs SOURCE_DIR INCLUDE_DIR
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
             ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
-            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
+            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES DEPENDENCIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Set defaults

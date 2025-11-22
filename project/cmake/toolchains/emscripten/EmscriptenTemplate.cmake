@@ -1,14 +1,8 @@
-# ==============================================================================
-# Emscripten Support Module
-# ==============================================================================
-# This module provides utility functions specifically for Emscripten/WebAssembly builds
-# with automatic configuration for web deployment and optimization.
-
-include_guard(GLOBAL)
 include(GetCurrentCompiler)
 
-# Create an Emscripten web page template
-# Usage:
+#
+# create an Emscripten web page template
+# usage:
 # create_emscripten_html_template(OUTPUT_FILE 
 #     [TITLE "Page Title"]              # HTML page title
 #     [CANVAS_ID "canvas"]              # Canvas element ID
@@ -19,6 +13,7 @@ include(GetCurrentCompiler)
 # - Use {{TITLE}} for page title substitution
 # - Use {{CANVAS_ID}} for canvas element ID substitution
 # - Include {{{ SCRIPT }}} where Emscripten should inject the generated JavaScript
+#
 function(create_emscripten_html_template output_file)
     cmake_parse_arguments(ARG "" "TITLE;CANVAS_ID;TEMPLATE_FILE" "" ${ARGN})
 

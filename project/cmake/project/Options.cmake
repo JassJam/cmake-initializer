@@ -1,8 +1,6 @@
 include(CheckSanitizerSupport)
 include(CMakeDependentOption)
 
-#
-
 # Check what sanitizers are supported
 check_sanitizers_support(SUPPORTS_UBSAN SUPPORTS_ASAN)
 
@@ -38,9 +36,6 @@ set(ENABLE_GLOBAL_SANITIZERS "${DEV_MODE}" CACHE STRING "Enable global sanitizer
 set(ENABLE_GLOBAL_HARDENING "${DEV_MODE}" CACHE STRING "Enable global hardening")
 set(ENABLE_GLOBAL_STATIC_ANALYSIS "${DEV_MODE}" CACHE STRING "Enable global static analysis")
 
-# === PERFORMANCE OPTIONS ===
-option(ENABLE_GLOBAL_IPO "Enable global link-time optimization (LTO)" ${RELEASE_MODE})
-
 # === SANITIZER OPTIONS ===
 if (DEV_MODE OR ENABLE_GLOBAL_SANITIZERS)
     set(DEFAULT_ASAN ${SUPPORTS_ASAN})
@@ -67,6 +62,7 @@ endif ()
 
 # === LINKING OPTIONS ===
 option(ENABLE_STATIC_RUNTIME "Statically link runtime libraries for better portability" OFF)
+option(ENABLE_GLOBAL_IPO "Enable global link-time optimization (LTO)" ${RELEASE_MODE})
 
 # === EMSCRIPTEN OPTIONS ===
 option(ENABLE_EMSDK_AUTO_INSTALL "Automatically install EMSDK locally if not found" ON)

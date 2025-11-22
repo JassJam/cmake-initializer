@@ -30,21 +30,20 @@ include(CMakePackageConfigHelpers)
 #
 # Example:
 #   install_component(my_target
-#       INCLUDE_SUBDIR "my_subdir"
-#       NAMESPACE "my_namespace::"
-#       RUNTIME_DIR "bin"
-#       LIBRARY_DIR "lib"
-#       ARCHIVE_DIR "lib"
-#       EXPORT_MACRO_NAME "MYTARGET_EXPORT"
-#       EXPORT_FILE_NAME "my_target_export.h"
+#       [INCLUDE_SUBDIR "my_subdir"]
+#       [NAMESPACE "my_namespace::"]
+#       [RUNTIME_DIR "bin"]
+#       [LIBRARY_DIR "lib"]
+#       [ARCHIVE_DIR "lib"]
+#       [EXPORT_MACRO_NAME "MYTARGET_EXPORT"]
+#       [EXPORT_FILE_NAME "my_target_export.h"]
 #   )
 #
 function(install_component TARGET_NAME)
     if (NOT TARGET ${TARGET_NAME})
-        message(FATAL_ERROR "target_add_compiler_warnings() called without TARGET")
+        message(FATAL_ERROR "install_component() called without TARGET")
     endif ()
 
-    # Parse arguments
     set(oneValueArgs
             INCLUDE_SUBDIR
             NAMESPACE
@@ -54,8 +53,11 @@ function(install_component TARGET_NAME)
             EXPORT_MACRO_NAME
             EXPORT_FILE_NAME
     )
+    
     cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
 
+    #
+    
     # Set defaults
     if (NOT ARG_INCLUDE_SUBDIR)
         set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})

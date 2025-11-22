@@ -1,34 +1,30 @@
-# ==============================================================================
-# Debug Options Configuration
-# ==============================================================================
-# This module provides debug-related options and configurations for different
-# compilers, including Edit and Continue support for MSVC.
-
 include(CheckCXXCompilerFlag)
 include(GetCurrentCompiler)
 
 #
-# Configure debug options for a specific target
-#
-# Usage:
+# usage:
 # target_enable_debug_options(
 #   TARGET_NAME
 #   [ENABLE_EDIT_AND_CONTINUE]
 #   [ENABLE_DEBUG_INFO]
 #   [DEBUG_INFO_LEVEL level]  # 0-3 for GCC/Clang, ignored for MSVC
 # )
+#
 function(target_enable_debug_options TARGET_NAME)
     set(oneValueArgs
             ENABLE_EDIT_AND_CONTINUE
             ENABLE_DEBUG_INFO
             DEBUG_INFO_LEVEL
     )
+    
     cmake_parse_arguments(ARG
             ""
             "${oneValueArgs}"
             ""
             ${ARGN}
     )
+    
+    #
 
     if (NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_enable_debug_options() called without valid TARGET")
@@ -52,14 +48,13 @@ function(target_enable_debug_options TARGET_NAME)
 endfunction()
 
 #
-# Enable debug options globally for all targets
-#
-# Usage:
+# usage:
 # enable_global_debug_options(
 #   [ENABLE_EDIT_AND_CONTINUE]
 #   [ENABLE_DEBUG_INFO] 
 #   [DEBUG_INFO_LEVEL level]
 # )
+#
 function(enable_global_debug_options)
     # Check if already applied globally
     get_property(already_applied GLOBAL PROPERTY PROJECT_GLOBAL_DEBUG_OPTIONS_ENABLED)
@@ -86,8 +81,8 @@ function(enable_global_debug_options)
 endfunction()
 
 #
-# Private function to configure MSVC debug options for a target
-#
+
+# Helper function to configure MSVC debug options for a target
 function(_configure_msvc_debug_options TARGET_NAME SCOPE_NAME ENABLE_EDIT_AND_CONTINUE ENABLE_DEBUG_INFO)
     set(DEBUG_OPTIONS "")
 
@@ -123,9 +118,7 @@ function(_configure_msvc_debug_options TARGET_NAME SCOPE_NAME ENABLE_EDIT_AND_CO
     endif ()
 endfunction()
 
-#
-# Private function to configure GCC/Clang debug options for a target
-#
+# Helper function to configure GCC/Clang debug options for a target
 function(_configure_gcc_clang_debug_options TARGET_NAME SCOPE_NAME ENABLE_DEBUG_INFO DEBUG_INFO_LEVEL)
     set(DEBUG_OPTIONS "")
 
@@ -153,9 +146,7 @@ function(_configure_gcc_clang_debug_options TARGET_NAME SCOPE_NAME ENABLE_DEBUG_
     endif ()
 endfunction()
 
-#
-# Private function to configure global MSVC debug options
-#
+# Helper function to configure global MSVC debug options
 function(_configure_global_msvc_debug_options)
     if (${ENABLE_EDIT_AND_CONTINUE})
         # Apply Edit and Continue globally
@@ -178,9 +169,7 @@ function(_configure_global_msvc_debug_options)
     endif ()
 endfunction()
 
-#
-# Private function to configure global GCC/Clang debug options
-#
+# Helper function to configure global GCC/Clang debug options
 function(_configure_global_gcc_clang_debug_options)
     if (${ENABLE_DEBUG_INFO})
         set(DEBUG_FLAG "")

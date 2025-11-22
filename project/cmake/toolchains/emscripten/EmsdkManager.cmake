@@ -1,14 +1,10 @@
-# ==============================================================================
-# Emscripten SDK Manager Module
-# ==============================================================================
-# This module handles automatic installation and setup of the Emscripten SDK
-# when it's not found on the system, ensuring seamless WebAssembly builds.
-
 include_guard(GLOBAL)
 
-# Check if EMSDK is available and install it locally if needed
+#
+# check if EMSDK is available and install it locally if needed
 # usage:
 # ensure_emsdk_available()
+#
 function(ensure_emsdk_available)
     # Check if EMSDK is already available and properly activated
     if (DEFINED ENV{EMSDK} AND EXISTS "$ENV{EMSDK}")
@@ -77,7 +73,78 @@ function(ensure_emsdk_available)
     message(STATUS "EMSDK installed successfully at: ${LOCAL_EMSDK_DIR}")
 endfunction()
 
-# Install and activate EMSDK in the given directory
+# Get the EMSDK toolchain file path
+function(get_emsdk_toolchain_file output_var)
+    ensure_emsdk_available()
+
+    if (DEFINED ENV{EMSDK})
+        set(TOOLCHAIN_FILE "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
+    else ()
+        set(TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/.emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
+    endif ()
+
+    if (NOT EXISTS "${TOOLCHAIN_FILE}")
+        message(FATAL_ERROR "Emscripten toolchain file not found: ${TOOLCHAIN_FILE}")
+    endif ()
+
+    set(${output_var} "${TOOLCHAIN_FILE}" PARENT_SCOPE)
+endfunction()
+
+#
+# Check if Emscripten compilers are available and set them up
+#
+function(verify_and_setup_emscripten_compilers)
+    ensure_emsdk_available()
+
+    # Get the EMSDK directory
+    if (DEFINED ENV{EMSDK})
+        set(EMSDK_DIR "$ENV{EMSDK}")
+    else ()
+        set(EMSDK_DIR "${CMAKE_SOURCE_DIR}/.emsdk")
+    endif ()
+
+    # Set up the toolchain file FIRST
+    get_emsdk_toolchain_file(TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_FILE}" CACHE FILEPATH "Emscripten toolchain file" FORCE)
+
+    # Include the toolchain to set up Emscripten environment
+    include("${TOOLCHAIN_FILE}")
+
+    # Set up full paths to compilers
+    if (CMAKE_HOST_WIN32)
+        set(EMCC_PATH "${EMSDK_DIR}/upstream/emscripten/emcc.bat")
+        set(EMPP_PATH "${EMSDK_DIR}/upstream/emscripten/em++.bat")
+    else ()
+        set(EMCC_PATH "${EMSDK_DIR}/upstream/emscripten/emcc")
+        set(EMPP_PATH "${EMSDK_DIR}/upstream/emscripten/em++")
+    endif ()
+
+    # Verify compilers exist
+    if (NOT EXISTS "${EMCC_PATH}")
+        message(FATAL_ERROR "emcc not found at: ${EMCC_PATH}")
+    endif ()
+
+    if (NOT EXISTS "${EMPP_PATH}")
+        message(FATAL_ERROR "em++ not found at: ${EMPP_PATH}")
+    endif ()
+
+    # Set CMake compiler variables only if not already properly set
+    if (NOT CMAKE_C_COMPILER STREQUAL EMCC_PATH)
+        set(CMAKE_C_COMPILER "${EMCC_PATH}" CACHE FILEPATH "Emscripten C compiler" FORCE)
+    endif ()
+    if (NOT CMAKE_CXX_COMPILER STREQUAL EMPP_PATH)
+        set(CMAKE_CXX_COMPILER "${EMPP_PATH}" CACHE FILEPATH "Emscripten C++ compiler" FORCE)
+    endif ()
+
+    message(STATUS "Emscripten compilers configured:")
+    message(STATUS "  - emcc: ${EMCC_PATH}")
+    message(STATUS "  - em++: ${EMPP_PATH}")
+    message(STATUS "  - toolchain: ${TOOLCHAIN_FILE}")
+endfunction()
+
+#
+# install and activate EMSDK in the given directory
+#
 function(_install_and_activate_emsdk emsdk_dir)
     set(EMSDK_SCRIPT "${emsdk_dir}/emsdk")
 
@@ -119,7 +186,9 @@ function(_install_and_activate_emsdk emsdk_dir)
     _activate_local_emsdk("${emsdk_dir}")
 endfunction()
 
-# Activate a local EMSDK installation for the current CMake session
+#
+# activate a local EMSDK installation for the current CMake session
+#
 function(_activate_local_emsdk emsdk_dir)
     # Set EMSDK environment variable
     set(ENV{EMSDK} "${emsdk_dir}")
@@ -190,71 +259,4 @@ function(_activate_local_emsdk emsdk_dir)
     if (PYTHON_PATH)
         message(STATUS "  - Python: ${PYTHON_PATH}")
     endif ()
-endfunction()
-
-# Get the EMSDK toolchain file path
-function(get_emsdk_toolchain_file output_var)
-    ensure_emsdk_available()
-
-    if (DEFINED ENV{EMSDK})
-        set(TOOLCHAIN_FILE "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
-    else ()
-        set(TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/.emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
-    endif ()
-
-    if (NOT EXISTS "${TOOLCHAIN_FILE}")
-        message(FATAL_ERROR "Emscripten toolchain file not found: ${TOOLCHAIN_FILE}")
-    endif ()
-
-    set(${output_var} "${TOOLCHAIN_FILE}" PARENT_SCOPE)
-endfunction()
-
-# Check if Emscripten compilers are available and set them up
-function(verify_and_setup_emscripten_compilers)
-    ensure_emsdk_available()
-
-    # Get the EMSDK directory
-    if (DEFINED ENV{EMSDK})
-        set(EMSDK_DIR "$ENV{EMSDK}")
-    else ()
-        set(EMSDK_DIR "${CMAKE_SOURCE_DIR}/.emsdk")
-    endif ()
-
-    # Set up the toolchain file FIRST
-    get_emsdk_toolchain_file(TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "${TOOLCHAIN_FILE}" CACHE FILEPATH "Emscripten toolchain file" FORCE)
-
-    # Include the toolchain to set up Emscripten environment
-    include("${TOOLCHAIN_FILE}")
-
-    # Set up full paths to compilers
-    if (CMAKE_HOST_WIN32)
-        set(EMCC_PATH "${EMSDK_DIR}/upstream/emscripten/emcc.bat")
-        set(EMPP_PATH "${EMSDK_DIR}/upstream/emscripten/em++.bat")
-    else ()
-        set(EMCC_PATH "${EMSDK_DIR}/upstream/emscripten/emcc")
-        set(EMPP_PATH "${EMSDK_DIR}/upstream/emscripten/em++")
-    endif ()
-
-    # Verify compilers exist
-    if (NOT EXISTS "${EMCC_PATH}")
-        message(FATAL_ERROR "emcc not found at: ${EMCC_PATH}")
-    endif ()
-
-    if (NOT EXISTS "${EMPP_PATH}")
-        message(FATAL_ERROR "em++ not found at: ${EMPP_PATH}")
-    endif ()
-
-    # Set CMake compiler variables only if not already properly set
-    if (NOT CMAKE_C_COMPILER STREQUAL EMCC_PATH)
-        set(CMAKE_C_COMPILER "${EMCC_PATH}" CACHE FILEPATH "Emscripten C compiler" FORCE)
-    endif ()
-    if (NOT CMAKE_CXX_COMPILER STREQUAL EMPP_PATH)
-        set(CMAKE_CXX_COMPILER "${EMPP_PATH}" CACHE FILEPATH "Emscripten C++ compiler" FORCE)
-    endif ()
-
-    message(STATUS "Emscripten compilers configured:")
-    message(STATUS "  - emcc: ${EMCC_PATH}")
-    message(STATUS "  - em++: ${EMPP_PATH}")
-    message(STATUS "  - toolchain: ${TOOLCHAIN_FILE}")
 endfunction()

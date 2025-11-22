@@ -1,8 +1,6 @@
 include(GetCurrentCompiler)
 
-#
 # from here:
-#
 # https://github.com/lefticus/cppbestpractices/blob/master/02-Use_the_Tools_Available.md
 
 #
@@ -19,7 +17,6 @@ include(GetCurrentCompiler)
 # )
 #
 function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
-    # Parse the options first
     set(oneValueArgs
             WARNINGS_AS_ERRORS
     )
@@ -37,9 +34,9 @@ function(target_add_compiler_warnings TARGET_NAME SCOPE_NAME)
             ${ARGN}
     )
 
-    get_current_compiler(CURRENT_COMPILER)
-
     #
+
+    get_current_compiler(CURRENT_COMPILER)
 
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_add_compiler_warnings() called without TARGET")

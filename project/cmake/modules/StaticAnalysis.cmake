@@ -1,23 +1,23 @@
-#
-# Static analysis tools setup (clang-tidy, cppcheck)
-# Usage:
-#   enable_global_static_analysis()                  # Enable static analysis globally
-#   target_enable_static_analysis(target_name [ENABLE_CLANG_TIDY] [ENABLE_CPPCHECK])
 
-# Global static analysis configuration
-# Usage: enable_global_static_analysis(
+#
+# usage:
+# enable_global_static_analysis(
 #   [ENABLE_CLANG_TIDY]
 #   [ENABLE_CPPCHECK] 
 #   [ENABLE_EXCEPTIONS]
 # )
+#
 function(enable_global_static_analysis)
     set(optionsArgs
             ENABLE_CLANG_TIDY
             ENABLE_CPPCHECK
             ENABLE_EXCEPTIONS
     )
+
     cmake_parse_arguments(ARG "${options}" "" "" ${ARGN})
 
+    #
+    
     if (ARG_ENABLE_CLANG_TIDY)
         set(CMAKE_CXX_CLANG_TIDY clang-tidy PARENT_SCOPE)
 
@@ -60,26 +60,30 @@ function(enable_global_static_analysis)
             set(CMAKE_CXX_CPPCHECK ${CPPCHECK_EXE} PARENT_SCOPE)
             message(STATUS "** Global cppcheck enabled")
         else ()
-            message(WARNING "** cppcheck requested but not found")
+            message(STATUS "** cppcheck requested but not found")
         endif ()
     endif ()
 endfunction()
 
 #
-# Enable static analysis for a specific target
-# Usage: target_enable_static_analysis(target_name
+# usage:
+# target_enable_static_analysis(target_name
 #   [ENABLE_CLANG_TIDY]
 #   [ENABLE_CPPCHECK]
 #   [ENABLE_EXCEPTIONS]
 # )
+#
 function(target_enable_static_analysis TARGET_NAME)
     set(options
             ENABLE_CLANG_TIDY
             ENABLE_CPPCHECK
             ENABLE_EXCEPTIONS
     )
+    
     cmake_parse_arguments(ARG "${options}" "" "" ${ARGN})
 
+    #
+    
     if (NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_enable_static_analysis: Target '${TARGET_NAME}' does not exist")
     endif ()
@@ -165,7 +169,7 @@ function(_configure_clang_tidy TARGET_NAME ENABLE_EXCEPTIONS)
         message(STATUS "** clang-tidy found: ${CLANG_TIDY_EXE}")
         _add_clang_tidy_custom_target(${TARGET_NAME} ${ENABLE_EXCEPTIONS} ${CLANG_TIDY_EXE})
     else ()
-        message(WARNING "clang-tidy requested but not found")
+        message(STATUS "clang-tidy requested but not found")
         message(STATUS "** Consider installing LLVM tools with clang-tidy")
         message(STATUS "** Alternative: MSVC has built-in static analysis with /analyze flag")
     endif ()
@@ -255,6 +259,6 @@ function(_configure_cppcheck TARGET_NAME)
         )
         message(STATUS "** cppcheck enabled for target: ${TARGET_NAME}")
     else ()
-        message(WARNING "cppcheck requested but not found")
+        message(STATUS "cppcheck requested but not found")
     endif ()
 endfunction()

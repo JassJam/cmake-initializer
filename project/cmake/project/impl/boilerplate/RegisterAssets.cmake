@@ -9,21 +9,13 @@ include_guard(GLOBAL)
 # Usage:
 #   target_register_asset(
 #     target_name
-#     FILE path/to/asset.ext
-#     [DESTINATION relative/path]
-#     [URL url_to_download_from]
-#     [HASH hash_algorithm=hash_value]
-#     [REQUIRED]
+#     FILE path/to/asset.ext # Path to the asset file (relative to current source dir or absolute)
+#                            # If URL is provided, downloaded assets are stored in _assets/ subdirectory
+#     [DESTINATION relative/path] # relative path within target output directory
+#     [URL url_to_download_from] # URL to download the asset if missing or hash mismatch
+#     [HASH hash_algorithm=hash_value] # hash to verify file integrity (e.g., SHA256=abc123...)
+#     [REQUIRED] # fail build if asset cannot be found or downloaded
 #   )
-#
-# Parameters:
-#   target_name - The target that needs this asset (first positional argument)
-#   FILE - Path to the asset file (relative to current source dir or absolute)
-#          If URL is provided, downloaded assets are stored in _assets/ subdirectory
-#   DESTINATION - Optional: relative path within target output directory (default: same as FILE basename)
-#   URL - Optional: URL to download the asset from if it doesn't exist or hash mismatch
-#   HASH - Optional: Hash to verify file integrity (format: SHA256=abc123...)
-#   REQUIRED - Optional: Fail build if asset cannot be found or downloaded
 #
 # Examples:
 #   # Copy cacert.pem to target output directory
@@ -48,9 +40,10 @@ function(target_register_asset TARGET_NAME)
 
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    # Validate required arguments
-    if (NOT TARGET_NAME)
-        message(FATAL_ERROR "target_register_asset: TARGET is required")
+    #
+    
+    if (NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "target_register_asset() called without TARGET")
     endif ()
 
     if (NOT ARG_FILE)
@@ -184,24 +177,14 @@ function(target_register_asset TARGET_NAME)
 endfunction()
 
 #
-# target_register_assets
-#
-# Convenience function to register multiple assets at once.
+# Function to register multiple assets at once.
 #
 # Usage:
 #   target_register_assets(
 #     target_name
-#     ASSETS
-#       asset1.txt
-#       path/to/asset2.png
-#       ...
-#     [DESTINATION_PREFIX prefix/path]
+#     [ASSETS asset1.txt path/to/asset2.png ...] # List of asset files
+#     [DESTINATION_PREFIX prefix/path] # prefix path for all assets in target output directory
 #   )
-#
-# Parameters:
-#   target_name - The target that needs these assets (first positional argument)
-#   ASSETS - List of asset files
-#   DESTINATION_PREFIX - Optional: prefix path for all assets in target output directory
 #
 function(target_register_assets TARGET_NAME)
     set(options)
@@ -210,8 +193,10 @@ function(target_register_assets TARGET_NAME)
 
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if (NOT TARGET_NAME)
-        message(FATAL_ERROR "target_register_assets: TARGET is required")
+    #
+
+    if (NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "target_register_assets: called without TARGET")
     endif ()
 
     if (NOT ARG_ASSETS)

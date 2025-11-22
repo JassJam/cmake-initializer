@@ -2,12 +2,10 @@ include_guard(GLOBAL)
 
 include(GetCurrentCompiler)
 
-# ==============================================================================
-
 #
-# Enable exception for the current target
 # usage:
 #   target_configure_exceptions(TARGET_NAME [ON/OFF])
+#
 function(target_configure_exceptions TARGET_NAME ON_OFF)
     if (GLOBAL_EXCEPTIONS_SET)
         message(TRACE "Global exceptions are already enabled, ignoring target-specific settings")
@@ -28,10 +26,9 @@ function(target_configure_exceptions TARGET_NAME ON_OFF)
 endfunction()
 
 #
-# Enable global exceptions handling
-#
 # usage:
 #   configure_global_exceptions([ON/OFF])
+#
 function(configure_global_exceptions ON_OFF)
     _configure_exceptions(COMPILE_FLAGS LINK_FLAGS ${ON_OFF})
     if (COMPILE_FLAGS)
@@ -49,6 +46,8 @@ function(configure_global_exceptions ON_OFF)
 endfunction()
 
 #
+
+# Helper function to configure exceptions flags based on compiler
 function(_configure_exceptions OUT_COMPILE_FLAGS OUT_LINK_FLAGS ON_OFF)
     get_current_compiler(CURRENT_COMPILER)
     if (CURRENT_COMPILER STREQUAL "MSVC" OR CURRENT_COMPILER STREQUAL "CLANG-MSVC")
