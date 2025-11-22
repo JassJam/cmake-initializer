@@ -28,7 +28,6 @@ include(SetupCommonProjectOptions)
 #     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
 #     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
 #     [EXPORT_MACRO "MY_EXPORT"]
-#     [ENVIRONMENT dev|prod|test|...]
 #
 #     # Sanity and analysis options
 #     [ENABLE_EXCEPTIONS [ON|OFF]]
@@ -47,7 +46,7 @@ include(SetupCommonProjectOptions)
 # )
 function(register_library TARGET_NAME)
     set(options SHARED STATIC INTERFACE INSTALL DEPENDENCIES)
-    set(oneValueArgs SOURCE_DIR INCLUDE_DIR EXPORT_MACRO ENVIRONMENT
+    set(oneValueArgs SOURCE_DIR INCLUDE_DIR EXPORT_MACRO
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
@@ -116,11 +115,6 @@ function(register_library TARGET_NAME)
             endif ()
         endif ()
     endif ()
-
-    # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
-    set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
-    include(LoadEnvVariable)
-    target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
 
     # Add sources with visibility (only for non-interface libraries)
     if (NOT ARG_INTERFACE)
