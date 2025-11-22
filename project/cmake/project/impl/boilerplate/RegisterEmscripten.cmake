@@ -1,21 +1,7 @@
-# ==============================================================================
-# Register Emscripten Module
-# ==============================================================================
-# Simplified one-liner interface for WebAssembly/Emscripten target registration.
-# This module provides a streamlined API for creating WebAssembly applications.
-
 include_guard(GLOBAL)
+
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
-
-# Initialize Emscripten environment if needed
-function(_ensure_emscripten_ready)
-    if (NOT DEFINED EMSDK_INITIALIZED)
-        verify_and_setup_emscripten_compilers()
-        configure_emscripten_html_generation()
-        set(EMSDK_INITIALIZED TRUE CACHE INTERNAL "EMSDK has been initialized")
-    endif ()
-endfunction()
 
 # Register an Emscripten/WebAssembly target
 # Usage:
@@ -639,4 +625,12 @@ function(configure_emscripten_html_generation)
     message(STATUS "Emscripten HTML generation enabled")
     message(STATUS "  - HTML shell template: ${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
     message(STATUS "  - Output will be .html files with embedded WebAssembly")
+endfunction()
+
+function(_ensure_emscripten_ready)
+    if (NOT DEFINED EMSDK_INITIALIZED)
+        verify_and_setup_emscripten_compilers()
+        configure_emscripten_html_generation()
+        set(EMSDK_INITIALIZED TRUE CACHE INTERNAL "EMSDK has been initialized")
+    endif ()
 endfunction()

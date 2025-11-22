@@ -1,134 +1,9 @@
-# ==============================================================================
-# Testing Framework Registration System
-# ==============================================================================
-
 include_guard(GLOBAL)
+
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
-# Configuration Variables:
-# - EMSCRIPTEN_NODE_EXECUTABLE: Path to Node.js executable for running Emscripten tests
-#   Defaults to auto-detection from EMSDK or system PATH
-# - EMSCRIPTEN_TEST_OPTIONS: Additional options for Emscripten test execution
-#   Example: "--experimental-wasm-bigint --max-old-space-size=4096"
-
-# Global variables to store test framework configuration
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED FALSE)
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "")
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER "")
-
-# Register a test framework globally (call once in main CMakeLists.txt)
-# Usage:
-# register_test_framework("doctest") (or "catch2", "gtest", "boost")
-function(register_test_framework FRAMEWORK_NAME)
-    # Skip if testing is disabled
-    if (NOT BUILD_TESTING)
-        message(STATUS "Testing disabled, skipping test framework registration")
-        return()
-    endif ()
-
-    get_property(already_registered GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED)
-    if (already_registered)
-        message(WARNING "Test framework already registered. Skipping duplicate registration.")
-        return()
-    endif ()
-
-    message(STATUS "Registering test framework: ${FRAMEWORK_NAME}")
-
-    # Set up framework-specific configuration
-    if (FRAMEWORK_NAME STREQUAL "doctest")
-        if (COMMAND CPMAddPackage)
-            CPMAddPackage(
-                    NAME doctest
-                    GITHUB_REPOSITORY doctest/doctest
-                    GIT_TAG v${DOCTEST_VERSION}
-                    SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS doctest::doctest)
-            set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
-            set(FRAMEWORK_PACKAGE_MANAGER "CPM")
-        elseif (COMMAND xrepo_package)
-            xrepo_package("doctest ${DOCTEST_VERSION}")
-            set(FRAMEWORK_LIBS doctest::doctest)
-            set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
-            set(FRAMEWORK_PACKAGE_MANAGER "XMake")
-        else ()
-            message(WARNING "No package manager available for doctest.")
-        endif ()
-
-    elseif (FRAMEWORK_NAME STREQUAL "catch2")
-        if (COMMAND CPMAddPackage)
-            CPMAddPackage(
-                    NAME Catch2
-                    GITHUB_REPOSITORY catchorg/Catch2
-                    GIT_TAG v${CATCH2_VERSION}
-                    SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
-            set(FRAMEWORK_DEFS "")
-        elseif (COMMAND xrepo_package)
-            xrepo_package("catch2 ${CATCH2_VERSION}")
-            set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
-            set(FRAMEWORK_DEFS "")
-        else ()
-            message(WARNING "No package manager available for Catch2.")
-        endif ()
-
-    elseif (FRAMEWORK_NAME STREQUAL "gtest")
-        if (COMMAND CPMAddPackage)
-            CPMAddPackage(
-                    NAME googletest
-                    GITHUB_REPOSITORY google/googletest
-                    GIT_TAG v${GTEST_VERSION}
-                    SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS gtest_main)
-            set(FRAMEWORK_DEFS "")
-        elseif (COMMAND xrepo_package)
-            xrepo_package("gtest ${GTEST_VERSION}")
-            set(FRAMEWORK_LIBS gtest_main)
-            set(FRAMEWORK_DEFS "")
-        else ()
-            message(WARNING "No package manager available for Google Test.")
-        endif ()
-
-    elseif (FRAMEWORK_NAME STREQUAL "boost")
-        if (COMMAND CPMAddPackage)
-            CPMAddPackage(
-                    NAME boost
-                    GITHUB_REPOSITORY boostorg/boost
-                    GIT_TAG ${BOOST_VERSION}
-                    OPTIONS
-                    "BOOST_ENABLE_CMAKE ON"
-                    "BOOST_INCLUDE_LIBRARIES test"
-                    SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS Boost::unit_test_framework)
-            set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
-        elseif (COMMAND xrepo_package)
-            xrepo_package("boost")
-            set(FRAMEWORK_LIBS Boost::unit_test_framework)
-            set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
-        else ()
-            message(WARNING "No package manager available for Boost Test.")
-        endif ()
-
-    else ()
-        message(WARNING "Unknown test framework: ${FRAMEWORK_NAME}. Supported: doctest, catch2, gtest, boost")
-    endif ()
-
-    # Store configuration globally
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED TRUE)
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "${FRAMEWORK_NAME}")
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "${FRAMEWORK_LIBS}")
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_DEFINITIONS "${FRAMEWORK_DEFS}")
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER "${FRAMEWORK_PACKAGE_MANAGER}")
-
-    message(STATUS "Test framework '${FRAMEWORK_NAME}' registered successfully")
-endfunction()
-
-# Comprehensive test creation function - uses the registered test framework
+# Register a test target using the registered framework
 # Usage:
 # register_test(MyTest
 #     # Source and include directories
@@ -196,7 +71,7 @@ function(register_test TARGET_NAME)
 
     # Set defaults
     if (NOT ARG_SOURCE_DIR)
-        set(ARG_SOURCE_DIR "tests")  # Default to current directory
+        set(ARG_SOURCE_DIR "tests")
     endif ()
     if (NOT ARG_INCLUDE_DIR)
         set(ARG_INCLUDE_DIR "include")
@@ -207,7 +82,7 @@ function(register_test TARGET_NAME)
 
     # Add test sources with visibility
     if (ARG_SOURCES)
-        set(current_visibility "PRIVATE")  # Default visibility for sources
+        set(current_visibility "PRIVATE")
         foreach (item ${ARG_SOURCES})
             if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
