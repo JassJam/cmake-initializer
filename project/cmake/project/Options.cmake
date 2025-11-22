@@ -20,6 +20,17 @@ set(PACKAGE_MANAGERS "CPM" CACHE STRING "Package managers to enable (semicolon-s
 option(DEV_MODE "Enable development mode (all quality tools)" ON)
 option(RELEASE_MODE "Enable release optimizations" OFF)
 
+cmake_dependent_option(
+        DEV_MODE
+        "Enable development mode (all quality tools)"
+        ON "NOT RELEASE_MODE" OFF
+)
+cmake_dependent_option(
+        RELEASE_MODE
+        "Enable release optimizations"
+        OFF "NOT DEV_MODE" ON
+)
+
 # === GLOBAL OPTIONS ===
 set(ENABLE_GLOBAL_EXCEPTIONS "ON" CACHE STRING "Enable global exception handling")
 set(ENABLE_GLOBAL_WARNINGS_AS_ERRORS "${DEV_MODE}" CACHE STRING "Enable global warnings as errors")
