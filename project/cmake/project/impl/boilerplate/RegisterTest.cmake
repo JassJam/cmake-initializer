@@ -145,7 +145,6 @@ endfunction()
 #     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
 #     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
 #     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
-#     [ENVIRONMENT dev|prod|test|...]
 #
 #     # Project options (override global defaults)
 #     [ENABLE_EXCEPTIONS ON|OFF]
@@ -180,7 +179,7 @@ function(register_test TARGET_NAME)
     endif ()
 
     set(options INSTALL DEPENDENCIES)
-    set(oneValueArgs SOURCE_DIR ENVIRONMENT
+    set(oneValueArgs SOURCE_DIR
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
@@ -205,11 +204,6 @@ function(register_test TARGET_NAME)
 
     # Create test executable
     add_executable(${TARGET_NAME})
-
-    # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
-    set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
-    include(LoadEnvVariable)
-    target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
 
     # Add test sources with visibility
     if (ARG_SOURCES)

@@ -25,7 +25,6 @@ endfunction()
 #     [INCLUDES include/dir1 include/dir2]   # Include directories
 #     [LIBRARIES lib1 lib2 ...]              # Link libraries
 #     [DEPENDENCIES dep1 dep2 ...]           # Target dependencies
-#     [ENVIRONMENT dev|prod|test|...]        # Environment for loading .env files
 #     
 #     # HTML/Web Configuration
 #     [HTML_TEMPLATE path/to/template.html]  # Custom HTML shell template
@@ -73,7 +72,7 @@ function(register_emscripten TARGET_NAME)
     set(options WASM STANDALONE_WASM NODE_JS PTHREAD SIMD ASYNCIFY ASSERTIONS
         SAFE_HEAP DEMANGLE_SUPPORT ALLOW_MEMORY_GROWTH CLOSURE_COMPILER INSTALL)
     set(oneValueArgs HTML_TEMPLATE HTML_TITLE CANVAS_ID OUTPUT_DIR INITIAL_MEMORY
-            MAXIMUM_MEMORY STACK_SIZE INSTALL_DESTINATION ENVIRONMENT
+            MAXIMUM_MEMORY STACK_SIZE INSTALL_DESTINATION
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
@@ -94,11 +93,6 @@ function(register_emscripten TARGET_NAME)
 
     # Create the executable target
     add_executable(${TARGET_NAME} ${ARG_SOURCES})
-
-    # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
-    set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
-    include(LoadEnvVariable)
-    target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
 
     # Add headers for IDE integration
     if (ARG_HEADERS)

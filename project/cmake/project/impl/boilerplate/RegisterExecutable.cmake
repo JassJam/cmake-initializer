@@ -25,7 +25,6 @@ include(SetupCommonProjectOptions)
 #     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
 #     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
 #     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
-#     [ENVIRONMENT dev|prod|test|...]
 #
 #     # Sanity and analysis options
 #     [ENABLE_EXCEPTIONS ON|OFF]
@@ -44,7 +43,7 @@ include(SetupCommonProjectOptions)
 # )
 function(register_executable TARGET_NAME)
     set(options INSTALL DEPENDENCIES)
-    set(oneValueArgs SOURCE_DIR INCLUDE_DIR ENVIRONMENT
+    set(oneValueArgs SOURCE_DIR INCLUDE_DIR
             ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
@@ -63,11 +62,6 @@ function(register_executable TARGET_NAME)
 
     # Create executable
     add_executable(${TARGET_NAME})
-
-    # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
-    set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
-    include(LoadEnvVariable)
-    target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
 
     # Add sources with visibility
     if (ARG_SOURCES)
