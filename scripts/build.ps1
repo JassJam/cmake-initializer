@@ -2,16 +2,7 @@
 
 <#
 .SYNOPSIS
-    Cross-platform build script for cmake-initializer projects
-
-.DESCRIPTION
-    Unified PowerShell script that builds the project on Windows, Linux, and macOS.
-    Requires expl    if ($VerboseOutput) {
-        Write-Host "Configure command: $($ConfigureCmd -join ' ')" -ForegroundColor DarkGray
-    }t CMake preset specification for consistent builds.
-    
-    This script uses cmake-initializer's preset-based build system and provides
-    comprehensive build options including static runtime linking for portable builds.
+    build script for project to compile using cmake presets.
 
 .PARAMETER Preset
     CMake preset to use for building. This parameter is mandatory and must specify
@@ -26,17 +17,6 @@
     
     Debug builds include debug symbols and disable optimizations.
     Release builds enable optimizations and may strip debug symbols.
-
-.PARAMETER Static
-    Enable static runtime linking for portable builds. When enabled, links against
-    static versions of runtime libraries to reduce external dependencies.
-    Default: false (uses dynamic linking)
-    
-    Automatically applies correct flags based on compiler:
-    - MSVC: /MT (static CRT)
-    - GCC/Clang: -static-libstdc++ -static-libgcc
-    - Intel: -static-intel
-    - Emscripten: -static-libstdc++ with standalone WASM output
 
 .PARAMETER BuildDir
     Base directory for build outputs. The actual build directory will be
@@ -63,20 +43,10 @@
     matches the cmake-initializer preset configuration.
     Default: "out"
 
-.PARAMETER Static
-    Enable static runtime linking for portable builds. When enabled, links against
-    static versions of runtime libraries to reduce external dependencies.
-    Default: false (uses dynamic linking)
-
 .PARAMETER Jobs
     Number of parallel build jobs to use during compilation. Higher values can
     speed up builds on multi-core systems but may increase memory usage.
     Default: Number of CPU cores detected on the system
-
-.PARAMETER ListTargets
-    List all available build targets without actually building anything.
-    Useful for discovering what targets are available in the project.
-    Default: false
 
 .PARAMETER VerboseOutput
     Enable verbose build output. Shows detailed compilation commands and progress
@@ -95,9 +65,9 @@
     This is the most common usage for development builds.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Preset windows-msvc-debug -Static -VerboseOutput
+    .\scripts\build.ps1 -Preset windows-msvc-debug -VerboseOutput
     
-    Build Debug configuration with static runtime linking and verbose output.
+    Build Debug configuration with a verbose output.
     Useful for creating portable debug builds with detailed build information.
 
 .EXAMPLE
@@ -107,9 +77,9 @@
     Good for testing with different compilers or debugging build issues.
 
 .EXAMPLE
-    .\scripts\build.ps1 -Preset unixlike-gcc-release -Static -Jobs 16
+    .\scripts\build.ps1 -Preset unixlike-gcc-release -Jobs 16
     
-    Build optimized release version with static linking using 16 parallel jobs.
+    Build optimized release version with 16 parallel jobs.
     Ideal for creating fast, portable release builds on high-core-count systems.
 
 .NOTES
@@ -118,7 +88,7 @@
     project layout with project subdirectory.
 
 .LINK
-    https://github.com/01Pollux/cmake-initializer
+    https://github.com/JustJam/cmake-initializer
 #>
 param(
     [Parameter(Mandatory=$true)]
@@ -128,9 +98,7 @@ param(
     [string[]]$Targets = @(),
     [string[]]$ExcludeTargets = @(),
     [string]$BuildDir = "out",
-    [switch]$Static,
     [int]$Jobs = 0,
-    [switch]$ListTargets,
     [switch]$VerboseOutput,
     [string[]]$ExtraArgs = @()
 )
@@ -165,7 +133,7 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
     if ($env:OS -eq "Windows_NT") { "Windows" } else { "Unix" }
 }
 
-Write-Host "🔨 cmake-initializer Build Script" -ForegroundColor Cyan
+Write-Host "cmake-initializer Build Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 
 # Derive build configuration from preset name
@@ -187,12 +155,6 @@ if ($ExtraArgs -and $ExtraArgs.Count -gt 0) {
     Write-Host "Extra CMake args: $($ExtraArgs -join ' ')" -ForegroundColor Yellow
 }
 
-# Add static linking if requested
-if ($Static) {
-    $ConfigArgs += "-DENABLE_STATIC_RUNTIME=ON"
-    Write-Host "Static linking: Enabled" -ForegroundColor Yellow
-}
-
 Write-Host "Configuration: $Config" -ForegroundColor Green
 Write-Host "Preset: $Preset" -ForegroundColor Green
 
@@ -201,12 +163,12 @@ Push-Location $ProjectDir
 
 try {
     # Validate preset exists before configuring
-    Write-Host "⚙️  Configuring project..." -ForegroundColor Blue
+    Write-Host "Configuring project..." -ForegroundColor Blue
     
     # Check if preset is available
     $AvailablePresets = & cmake --list-presets 2>$null | Where-Object { $_ -match '^\s*"([^"]+)"' } | ForEach-Object { $Matches[1] }
     if ($AvailablePresets -and $Preset -notin $AvailablePresets) {
-        Write-Host "❌ Preset '$Preset' is not available on this platform." -ForegroundColor Red
+        Write-Host "Preset '$Preset' is not available on this platform." -ForegroundColor Red
         Write-Host "Available presets:" -ForegroundColor Yellow
         foreach ($p in $AvailablePresets) {
             Write-Host "  - $p" -ForegroundColor Yellow
@@ -246,76 +208,8 @@ try {
         throw "Configuration failed with exit code $ConfigResult"
     }
 
-    # List targets if requested
-    if ($ListTargets) {
-        Write-Host "🎯 Available Build Targets:" -ForegroundColor Cyan
-        
-        # Function to find targets recursively
-        function Get-CMakeTargets {
-            param([string]$Directory)
-            
-            $targets = @()
-            
-            # Look for .vcxproj files (Windows/MSVC)
-            $vcxprojFiles = Get-ChildItem -Path $Directory -Recurse -Filter "*.vcxproj" -File | 
-                Where-Object { $_.Name -notmatch "(ALL_BUILD|ZERO_CHECK|INSTALL|RUN_TESTS|Continuous|Experimental|Nightly|NightlyMemoryCheck)" }
-            
-            foreach ($vcxproj in $vcxprojFiles) {
-                $targetName = [System.IO.Path]::GetFileNameWithoutExtension($vcxproj.Name)
-                $relativePath = $vcxproj.Directory.FullName.Replace($BuildOutputDir, "").TrimStart('\', '/')
-                $targets += @{
-                    Name = $targetName
-                    Path = if ($relativePath) { $relativePath } else { "." }
-                    Type = "Executable/Library"
-                }
-            }
-            
-            # Look for Makefile targets (Unix-like systems)
-            $makefileTargets = @()
-            if (Test-Path (Join-Path $Directory "Makefile")) {
-                try {
-                    $helpOutput = & make -C $Directory help 2>$null
-                    if ($LASTEXITCODE -eq 0) {
-                        $makefileTargets = $helpOutput | Where-Object { $_ -match "^\.\.\." } | 
-                            ForEach-Object { ($_ -split " ")[1] } | Where-Object { $_ -and $_ -notmatch "(all|clean|depend|help)" }
-                    }
-                } catch {
-                    # Ignore errors when make help is not available
-                }
-            }
-            
-            return $targets
-        }
-        
-        $allTargets = Get-CMakeTargets -Directory $BuildOutputDir
-        
-        if ($allTargets.Count -eq 0) {
-            Write-Host "  No custom targets found (only system targets like ALL_BUILD, INSTALL, etc.)" -ForegroundColor Yellow
-        } else {
-            $groupedTargets = $allTargets | Group-Object -Property Path | Sort-Object Name
-            
-            foreach ($group in $groupedTargets) {
-                $pathDisplay = if ($group.Name -eq ".") { "Project Root" } else { $group.Name }
-                Write-Host "  📁 $pathDisplay" -ForegroundColor Green
-                
-                foreach ($target in $group.Group | Sort-Object Name) {
-                    Write-Host "    🎯 $($target.Name)" -ForegroundColor White
-                }
-                Write-Host ""
-            }
-            
-            Write-Host "Total targets found: $($allTargets.Count)" -ForegroundColor Cyan
-        }
-        
-        Write-Host "`nTo build specific targets:" -ForegroundColor DarkGray
-        Write-Host "  .\scripts\build.ps1 -Targets `"TargetName1`", `"TargetName2`"" -ForegroundColor DarkGray
-        Write-Host "  .\scripts\build.ps1 -Targets `"TargetName`" -ExcludeTargets `"UnwantedTarget`"" -ForegroundColor DarkGray
-        
-        return
-    }
-
     # Build the project
-    Write-Host "🔧 Building project..." -ForegroundColor Blue
+    Write-Host "Building project..." -ForegroundColor Blue
     $BuildCmd = @("cmake", "--build", $BuildOutputDir, "--config", $Config, "--parallel", $Jobs)
     
     if ($Targets.Count -gt 0) {
@@ -348,18 +242,18 @@ try {
                 
                 & $TargetBuildCmd[0] $TargetBuildCmd[1..($TargetBuildCmd.Length-1)]
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "  ✅ $Target" -ForegroundColor Green
+                    Write-Host "  | $Target" -ForegroundColor Green
                     $SuccessfulTargets += $Target
                 } else {
-                    Write-Host "  ❌ $Target failed" -ForegroundColor Red
+                    Write-Host "  | $Target failed" -ForegroundColor Red
                     $FailedTargets += $Target
                 }
             }
             
-            Write-Host "📊 Build summary:" -ForegroundColor Cyan
-            Write-Host "  ✅ Successful: $($SuccessfulTargets.Count)/$($TargetsToBuild.Count) ($($SuccessfulTargets -join ', '))" -ForegroundColor Green
+            Write-Host "Build summary:" -ForegroundColor Cyan
+            Write-Host "  | Successful: $($SuccessfulTargets.Count)/$($TargetsToBuild.Count) ($($SuccessfulTargets -join ', '))" -ForegroundColor Green
             if ($FailedTargets.Count -gt 0) {
-                Write-Host "  ❌ Failed: $($FailedTargets.Count)/$($TargetsToBuild.Count) ($($FailedTargets -join ', '))" -ForegroundColor Red
+                Write-Host "  | Failed: $($FailedTargets.Count)/$($TargetsToBuild.Count) ($($FailedTargets -join ', '))" -ForegroundColor Red
                 throw "Some targets failed to build"
             }
             
@@ -381,7 +275,7 @@ try {
         throw "Build failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "✅ Build completed successfully!" -ForegroundColor Green
+    Write-Host "Build completed successfully!" -ForegroundColor Green
     
     # Show build information
     $ActualBuildDir = Join-Path $ProjectRoot "$BuildDir/build/$Preset"
@@ -392,7 +286,7 @@ try {
     }
 
 } catch {
-    Write-Host "❌ Build failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Build failed: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 } finally {
     Pop-Location

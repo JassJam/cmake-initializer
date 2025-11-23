@@ -2,17 +2,7 @@
 
 <#
 .SYNOPSIS
-    Cross-platform test script for cmake-initializer projects
-
-.DESCRIPTION
-    Unified PowerShell script that runs tests on Windows, Linux, and macOS.
-    Supports comprehensive test execution with detailed reporting, parallel execution,
-    and integration with various testing frameworks including doctest, Catch2, Google Test, and Boost.Test.
-    
-    This script automatically detects the project structure, discovers available tests,
-    and provides detailed output including test results, coverage information, and
-    performance metrics. It integrates seamlessly with cmake-initializer's preset-based
-    build system and CI/CD pipelines.
+    Test script for project to run unit and integration tests.
 
 .PARAMETER Config
     Build configuration to test. Must be either 'Debug' or 'Release'.
@@ -140,7 +130,7 @@
     For best results, ensure tests are built with the same configuration being tested.
 
 .LINK
-    https://github.com/01Pollux/cmake-initializer
+    https://github.com/Justjam/cmake-initializer
 #>
 param(
     [ValidateSet("Debug", "Release")]
@@ -156,7 +146,6 @@ param(
     [int]$Repeat = 1,
     [ValidateSet("default", "verbose", "junit", "json")]
     [string]$Output = "default",
-    [switch]$ListTargets,
     [switch]$Coverage,
     [switch]$Valgrind,
     [switch]$StopOnFailure,
@@ -194,7 +183,7 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
     if ($env:OS -eq "Windows_NT") { "Windows" } else { "Unix" }
 }
 
-Write-Host "🧪 cmake-initializer Test Script" -ForegroundColor Cyan
+Write-Host "cmake-initializer Test Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 
 # Derive build configuration from preset name
@@ -220,60 +209,6 @@ try {
 
     Write-Host "Build directory: $FullBuildDir" -ForegroundColor DarkGray
 
-    # List targets if requested
-    if ($ListTargets) {
-        Write-Host "🎯 Available Build Targets:" -ForegroundColor Cyan
-        
-        # Function to find targets recursively
-        function Get-CMakeTargets {
-            param([string]$Directory)
-            
-            $targets = @()
-            
-            # Look for .vcxproj files (Windows/MSVC)
-            $vcxprojFiles = Get-ChildItem -Path $Directory -Recurse -Filter "*.vcxproj" -File | 
-                Where-Object { $_.Name -notmatch "(ALL_BUILD|ZERO_CHECK|INSTALL|RUN_TESTS|Continuous|Experimental|Nightly|NightlyMemoryCheck)" }
-            
-            foreach ($vcxproj in $vcxprojFiles) {
-                $targetName = [System.IO.Path]::GetFileNameWithoutExtension($vcxproj.Name)
-                $relativePath = $vcxproj.Directory.FullName.Replace($Directory, "").TrimStart('\', '/')
-                $targets += @{
-                    Name = $targetName
-                    Path = if ($relativePath) { $relativePath } else { "." }
-                    Type = "Executable/Library"
-                }
-            }
-            
-            return $targets
-        }
-        
-        $allTargets = Get-CMakeTargets -Directory $FullBuildDir
-        
-        if ($allTargets.Count -eq 0) {
-            Write-Host "  No custom targets found (only system targets like ALL_BUILD, INSTALL, etc.)" -ForegroundColor Yellow
-        } else {
-            $groupedTargets = $allTargets | Group-Object -Property Path | Sort-Object Name
-            
-            foreach ($group in $groupedTargets) {
-                $pathDisplay = if ($group.Name -eq ".") { "Project Root" } else { $group.Name }
-                Write-Host "  📁 $pathDisplay" -ForegroundColor Green
-                
-                foreach ($target in $group.Group | Sort-Object Name) {
-                    Write-Host "    🎯 $($target.Name)" -ForegroundColor White
-                }
-                Write-Host ""
-            }
-            
-            Write-Host "Total targets found: $($allTargets.Count)" -ForegroundColor Cyan
-        }
-        
-        Write-Host "`nTo test specific targets:" -ForegroundColor DarkGray
-        Write-Host "  .\scripts\test.ps1 -Targets `"TargetName1`", `"TargetName2`"" -ForegroundColor DarkGray
-        Write-Host "  .\scripts\test.ps1 -Targets `"TargetName`" -ExcludeTargets `"UnwantedTarget`"" -ForegroundColor DarkGray
-        
-        return
-    }
-
     # Check if tests are available
     $TestFiles = Get-ChildItem -Path $FullBuildDir -Recurse -Include "*.exe", "*test*" -File | Where-Object { $_.Name -match "test" }
     if ($TestFiles.Count -eq 0) {
@@ -288,7 +223,7 @@ try {
         if ($TargetsToBuild.Count -eq 0) {
             Write-Warning "All specified targets were excluded. No targets to build before testing."
         } else {
-            Write-Host "🔧 Building test targets before running tests..." -ForegroundColor Blue
+            Write-Host "Building test targets before running tests..." -ForegroundColor Blue
             Write-Host "Targets to build: $($TargetsToBuild -join ', ')" -ForegroundColor Green
             if ($ExcludeTargets.Count -gt 0) {
                 Write-Host "Excluded targets: $($ExcludeTargets -join ', ')" -ForegroundColor Red
@@ -305,10 +240,10 @@ try {
                 
                 & $BuildCmd[0] $BuildCmd[1..($BuildCmd.Length-1)]
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "✓ Successfully built target: $Target" -ForegroundColor Green
+                    Write-Host "Successfully built target: $Target" -ForegroundColor Green
                     $BuildResults += @{Target = $Target; Success = $true}
                 } else {
-                    Write-Host "✗ Failed to build target: $Target (exit code $LASTEXITCODE)" -ForegroundColor Red
+                    Write-Host "Failed to build target: $Target (exit code $LASTEXITCODE)" -ForegroundColor Red
                     $BuildResults += @{Target = $Target; Success = $false}
                 }
             }
@@ -318,8 +253,8 @@ try {
             $FailedBuilds = $BuildResults | Where-Object { -not $_.Success }
             
             Write-Host "`nBuild Summary:" -ForegroundColor Cyan
-            Write-Host "  ✓ Successful: $($SuccessfulBuilds.Count)" -ForegroundColor Green
-            Write-Host "  ✗ Failed: $($FailedBuilds.Count)" -ForegroundColor Red
+            Write-Host "  | Successful: $($SuccessfulBuilds.Count)" -ForegroundColor Green
+            Write-Host "  | Failed: $($FailedBuilds.Count)" -ForegroundColor Red
             
             if ($FailedBuilds.Count -gt 0) {
                 $FailedTargetNames = ($FailedBuilds | ForEach-Object { $_.Target }) -join ', '
@@ -329,7 +264,7 @@ try {
     }
 
     # Check if any tests exist before running CTest
-    Write-Host "🔍 Checking for available tests..." -ForegroundColor Blue
+    Write-Host "Checking for available tests..." -ForegroundColor Blue
     
     # Use ctest --show-only to check if tests exist without running them
     $TestCheckCmd = @("ctest", "--test-dir", $FullBuildDir, "--build-config", $Config, "--show-only=json-v1")
@@ -344,18 +279,18 @@ try {
             $TestCount = if ($TestInfo.tests) { $TestInfo.tests.Count } else { 0 }
             
             if ($TestCount -eq 0) {
-                Write-Host "⚠️  No tests were found to run" -ForegroundColor Yellow
+                Write-Host "No tests were found to run" -ForegroundColor Yellow
                 Write-Host "This usually means BUILD_TESTING=OFF or no test targets were defined" -ForegroundColor Yellow
-                Write-Host "✅ Test execution completed (no tests to run)" -ForegroundColor Green
+                Write-Host "Test execution completed (no tests to run)" -ForegroundColor Green
                 exit 0
             } else {
                 Write-Host "Found $TestCount test(s) to run" -ForegroundColor Green
             }
         } else {
-            Write-Host "⚠️  Could not determine test count, proceeding with test execution..." -ForegroundColor Yellow
+            Write-Host "Could not determine test count, proceeding with test execution..." -ForegroundColor Yellow
         }
     } catch {
-        Write-Host "⚠️  Could not check for tests, proceeding with test execution..." -ForegroundColor Yellow
+        Write-Host "Could not check for tests, proceeding with test execution..." -ForegroundColor Yellow
     }
 
     # Build CTest command
@@ -412,16 +347,16 @@ try {
     
     # Add coverage support
     if ($Coverage) {
-        Write-Host "📊 Enabling code coverage..." -ForegroundColor Blue
+        Write-Host "Enabling code coverage..." -ForegroundColor Blue
         $CTestCmd += @("-T", "Coverage")
     }
     
-    # Add Valgrind support (Linux/macOS only)
+    # Add Valgrind support
     if ($Valgrind) {
         if ($Platform -eq "Windows") {
             Write-Warning "Valgrind is not available on Windows. Skipping memory check."
         } else {
-            Write-Host "🔍 Enabling Valgrind memory check..." -ForegroundColor Blue
+            Write-Host "Enabling Valgrind memory check..." -ForegroundColor Blue
             $CTestCmd += @("-T", "MemCheck")
         }
     }
@@ -433,7 +368,7 @@ try {
     }
     
     # Run tests
-    Write-Host "🏃 Running tests..." -ForegroundColor Blue
+    Write-Host "Running tests..." -ForegroundColor Blue
     $StartTime = Get-Date
     
     & $CTestCmd[0] $CTestCmd[1..($CTestCmd.Length-1)]
@@ -444,18 +379,18 @@ try {
     
     # Report results
     if ($TestExitCode -eq 0) {
-        Write-Host "✅ All tests passed!" -ForegroundColor Green
+        Write-Host "All tests passed!" -ForegroundColor Green
     } else {
-        Write-Host "❌ Some tests failed (exit code: $TestExitCode)" -ForegroundColor Red
+        Write-Host "Some tests failed (exit code: $TestExitCode)" -ForegroundColor Red
     }
     
-    Write-Host "⏱️  Test duration: $($Duration.ToString('mm\:ss'))" -ForegroundColor Cyan
+    Write-Host "Test duration: $($Duration.ToString('mm\:ss'))" -ForegroundColor Cyan
     
     # Show coverage results if enabled
     if ($Coverage) {
         $CoverageDir = Join-Path $FullBuildDir "Coverage"
         if (Test-Path $CoverageDir) {
-            Write-Host "📊 Coverage report generated in: $CoverageDir" -ForegroundColor Cyan
+            Write-Host "Coverage report generated in: $CoverageDir" -ForegroundColor Cyan
         }
     }
     
@@ -463,7 +398,7 @@ try {
     if ($Valgrind -and $Platform -ne "Windows") {
         $MemCheckDir = Join-Path $FullBuildDir "DynamicAnalysis"
         if (Test-Path $MemCheckDir) {
-            Write-Host "🔍 Memory check report generated in: $MemCheckDir" -ForegroundColor Cyan
+            Write-Host "Memory check report generated in: $MemCheckDir" -ForegroundColor Cyan
         }
     }
     
@@ -471,7 +406,7 @@ try {
     exit $TestExitCode
 
 } catch {
-    Write-Host "❌ Test execution failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Test execution failed: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 } finally {
     Pop-Location

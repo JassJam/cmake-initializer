@@ -81,18 +81,18 @@ runs:
         & "${{ github.workspace }}/scripts/build.ps1" -Preset "${{ inputs.config-preset }}" -ExtraArgs @("-DBUILD_TESTING=ON")
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "❌ Build failed with exit code: $LASTEXITCODE"
+            Write-Error "Build failed with exit code: $LASTEXITCODE"
             exit $LASTEXITCODE
         }
         
         & "${{ github.workspace }}/scripts/test.ps1" -Preset "${{ inputs.config-preset }}"
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "❌ Tests failed with exit code: $LASTEXITCODE"
+            Write-Error "Tests failed with exit code: $LASTEXITCODE"
             exit $LASTEXITCODE
         }
         
-        Write-Host "✅ Build and tests completed successfully"
+        Write-Host "Build and tests completed successfully"
 
     - name: Submit to CDash (${{ inputs.config-name }})
       if: inputs.ctest-site != '' && inputs.ctest-location != ''
@@ -112,7 +112,7 @@ runs:
           -DashboardModel "${{ inputs.ctest-dashboard-model }}"
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "❌ CDash submission failed - this usually indicates test failures"
+            Write-Error "CDash submission failed - this usually indicates test failures"
             exit $LASTEXITCODE
         }
     

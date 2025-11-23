@@ -121,18 +121,18 @@ try {
         $TestCount = if ($TestInfo.tests) { $TestInfo.tests.Count } else { 0 }
         
         if ($TestCount -eq 0) {
-            Write-Host "⚠️  No tests found - skipping CDash test submission" -ForegroundColor Yellow
+            Write-Host "No tests found - skipping CDash test submission" -ForegroundColor Yellow
             Write-Host "This usually means BUILD_TESTING=OFF or no test targets were defined" -ForegroundColor Yellow
-            Write-Host "✅ CDash submission completed (no tests to submit)" -ForegroundColor Green
+            Write-Host "CDash submission completed (no tests to submit)" -ForegroundColor Green
             exit 0
         } else {
             Write-Host "Found $TestCount test(s) - proceeding with CDash submission" -ForegroundColor Green
         }
     } else {
-        Write-Host "⚠️  Could not determine test count, proceeding with submission..." -ForegroundColor Yellow
+        Write-Host "Could not determine test count, proceeding with submission..." -ForegroundColor Yellow
     }
 } catch {
-    Write-Host "⚠️  Could not check for tests, proceeding with submission..." -ForegroundColor Yellow
+    Write-Host "Could not check for tests, proceeding with submission..." -ForegroundColor Yellow
 }
 
 # Set environment variable for the CTest script
@@ -148,10 +148,10 @@ $ctestExitCode = $LASTEXITCODE
 Pop-Location -StackName "CDashSubmission"
 
 if ($ctestExitCode -eq 0) {
-    Write-Host "✅ CDash submission completed successfully"
+    Write-Host "CDash submission completed successfully"
     exit 0
 } else {
-    Write-Error "❌ CTest execution failed with exit code: $ctestExitCode"
+    Write-Error "CTest execution failed with exit code: $ctestExitCode"
     Write-Error "This indicates that tests failed or there was an issue with the test execution"
     exit $ctestExitCode
 }

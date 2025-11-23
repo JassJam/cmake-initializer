@@ -1,7 +1,3 @@
-# CI Scripts
-
-This directory contains production CI/CD scripts for the cmake-initializer project.
-
 ## CDash Submission Scripts
 
 ### `submit-cdash.ps1` (PowerShell)

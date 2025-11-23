@@ -81,12 +81,10 @@ TEST_F(MathUtilsTest, TestFactorial)
     EXPECT_EQ(math_utils::Factorial(4), 24);
     EXPECT_EQ(math_utils::Factorial(5), 120);
 
-    // Test negative number exception
     EXPECT_THROW(math_utils::Factorial(-1), std::invalid_argument);
     EXPECT_THROW(math_utils::Factorial(-5), std::invalid_argument);
 }
 
-// Parameterized test example
 class PrimeNumberTest : public ::testing::TestWithParam<std::pair<int, bool>>
 {
 };

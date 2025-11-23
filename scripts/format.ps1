@@ -2,16 +2,7 @@
 
 <#
 .SYNOPSIS
-    Cross-platform code formatting script using clang-format
-
-.DESCRIPTION
-    Unified PowerShell script that formats C/C++ source files using clang-format.
-    Supports recursive directory traversal and handles multiple file extensions.
-    Provides comprehensive formatting options with safety features and detailed reporting.
-    
-    This script automatically discovers C/C++ source files and applies clang-format
-    using your project's .clang-format configuration file. It includes dry-run
-    capabilities, verbose output, and comprehensive error handling.
+    Code formatting script using clang-format.
 
 .PARAMETER Path
     Root directory path to search for source files. The script will search this
@@ -165,22 +156,22 @@ function Write-ColorOutput {
 
 function Write-Success {
     param([string]$Message)
-    Write-ColorOutput "✅ $Message" "Green"
+    Write-ColorOutput "$Message" "Green"
 }
 
 function Write-Warning {
     param([string]$Message)
-    Write-ColorOutput "⚠️  $Message" "Yellow"
+    Write-ColorOutput "$Message" "Yellow"
 }
 
 function Write-Error {
     param([string]$Message)
-    Write-ColorOutput "❌ $Message" "Red"
+    Write-ColorOutput "$Message" "Red"
 }
 
 function Write-Info {
     param([string]$Message)
-    Write-ColorOutput "ℹ️  $Message" "Cyan"
+    Write-ColorOutput "$Message" "Cyan"
 }
 
 # Verify clang-format availability
@@ -278,7 +269,7 @@ function Format-File {
 }
 
 # Main script execution
-Write-ColorOutput "🎨 clang-format Code Formatter" "Magenta"
+Write-ColorOutput "clang-format Code Formatter" "Magenta"
 Write-ColorOutput "Platform: $Platform" "Green"
 
 # Resolve and validate paths
@@ -470,7 +461,7 @@ try {
     
     # Summary report
     Write-ColorOutput "" "White"
-    Write-ColorOutput "📊 Formatting Summary" "Magenta"
+    Write-ColorOutput "Formatting Summary" "Magenta"
     Write-ColorOutput "Total files processed: $($FilesToFormat.Count)" "White"
     Write-Success "Successfully formatted: $SuccessCount"
     
@@ -496,7 +487,7 @@ try {
         exit 1
     } else {
         if (-not $WhatIf) {
-            Write-Success "All files formatted successfully! 🎉"
+            Write-Success "All files formatted successfully!"
         }
         exit 0
     }

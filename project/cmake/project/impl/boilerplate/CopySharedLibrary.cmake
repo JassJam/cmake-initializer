@@ -1,302 +1,454 @@
+include_guard(DIRECTORY)
 include(CMakePackageConfigHelpers)
+    include(GetCurrentCompiler)
 
-# Function to copy shared library dependencies to build directory for direct execution
+#
+# usage:
+# install_component(TARGET_NAME
+#     [INCLUDE_SUBDIR <subdir>] # The subdirectory under the include directory where the public headers will be installed
+#     [NAMESPACE <namespace>] # The namespace to use for the exported targets
+#     [RUNTIME_DIR <RUNTIME_DIR>] # The directory where runtime files (DLLs and executables) will be installed
+#     [LIBRARY_DIR <library_dir>] # The directory where library files (shared libraries) will be installed
+#     [ARCHIVE_DIR <archive_dir>] # The directory where archive files (static/import libraries) will be installed
+#     [EXPORT_MACRO_NAME <macro_name>] # The name of the export define for the TARGET_NAME
+#     [EXPORT_FILE_NAME <file_name>] # The name of the export file to be generated
+# )
+#
+# Example:
+#   install_component(my_target
+#       INCLUDE_SUBDIR "my_subdir"
+#       NAMESPACE "my_namespace::"
+#       RUNTIME_DIR "bin"
+#       LIBRARY_DIR "lib"
+#       ARCHIVE_DIR "lib"
+#       EXPORT_MACRO_NAME "MYTARGET_EXPORT"
+#       EXPORT_FILE_NAME "my_target_export.h"
+#   )
+#
+function(install_component TARGET_NAME)
+    set(oneValueArgs
+            INCLUDE_SUBDIR
+            NAMESPACE
+            RUNTIME_DIR
+            LIBRARY_DIR
+            ARCHIVE_DIR
+            EXPORT_MACRO_NAME
+            EXPORT_FILE_NAME
+    )
+
+    cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
+
+    #
+
+    # Set defaults
+    if (NOT ARG_INCLUDE_SUBDIR)
+        set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})
+    endif ()
+    if (NOT ARG_NAMESPACE)
+        set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
+    endif ()
+    if (NOT ARG_RUNTIME_DIR)
+        set(ARG_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR})
+    endif ()
+    if (NOT ARG_LIBRARY_DIR)
+        set(ARG_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
+    endif ()
+    if (NOT ARG_ARCHIVE_DIR)
+        set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
+    endif ()
+    if (NOT ARG_EXPORT_MACRO_NAME)
+        set(ARG_EXPORT_MACRO_NAME "${TARGET_NAME}_EXPORT")
+    endif ()
+    if (NOT ARG_EXPORT_FILE_NAME)
+        set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${TARGET_NAME}_export.h")
+    endif ()
+
+    # Get TARGET_NAME type
+    get_target_property(target_type ${TARGET_NAME} TYPE)
+
+    # Install TARGET_NAME with appropriate components
+    install(TARGETS ${TARGET_NAME}
+            EXPORT ${TARGET_NAME}Targets
+            RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
+            LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
+            ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    # Install shared library dependencies for executables and shared libraries
+    get_target_property(target_type ${TARGET_NAME} TYPE)
+    if (target_type STREQUAL "EXECUTABLE" OR target_type STREQUAL "SHARED_LIBRARY")
+        _target_install_shared_library_dependencies(${TARGET_NAME} ${ARG_RUNTIME_DIR})
+
+        # Install AddressSanitizer runtime DLL if needed
+        _install_asan_runtime_dll(${TARGET_NAME} ${ARG_RUNTIME_DIR})
+    endif ()
+
+    # Handle Emscripten WebAssembly files
+    get_current_compiler(CURRENT_COMPILER)
+    if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
+        get_target_property(target_type ${TARGET_NAME} TYPE)
+        if (target_type STREQUAL "EXECUTABLE")
+            # Install accompanying WASM files for Emscripten executables
+            install(FILES
+                    $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
+                    DESTINATION ${ARG_RUNTIME_DIR}
+                    OPTIONAL
+            )
+        endif ()
+    endif ()
+
+    # Install export configuration (only if it's safe to do so)
+    # Skip export for targets that have external dependencies not in our project
+    get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
+    set(CAN_EXPORT TRUE)
+
+    if (TARGET_LINK_LIBS)
+        foreach (LIB ${TARGET_LINK_LIBS})
+            if (TARGET ${LIB})
+                # Check if this is an external target (not part of our project)
+                get_target_property(LIB_SOURCE_DIR ${LIB} SOURCE_DIR)
+                get_target_property(LIB_BINARY_DIR ${LIB} BINARY_DIR)
+
+                # If the target doesn't have a source/binary dir in our project tree, it's external
+                if (NOT LIB_SOURCE_DIR OR NOT LIB_BINARY_DIR)
+                    set(CAN_EXPORT FALSE)
+                    break()
+                endif ()
+
+                # Check if it's a CPM-managed dependency (usually under _deps)
+                string(FIND "${LIB_SOURCE_DIR}" "_deps/" DEPS_FOUND)
+                if (NOT DEPS_FOUND EQUAL -1)
+                    set(CAN_EXPORT FALSE)
+                    break()
+                endif ()
+            endif ()
+        endforeach ()
+    endif ()
+
+    if (CAN_EXPORT)
+        install(EXPORT ${TARGET_NAME}Targets
+                FILE ${TARGET_NAME}Config.cmake
+                NAMESPACE ${ARG_NAMESPACE}
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
+        )
+    else ()
+        message(STATUS "** Skipping export for ${TARGET_NAME} due to external dependencies")
+    endif ()
+
+    # Handle shared library specifics
+    if (${target_type} STREQUAL "SHARED_LIBRARY")
+        # Generate export headers
+        generate_export_header(${TARGET_NAME}
+                BASE_NAME ${TARGET_NAME}
+                EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
+                EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
+        )
+
+        # Install export headers
+        install(FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
+        )
+    endif ()
+endfunction()
+
+# Helper function to copy shared library dependencies to build directory for direct execution
 function(_copy_shared_library_dependencies_to_build_dir TARGET_NAME)
     # Get the target's link libraries
     get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
-    if(NOT TARGET_LINK_LIBS)
+    if (NOT TARGET_LINK_LIBS)
         return()
-    endif()
-    
+    endif ()
+
     # Process each linked library
-    foreach(LIB ${TARGET_LINK_LIBS})
-        if(TARGET ${LIB})
+    foreach (LIB ${TARGET_LINK_LIBS})
+        if (TARGET ${LIB})
             get_target_property(LIB_TYPE ${LIB} TYPE)
-            
+
             # Ensure build order dependency for all target types
             add_dependencies(${TARGET_NAME} ${LIB})
-            
+
             # Copy shared libraries to target directory for direct execution
-            if(LIB_TYPE STREQUAL "SHARED_LIBRARY")
+            if (LIB_TYPE STREQUAL "SHARED_LIBRARY")
                 # Add a post-build step to copy the shared library to the target's directory
                 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         "$<TARGET_FILE:${LIB}>"
                         "$<TARGET_FILE_DIR:${TARGET_NAME}>/"
-                    COMMENT "Copying shared library ${LIB} for ${TARGET_NAME}"
-                    VERBATIM
+                        COMMENT "Copying shared library ${LIB} for ${TARGET_NAME}"
+                        VERBATIM
                 )
-                
+
                 message(STATUS "** Will copy shared library ${LIB} to build directory for ${TARGET_NAME}")
-            endif()
-            
+            endif ()
+
             # Recursively handle dependencies of this library
             _copy_shared_library_dependencies_to_build_dir_recursive(${TARGET_NAME} ${LIB})
-        endif()
-    endforeach()
+        endif ()
+    endforeach ()
 endfunction()
 
 # Helper function to recursively handle dependencies
 function(_copy_shared_library_dependencies_to_build_dir_recursive MAIN_TARGET LIB_TARGET)
     get_target_property(LIB_LINK_LIBS ${LIB_TARGET} LINK_LIBRARIES)
-    if(NOT LIB_LINK_LIBS)
+    if (NOT LIB_LINK_LIBS)
         return()
-    endif()
-    
-    foreach(NESTED_LIB ${LIB_LINK_LIBS})
-        if(TARGET ${NESTED_LIB})
+    endif ()
+
+    foreach (NESTED_LIB ${LIB_LINK_LIBS})
+        if (TARGET ${NESTED_LIB})
             get_target_property(NESTED_LIB_TYPE ${NESTED_LIB} TYPE)
-            
+
             # Ensure build order dependency
             add_dependencies(${MAIN_TARGET} ${NESTED_LIB})
-            
+
             # Copy shared libraries
-            if(NESTED_LIB_TYPE STREQUAL "SHARED_LIBRARY")
+            if (NESTED_LIB_TYPE STREQUAL "SHARED_LIBRARY")
                 add_custom_command(TARGET ${MAIN_TARGET} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         "$<TARGET_FILE:${NESTED_LIB}>"
                         "$<TARGET_FILE_DIR:${MAIN_TARGET}>/"
-                    COMMENT "Copying transitive shared library ${NESTED_LIB} for ${MAIN_TARGET}"
-                    VERBATIM
+                        COMMENT "Copying transitive shared library ${NESTED_LIB} for ${MAIN_TARGET}"
+                        VERBATIM
                 )
-                
+
                 message(STATUS "** Will copy transitive shared library ${NESTED_LIB} to build directory for ${MAIN_TARGET}")
-            endif()
-            
+            endif ()
+
             # Continue recursively (with depth limit to avoid infinite loops)
             get_target_property(PROCESSED ${MAIN_TARGET} _PROCESSED_DEPS)
-            if(NOT PROCESSED)
+            if (NOT PROCESSED)
                 set_target_properties(${MAIN_TARGET} PROPERTIES _PROCESSED_DEPS "")
                 set(PROCESSED "")
-            endif()
-            
-            if(NOT "${NESTED_LIB}" IN_LIST PROCESSED)
+            endif ()
+
+            if (NOT "${NESTED_LIB}" IN_LIST PROCESSED)
                 list(APPEND PROCESSED ${NESTED_LIB})
                 set_target_properties(${MAIN_TARGET} PROPERTIES _PROCESSED_DEPS "${PROCESSED}")
                 _copy_shared_library_dependencies_to_build_dir_recursive(${MAIN_TARGET} ${NESTED_LIB})
-            endif()
-        endif()
-    endforeach()
+            endif ()
+        endif ()
+    endforeach ()
 endfunction()
 
-# Function to copy AddressSanitizer runtime DLL to build directory for direct execution
+# Helper function to copy AddressSanitizer runtime DLL to build directory for direct execution
 function(_copy_asan_dll_to_build_dir TARGET_NAME)
     # Only handle this for MSVC with AddressSanitizer enabled
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
-    
-    if(NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
+
+    if (NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
         return()
-    endif()
-    
+    endif ()
+
     # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
     string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-    if(ASAN_FLAGS_INDEX EQUAL -1)
+    if (ASAN_FLAGS_INDEX EQUAL -1)
         return()
-    endif()
-    
-    # Find the AddressSanitizer DLL using the same logic as install_asan_runtime_dll
+    endif ()
+
+    # Find the AddressSanitizer DLL using the same logic as _install_asan_runtime_dll
     _find_asan_dll_path(ASAN_DLL_PATH)
-    
-    if(ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
+
+    if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
         # Get the target's output directory
         get_target_property(TARGET_OUTPUT_DIR ${TARGET_NAME} RUNTIME_OUTPUT_DIRECTORY)
-        if(NOT TARGET_OUTPUT_DIR)
+        if (NOT TARGET_OUTPUT_DIR)
             set(TARGET_OUTPUT_DIR $<TARGET_FILE_DIR:${TARGET_NAME}>)
-        endif()
-        
+        endif ()
+
         # Normalize path for CMake (use forward slashes)
         file(TO_CMAKE_PATH "${ASAN_DLL_PATH}" ASAN_DLL_CMAKE_PATH)
         get_filename_component(ASAN_DLL_NAME "${ASAN_DLL_CMAKE_PATH}" NAME)
-        
+
         # Add a post-build step to copy the DLL to the target's output directory
         add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${ASAN_DLL_CMAKE_PATH}"
                 "$<TARGET_FILE_DIR:${TARGET_NAME}>/${ASAN_DLL_NAME}"
-            COMMENT "Copying AddressSanitizer runtime DLL for ${TARGET_NAME}"
-            VERBATIM
+                COMMENT "Copying AddressSanitizer runtime DLL for ${TARGET_NAME}"
+                VERBATIM
         )
-        
+
         message(STATUS "** Will copy AddressSanitizer runtime DLL to build directory for ${TARGET_NAME}")
-    else()
+    else ()
         message(WARNING "AddressSanitizer runtime DLL not found for build directory copying. ${TARGET_NAME} may not run directly from build directory.")
-    endif()
+    endif ()
 endfunction()
 
 # Helper function to find AddressSanitizer DLL path (shared between install and build directory copying)
 function(_find_asan_dll_path OUTPUT_VAR)
     # Determine architecture-specific DLL name
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-x86_64.dll")
         set(ARCH_DIR "x64")
-    else()
+    else ()
         set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-i386.dll")
         set(ARCH_DIR "x86")
-    endif()
-    
+    endif ()
+
     set(ASAN_DLL_PATH "")
-    
+
     # First, try to use vswhere to find Visual Studio installations
     find_program(VSWHERE_EXECUTABLE
-        NAMES vswhere.exe
-        PATHS 
+            NAMES vswhere.exe
+            PATHS
             "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/Installer"
             "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
-        DOC "Visual Studio locator tool"
+            DOC "Visual Studio locator tool"
     )
-    
-    if(VSWHERE_EXECUTABLE)
+
+    if (VSWHERE_EXECUTABLE)
         # Get Visual Studio installation path using vswhere
         execute_process(
-            COMMAND "${VSWHERE_EXECUTABLE}" -latest -property installationPath
-            OUTPUT_VARIABLE VS_INSTALL_PATH
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
+                COMMAND "${VSWHERE_EXECUTABLE}" -latest -property installationPath
+                OUTPUT_VARIABLE VS_INSTALL_PATH
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
         )
-        
-        if(VS_INSTALL_PATH AND EXISTS "${VS_INSTALL_PATH}")
+
+        if (VS_INSTALL_PATH AND EXISTS "${VS_INSTALL_PATH}")
             # Search for AddressSanitizer runtime DLL in VC tools
-            file(GLOB_RECURSE ASAN_DLL_CANDIDATES 
-                "${VS_INSTALL_PATH}/VC/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-            
-            if(ASAN_DLL_CANDIDATES)
+            file(GLOB_RECURSE ASAN_DLL_CANDIDATES
+                    "${VS_INSTALL_PATH}/VC/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
+
+            if (ASAN_DLL_CANDIDATES)
                 # Prefer the newest version (last in sorted list)
                 list(SORT ASAN_DLL_CANDIDATES)
                 list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
-            endif()
-        endif()
-    endif()
-    
+            endif ()
+        endif ()
+    endif ()
+
     # Fallback: Search in environment variables
-    if(NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
+    if (NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
         # Try VCINSTALLDIR environment variable
-        if(DEFINED ENV{VCINSTALLDIR})
-            file(GLOB_RECURSE ASAN_DLL_CANDIDATES 
-                "$ENV{VCINSTALLDIR}/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-            if(ASAN_DLL_CANDIDATES)
+        if (DEFINED ENV{VCINSTALLDIR})
+            file(GLOB_RECURSE ASAN_DLL_CANDIDATES
+                    "$ENV{VCINSTALLDIR}/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
+            if (ASAN_DLL_CANDIDATES)
                 list(SORT ASAN_DLL_CANDIDATES)
                 list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
-            endif()
-        endif()
-        
+            endif ()
+        endif ()
+
         # Try VCToolsInstallDir environment variable
-        if((NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}") AND DEFINED ENV{VCToolsInstallDir})
-            file(GLOB_RECURSE ASAN_DLL_CANDIDATES 
-                "$ENV{VCToolsInstallDir}/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-            if(ASAN_DLL_CANDIDATES)
+        if ((NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}") AND DEFINED ENV{VCToolsInstallDir})
+            file(GLOB_RECURSE ASAN_DLL_CANDIDATES
+                    "$ENV{VCToolsInstallDir}/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
+            if (ASAN_DLL_CANDIDATES)
                 list(SORT ASAN_DLL_CANDIDATES)
                 list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
-            endif()
-        endif()
-    endif()
-    
+            endif ()
+        endif ()
+    endif ()
+
     # Final fallback: Search in common Visual Studio installation directories
-    if(NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
+    if (NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
         set(COMMON_VS_ROOTS
-            "$ENV{ProgramFiles}/Microsoft Visual Studio"
-            "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio"
+                "$ENV{ProgramFiles}/Microsoft Visual Studio"
+                "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio"
         )
-        
-        foreach(VS_ROOT ${COMMON_VS_ROOTS})
-            if(EXISTS "${VS_ROOT}")
+
+        foreach (VS_ROOT ${COMMON_VS_ROOTS})
+            if (EXISTS "${VS_ROOT}")
                 file(GLOB VS_VERSIONS "${VS_ROOT}/20*/*/VC/Tools/MSVC")
-                foreach(VS_VERSION_PATH ${VS_VERSIONS})
-                    if(EXISTS "${VS_VERSION_PATH}")
-                        file(GLOB_RECURSE ASAN_DLL_CANDIDATES 
-                            "${VS_VERSION_PATH}/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-                        if(ASAN_DLL_CANDIDATES)
+                foreach (VS_VERSION_PATH ${VS_VERSIONS})
+                    if (EXISTS "${VS_VERSION_PATH}")
+                        file(GLOB_RECURSE ASAN_DLL_CANDIDATES
+                                "${VS_VERSION_PATH}/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
+                        if (ASAN_DLL_CANDIDATES)
                             list(SORT ASAN_DLL_CANDIDATES)
                             list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
                             break()
-                        endif()
-                    endif()
-                endforeach()
-                if(ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
+                        endif ()
+                    endif ()
+                endforeach ()
+                if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
                     break()
-                endif()
-            endif()
-        endforeach()
-    endif()
-    
+                endif ()
+            endif ()
+        endforeach ()
+    endif ()
+
     set(${OUTPUT_VAR} "${ASAN_DLL_PATH}" PARENT_SCOPE)
 endfunction()
 
-# Function to install AddressSanitizer runtime DLL if needed
-function(install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
+# Helper function to install AddressSanitizer runtime DLL alongside the executable
+function(_install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
     # Only handle this for MSVC with AddressSanitizer enabled
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
-    
-    if(NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
+
+    if (NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
         return()
-    endif()
-    
+    endif ()
+
     # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
     string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-    if(ASAN_FLAGS_INDEX EQUAL -1)
+    if (ASAN_FLAGS_INDEX EQUAL -1)
         return()
-    endif()
-    
+    endif ()
+
     # Use the shared helper function to find the DLL
     _find_asan_dll_path(ASAN_DLL_PATH)
-    
-    if(ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
+
+    if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
         message(STATUS "** Found AddressSanitizer runtime DLL for installation: ${ASAN_DLL_PATH}")
-        
+
         # Normalize path for CMake (use forward slashes)
         file(TO_CMAKE_PATH "${ASAN_DLL_PATH}" ASAN_DLL_CMAKE_PATH)
-        
+
         # Install the DLL alongside the executable
         install(FILES "${ASAN_DLL_CMAKE_PATH}"
                 DESTINATION ${RUNTIME_DIR}
                 COMPONENT Runtime)
         message(STATUS "** Will install AddressSanitizer runtime DLL for ${TARGET_NAME}")
-    else()
+    else ()
         # Determine architecture for error message
-        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        if (CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-x86_64.dll")
             set(ARCH_DIR "x64")
-        else()
+        else ()
             set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-i386.dll")
             set(ARCH_DIR "x86")
-        endif()
-        
+        endif ()
+
         find_program(VSWHERE_EXECUTABLE
-            NAMES vswhere.exe
-            PATHS 
+                NAMES vswhere.exe
+                PATHS
                 "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/Installer"
                 "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
-            DOC "Visual Studio locator tool"
+                DOC "Visual Studio locator tool"
         )
-        
+
         message(WARNING "AddressSanitizer runtime DLL (${ASAN_DLL_PATTERN}) not found for installation. Installed executable may not run without setting PATH.")
         message(STATUS "** Searched architecture: ${ARCH_DIR}")
-        if(VSWHERE_EXECUTABLE)
+        if (VSWHERE_EXECUTABLE)
             message(STATUS "** Used vswhere: ${VSWHERE_EXECUTABLE}")
-        else()
+        else ()
             message(STATUS "** vswhere not found, used fallback search")
-        endif()
-    endif()
+        endif ()
+    endif ()
 endfunction()
 
-# Function to install shared library dependencies cross-platform
-function(target_install_shared_library_dependencies TARGET_NAME RUNTIME_DIR)
+# Helper function to install shared library dependencies cross-platform
+function(_target_install_shared_library_dependencies TARGET_NAME RUNTIME_DIR)
     # Get TARGET_NAME type
     get_target_property(target_type ${TARGET_NAME} TYPE)
-    if(NOT target_type STREQUAL "EXECUTABLE" AND NOT target_type STREQUAL "SHARED_LIBRARY")
+    if (NOT target_type STREQUAL "EXECUTABLE" AND NOT target_type STREQUAL "SHARED_LIBRARY")
         return()  # Only handle executables and shared libraries
-    endif()
-    
+    endif ()
+
     # Get target output name
     get_target_property(target_output_name ${TARGET_NAME} OUTPUT_NAME)
-    if(NOT target_output_name)
+    if (NOT target_output_name)
         set(target_output_name ${TARGET_NAME})
-    endif()
-    
+    endif ()
+
     # Create a post-install script to copy shared library dependencies
     set(install_script_file "${CMAKE_CURRENT_BINARY_DIR}/install_${TARGET_NAME}_dependencies.cmake")
-    
+
     file(WRITE ${install_script_file} "
 # Auto-generated script to install shared library dependencies for ${TARGET_NAME}
 cmake_minimum_required(VERSION 3.15)
@@ -467,237 +619,70 @@ endif()
 
     # Install the script to run after the main installation
     install(SCRIPT ${install_script_file} COMPONENT Runtime)
-    
+
     # Enhanced handling of TARGET_NAME dependencies to include transitive dependencies
     get_target_property(target_link_libs ${TARGET_NAME} LINK_LIBRARIES)
-    if(target_link_libs)
+    if (target_link_libs)
         # Function to collect all dependency targets recursively (including static libraries with shared deps)
         function(collect_all_dependency_targets target_name visited_targets dependency_targets)
             # Avoid infinite recursion
-            if(target_name IN_LIST visited_targets)
+            if (target_name IN_LIST visited_targets)
                 return()
-            endif()
+            endif ()
             list(APPEND visited_targets ${target_name})
-            
-            if(TARGET ${target_name})
+
+            if (TARGET ${target_name})
                 get_target_property(target_type ${target_name} TYPE)
-                
+
                 list(APPEND dependency_targets ${target_name})
-                
+
                 # Recursively check this TARGET_NAME's dependencies
                 get_target_property(target_deps ${target_name} LINK_LIBRARIES)
-                if(target_deps)
-                    foreach(dep ${target_deps})
+                if (target_deps)
+                    foreach (dep ${target_deps})
                         collect_all_dependency_targets(${dep} \"${visited_targets}\" dependency_targets)
-                    endforeach()
-                endif()
-                
+                    endforeach ()
+                endif ()
+
                 # Also check interface link libraries for transitive dependencies
                 get_target_property(interface_deps ${target_name} INTERFACE_LINK_LIBRARIES)
-                if(interface_deps)
-                    foreach(dep ${interface_deps})
-                        if(TARGET ${dep})
+                if (interface_deps)
+                    foreach (dep ${interface_deps})
+                        if (TARGET ${dep})
                             collect_all_dependency_targets(${dep} \"${visited_targets}\" dependency_targets)
-                        endif()
-                    endforeach()
-                endif()
-            endif()
-            
+                        endif ()
+                    endforeach ()
+                endif ()
+            endif ()
+
             # Propagate results back to parent scope
             set(dependency_targets ${dependency_targets} PARENT_SCOPE)
             set(visited_targets ${visited_targets} PARENT_SCOPE)
         endfunction()
-        
+
         # Collect all dependency targets
         set(all_dependency_targets \"\")
         set(visited_list \"\")
-        foreach(lib ${target_link_libs})
+        foreach (lib ${target_link_libs})
             collect_all_dependency_targets(${lib} \"${visited_list}\" all_dependency_targets)
-        endforeach()
-        
+        endforeach ()
+
         # Remove duplicates
-        if(all_dependency_targets)
+        if (all_dependency_targets)
             list(REMOVE_DUPLICATES all_dependency_targets)
-        endif()
-        
+        endif ()
+
         # Install shared libraries for all dependency targets
-        foreach(dep_target ${all_dependency_targets})
-            if(TARGET ${dep_target})
+        foreach (dep_target ${all_dependency_targets})
+            if (TARGET ${dep_target})
                 get_target_property(dep_type ${dep_target} TYPE)
-                if(dep_type STREQUAL "SHARED_LIBRARY")
+                if (dep_type STREQUAL "SHARED_LIBRARY")
                     install(FILES $<TARGET_FILE:${dep_target}>
-                        DESTINATION ${RUNTIME_DIR}
-                        COMPONENT Runtime
+                            DESTINATION ${RUNTIME_DIR}
+                            COMPONENT Runtime
                     )
-                endif()
-            endif()
-        endforeach()
-    endif()
-endfunction()
-
-#
-# Helper function to install a TARGET_NAME with specific components
-# This function installs a TARGET_NAME with the specified components and options.
-# It handles the installation of runtime, library, and archive files,
-# as well as public headers and export configuration.
-# It also generates export headers for shared libraries.
-#
-# usage:
-# install_component(TARGET_NAME
-#     [INCLUDE_SUBDIR <subdir>]
-#     [NAMESPACE <namespace>]
-#     [RUNTIME_DIR <RUNTIME_DIR>]
-#     [LIBRARY_DIR <library_dir>]
-#     [ARCHIVE_DIR <archive_dir>]
-#     [EXPORT_MACRO_NAME <macro_name>]
-#     [EXPORT_FILE_NAME <file_name>]
-# )
-#
-# Arguments:
-#   TARGET_NAME: The TARGET_NAME to install.
-#   INCLUDE_SUBDIR: The subdirectory under the include directory where the public headers will be installed.
-#   NAMESPACE: The namespace to use for the exported targets.
-#   RUNTIME_DIR: The directory where runtime files (DLLs and executables) will be installed.
-#   LIBRARY_DIR: The directory where library files (shared libraries) will be installed.
-#   ARCHIVE_DIR: The directory where archive files (static/import libraries) will be installed.
-#   EXPORT_MACRO_NAME: The name of the export define for the TARGET_NAME.
-#   EXPORT_FILE_NAME: The name of the export file to be generated.
-#
-# Example:
-#   install_component(my_target
-#       INCLUDE_SUBDIR "my_subdir"
-#       NAMESPACE "my_namespace::"
-#       RUNTIME_DIR "bin"
-#       LIBRARY_DIR "lib"
-#       ARCHIVE_DIR "lib"
-#       EXPORT_MACRO_NAME "MYTARGET_EXPORT"
-#       EXPORT_FILE_NAME "my_target_export.h"
-#   )
-#
-function(install_component TARGET_NAME)
-    # Parse arguments
-    set(oneValueArgs 
-        INCLUDE_SUBDIR 
-        NAMESPACE 
-        RUNTIME_DIR 
-        LIBRARY_DIR 
-        ARCHIVE_DIR
-        EXPORT_MACRO_NAME
-        EXPORT_FILE_NAME
-    )
-    cmake_parse_arguments(ARG "" "${oneValueArgs}" "" ${ARGN})
-
-    # Set defaults
-    if(NOT ARG_INCLUDE_SUBDIR)
-        set(ARG_INCLUDE_SUBDIR ${TARGET_NAME})
-    endif()
-    if(NOT ARG_NAMESPACE)
-        set(ARG_NAMESPACE ${THIS_PROJECT_NAMESPACE})
-    endif()
-    if(NOT ARG_RUNTIME_DIR)
-        set(ARG_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR})
-    endif()
-    if(NOT ARG_LIBRARY_DIR)
-        set(ARG_LIBRARY_DIR ${CMAKE_INSTALL_LIBDIR})
-    endif()
-    if(NOT ARG_ARCHIVE_DIR)
-        set(ARG_ARCHIVE_DIR ${CMAKE_INSTALL_LIBDIR})
-    endif()
-    if(NOT ARG_EXPORT_MACRO_NAME)
-        set(ARG_EXPORT_MACRO_NAME "${TARGET_NAME}_EXPORT")
-    endif()
-    if(NOT ARG_EXPORT_FILE_NAME)
-        set(ARG_EXPORT_FILE_NAME "${ARG_INCLUDE_SUBDIR}/${TARGET_NAME}_export.h")
-    endif()
-
-    # Get TARGET_NAME type
-    get_target_property(target_type ${TARGET_NAME} TYPE)
-
-    # Install TARGET_NAME with appropriate components
-    install(TARGETS ${TARGET_NAME}
-        EXPORT ${TARGET_NAME}Targets
-        RUNTIME DESTINATION ${ARG_RUNTIME_DIR}  # DLLs and executables
-        LIBRARY DESTINATION ${ARG_RUNTIME_DIR}  # Shared libraries (same as executables)
-        ARCHIVE DESTINATION ${ARG_ARCHIVE_DIR}  # Static/import libraries
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-    
-    # Install shared library dependencies for executables and shared libraries
-    get_target_property(target_type ${TARGET_NAME} TYPE)
-    if(target_type STREQUAL "EXECUTABLE" OR target_type STREQUAL "SHARED_LIBRARY")
-        target_install_shared_library_dependencies(${TARGET_NAME} ${ARG_RUNTIME_DIR})
-        
-        # Install AddressSanitizer runtime DLL if needed
-        install_asan_runtime_dll(${TARGET_NAME} ${ARG_RUNTIME_DIR})
-    endif()
-    
-    # Handle Emscripten WebAssembly files
-    include(GetCurrentCompiler)
-    get_current_compiler(CURRENT_COMPILER)
-    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
-        get_target_property(target_type ${TARGET_NAME} TYPE)
-        if(target_type STREQUAL "EXECUTABLE")
-            # Install accompanying WASM files for Emscripten executables
-            install(FILES 
-                $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.wasm
-                DESTINATION ${ARG_RUNTIME_DIR}
-                OPTIONAL
-            )
-        endif()
-    endif()
-
-    # Install export configuration (only if it's safe to do so)
-    # Skip export for targets that have external dependencies not in our project
-    get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
-    set(CAN_EXPORT TRUE)
-    
-    if(TARGET_LINK_LIBS)
-        foreach(LIB ${TARGET_LINK_LIBS})
-            if(TARGET ${LIB})
-                # Check if this is an external target (not part of our project)
-                get_target_property(LIB_SOURCE_DIR ${LIB} SOURCE_DIR)
-                get_target_property(LIB_BINARY_DIR ${LIB} BINARY_DIR)
-                
-                # If the target doesn't have a source/binary dir in our project tree, it's external
-                if(NOT LIB_SOURCE_DIR OR NOT LIB_BINARY_DIR)
-                    set(CAN_EXPORT FALSE)
-                    break()
-                endif()
-                
-                # Check if it's a CPM-managed dependency (usually under _deps)
-                string(FIND "${LIB_SOURCE_DIR}" "_deps/" DEPS_FOUND)
-                if(NOT DEPS_FOUND EQUAL -1)
-                    set(CAN_EXPORT FALSE)
-                    break()
-                endif()
-            endif()
-        endforeach()
-    endif()
-    
-    if(CAN_EXPORT)
-        install(EXPORT ${TARGET_NAME}Targets
-            FILE ${TARGET_NAME}Config.cmake
-            NAMESPACE ${ARG_NAMESPACE}
-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${THIS_PROJECT_NAME}
-        )
-    else()
-        message(STATUS "** Skipping export for ${TARGET_NAME} due to external dependencies")
-    endif()
-
-    # Handle shared library specifics
-    if(${target_type} STREQUAL "SHARED_LIBRARY")
-        # Generate export headers
-        generate_export_header(${TARGET_NAME}
-            BASE_NAME ${TARGET_NAME}
-            EXPORT_MACRO_NAME ${ARG_EXPORT_MACRO_NAME}
-            EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}"
-        )
-
-        # Install export headers
-        install(FILES 
-            ${CMAKE_CURRENT_BINARY_DIR}/include/${ARG_EXPORT_FILE_NAME}
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${ARG_INCLUDE_SUBDIR}
-        )
-    endif()
+                endif ()
+            endif ()
+        endforeach ()
+    endif ()
 endfunction()

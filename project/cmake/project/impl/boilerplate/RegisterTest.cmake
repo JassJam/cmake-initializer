@@ -1,454 +1,333 @@
-# ==============================================================================
-# Testing Framework Registration System
-# ==============================================================================
-
-include_guard(GLOBAL)
+include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 
-# Configuration Variables:
-# - EMSCRIPTEN_NODE_EXECUTABLE: Path to Node.js executable for running Emscripten tests
-#   Defaults to auto-detection from EMSDK or system PATH
-# - EMSCRIPTEN_TEST_OPTIONS: Additional options for Emscripten test execution
-#   Example: "--experimental-wasm-bigint --max-old-space-size=4096"
-
-# Global variables to store test framework configuration
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED FALSE)
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "")
-set_property(GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER "")
-
-# Register a test framework globally (call once in main CMakeLists.txt)
-# Usage:
-# register_test_framework("doctest") (or "catch2", "gtest", "boost")
-function(register_test_framework FRAMEWORK_NAME)
-    # Skip if testing is disabled
-    if(NOT BUILD_TESTING)
-        message(STATUS "Testing disabled, skipping test framework registration")
-        return()
-    endif()
-    
-    get_property(already_registered GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED)
-    if(already_registered)
-        message(WARNING "Test framework already registered. Skipping duplicate registration.")
-        return()
-    endif()
-
-    message(STATUS "Registering test framework: ${FRAMEWORK_NAME}")
-    
-    # Set up framework-specific configuration
-    if(FRAMEWORK_NAME STREQUAL "doctest")
-        if(COMMAND CPMAddPackage)
-            CPMAddPackage(
-                NAME doctest
-                GITHUB_REPOSITORY doctest/doctest
-                GIT_TAG v${DOCTEST_VERSION}
-                SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS doctest::doctest)
-            set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
-            set(FRAMEWORK_PACKAGE_MANAGER "CPM")
-        elseif(COMMAND xrepo_package)
-            xrepo_package("doctest ${DOCTEST_VERSION}")
-            set(FRAMEWORK_LIBS doctest::doctest)
-            set(FRAMEWORK_DEFS "DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN")
-            set(FRAMEWORK_PACKAGE_MANAGER "XMake")
-        else()
-            message(WARNING "No package manager available for doctest.")
-        endif()
-        
-    elseif(FRAMEWORK_NAME STREQUAL "catch2")
-        if(COMMAND CPMAddPackage)
-            CPMAddPackage(
-                NAME Catch2
-                GITHUB_REPOSITORY catchorg/Catch2
-                GIT_TAG v${CATCH2_VERSION}
-                SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
-            set(FRAMEWORK_DEFS "")
-        elseif(COMMAND xrepo_package)
-            xrepo_package("catch2 ${CATCH2_VERSION}")
-            set(FRAMEWORK_LIBS Catch2::Catch2WithMain)
-            set(FRAMEWORK_DEFS "")
-        else()
-            message(WARNING "No package manager available for Catch2.")
-        endif()
-        
-    elseif(FRAMEWORK_NAME STREQUAL "gtest")
-        if(COMMAND CPMAddPackage)
-            CPMAddPackage(
-                NAME googletest
-                GITHUB_REPOSITORY google/googletest
-                GIT_TAG v${GTEST_VERSION}
-                SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS gtest_main)
-            set(FRAMEWORK_DEFS "")
-        elseif(COMMAND xrepo_package)
-            xrepo_package("gtest ${GTEST_VERSION}")
-            set(FRAMEWORK_LIBS gtest_main)
-            set(FRAMEWORK_DEFS "")
-        else()
-            message(WARNING "No package manager available for Google Test.")
-        endif()
-        
-    elseif(FRAMEWORK_NAME STREQUAL "boost")
-        if(COMMAND CPMAddPackage)
-            CPMAddPackage(
-                NAME boost
-                GITHUB_REPOSITORY boostorg/boost
-                GIT_TAG ${BOOST_VERSION}
-                OPTIONS
-                    "BOOST_ENABLE_CMAKE ON"
-                    "BOOST_INCLUDE_LIBRARIES test"
-                SYSTEM ON
-            )
-            set(FRAMEWORK_LIBS Boost::unit_test_framework)
-            set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
-        elseif(COMMAND xrepo_package)
-            xrepo_package("boost")
-            set(FRAMEWORK_LIBS Boost::unit_test_framework)
-            set(FRAMEWORK_DEFS "BOOST_TEST_MODULE=Tests")
-        else()
-            message(WARNING "No package manager available for Boost Test.")
-        endif()
-        
-    else()
-        message(WARNING "Unknown test framework: ${FRAMEWORK_NAME}. Supported: doctest, catch2, gtest, boost")
-    endif()
-
-    # Store configuration globally
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED TRUE)
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "${FRAMEWORK_NAME}")
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES "${FRAMEWORK_LIBS}")
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_DEFINITIONS "${FRAMEWORK_DEFS}")
-    set_property(GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER "${FRAMEWORK_PACKAGE_MANAGER}")
-    
-    message(STATUS "Test framework '${FRAMEWORK_NAME}' registered successfully")
-endfunction()
-
-# Comprehensive test creation function - uses the registered test framework
+#
+# Register a test target using the registered framework
 # Usage:
 # register_test(MyTest
-#     SOURCE_DIR "tests"
-#     SOURCES PRIVATE "test_main.cpp" "test_utils.cpp" PUBLIC "api_test.cpp"
-#     INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"
-#     LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"
-#     DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"
-#     COMPILE_DEFINITIONS PRIVATE "TEST_PRIVATE" PUBLIC "TEST_PUBLIC" INTERFACE "TEST_INTERFACE"
-#     COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"
-#     COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"
-#     LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"
-#     PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"
-#     ENVIRONMENT [dev|prod|test|...]
-#     INSTALL
+#     # Source and include directories
+#     [SOURCE_DIR "tests"]
+#     [INCLUDE_DIR "tests-include"]
+#
+#     # project files and settings with visibility
+#     [SOURCES PRIVATE "test_main.cpp" "test_utils.cpp" PUBLIC "api_test.cpp"]
+#     [INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"]
+#     [LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"]
+#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"]
+#     [COMPILE_DEFINITIONS PRIVATE "TEST_PRIVATE" PUBLIC "TEST_PUBLIC" INTERFACE "TEST_INTERFACE"]
+#     [COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"]
+#     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
+#     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
+#     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
+#
 #     # Project options (override global defaults)
-#     ENABLE_EXCEPTIONS [ON|OFF]
-#     ENABLE_IPO [ON|OFF]
-#     WARNINGS_AS_ERRORS [ON|OFF]
-#     ENABLE_SANITIZER_ADDRESS [ON|OFF]
-#     ENABLE_SANITIZER_LEAK [ON|OFF]
-#     ENABLE_SANITIZER_UNDEFINED_BEHAVIOR [ON|OFF]
-#     ENABLE_SANITIZER_THREAD [ON|OFF]
-#     ENABLE_SANITIZER_MEMORY [ON|OFF]
-#     ENABLE_HARDENING [ON|OFF]
-#     ENABLE_CLANG_TIDY [ON|OFF]
-#     ENABLE_CPPCHECK [ON|OFF]
+#     [ENABLE_EXCEPTIONS ON|OFF]
+#     [ENABLE_IPO ON|OFF]
+#     [WARNINGS_AS_ERRORS ON|OFF]
+#     [ENABLE_SANITIZER_ADDRESS ON|OFF]
+#     [ENABLE_SANITIZER_LEAK ON|OFF]
+#     [ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ON|OFF]
+#     [ENABLE_SANITIZER_THREAD ON|OFF]
+#     [ENABLE_SANITIZER_MEMORY ON|OFF]
+#     [ENABLE_HARDENING ON|OFF]
+#     [ENABLE_CLANG_TIDY ON|OFF]
+#     [ENABLE_CPPCHECK ON|OFF]
+#
+#     [INSTALL]
 # )
+#
 function(register_test TARGET_NAME)
     # Skip if testing is disabled
-    if(NOT BUILD_TESTING)
+    if (NOT BUILD_TESTING)
         message(STATUS "Testing disabled, skipping test registration for ${TARGET_NAME}")
         return()
-    endif()
-    
+    endif ()
+
     # Get framework configuration
     get_property(framework_name GLOBAL PROPERTY TEST_FRAMEWORK_NAME)
     get_property(framework_libs GLOBAL PROPERTY TEST_FRAMEWORK_LIBRARIES)
     get_property(framework_defs GLOBAL PROPERTY TEST_FRAMEWORK_DEFINITIONS)
 
     # If no framework is registered, throw an error
-    if(NOT framework_name)
+    if (NOT framework_name)
         message(WARNING "No test framework was registered.")
-    endif()
-    
-    set(options INSTALL DEPENDENCIES)
-    set(oneValueArgs SOURCE_DIR ENVIRONMENT
-        ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
-        ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
-        ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
-        ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
+    endif ()
+
+    set(options INSTALL)
+    set(oneValueArgs SOURCE_DIR
+            ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
+            ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
+            ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
+            ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
     set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCY_LIST
-        COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES)
+            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES DEPENDENCIES)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+    #
+    
     # Check if test framework is registered
     get_property(framework_registered GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED)
-    if(NOT framework_registered)
+    if (NOT framework_registered)
         message(FATAL_ERROR "No test framework registered. Call register_test_framework() first.")
-    endif()
+    endif ()
 
     # Set defaults
-    if(NOT ARG_SOURCE_DIR)
-        set(ARG_SOURCE_DIR ".")  # Default to current directory
-    endif()
+    if (NOT ARG_SOURCE_DIR)
+        set(ARG_SOURCE_DIR "tests")
+    endif ()
+    if (NOT ARG_INCLUDE_DIR)
+        set(ARG_INCLUDE_DIR "include")
+    endif ()
 
     # Create test executable
     add_executable(${TARGET_NAME})
 
-    # Load .env and .env.<ENVIRONMENT> if ENVIRONMENT is set
-    set(_env_file "${CMAKE_CURRENT_LIST_DIR}/.env")
-    include(LoadEnvVariable)
-    target_load_env_files(${TARGET_NAME} "${_env_file}" "${_env_file}.${ARG_ENVIRONMENT}")
-
     # Add test sources with visibility
-    if(ARG_SOURCES)
-        set(current_visibility "PRIVATE")  # Default visibility for sources
-        foreach(item ${ARG_SOURCES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+    if (ARG_SOURCES)
+        set(current_visibility "PRIVATE")
+        foreach (item ${ARG_SOURCES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_sources(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    else()
+            endif ()
+        endforeach ()
+    else ()
         # Try framework-specific test file first
         set(FRAMEWORK_TEST_FILE "test_${framework_name}.cpp")
-        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${FRAMEWORK_TEST_FILE}")
+        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${FRAMEWORK_TEST_FILE}")
             target_sources(${TARGET_NAME} PRIVATE ${FRAMEWORK_TEST_FILE})
-        else()
+        else ()
             # Auto-discover test sources
-            file(GLOB_RECURSE TEST_SOURCES 
-                "${ARG_SOURCE_DIR}/*.cpp" 
-                "${ARG_SOURCE_DIR}/*.c"
-                "${ARG_SOURCE_DIR}/test_*.cpp"
-                "${ARG_SOURCE_DIR}/*_test.cpp"
+            file(GLOB_RECURSE TEST_SOURCES
+                    "${ARG_SOURCE_DIR}/*.cpp"
+                    "${ARG_SOURCE_DIR}/*.c"
+                    "${ARG_SOURCE_DIR}/test_*.cpp"
+                    "${ARG_SOURCE_DIR}/*_test.cpp"
             )
-            if(TEST_SOURCES)
+            if (TEST_SOURCES)
                 target_sources(${TARGET_NAME} PRIVATE ${TEST_SOURCES})
-            else()
+            else ()
                 message(FATAL_ERROR "No test sources found. Expected ${FRAMEWORK_TEST_FILE} or other test files in ${ARG_SOURCE_DIR}/")
-            endif()
-        endif()
-    endif()
+            endif ()
+        endif ()
+    endif ()
 
-    # Add includes with visibility
-    if(ARG_INCLUDES)
-        set(current_visibility "PRIVATE")  # Default visibility for tests
-        foreach(item ${ARG_INCLUDES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
-                set(current_visibility ${item})
-            else()
-                target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+    # Add default include directory
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}")
+        target_include_directories(${TARGET_NAME} PRIVATE
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>)
+    endif ()
     
-    if(ARG_LIBRARIES)
+    # Add includes with visibility
+    if (ARG_INCLUDES)
         set(current_visibility "PRIVATE")  # Default visibility for tests
-        foreach(item ${ARG_LIBRARIES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_INCLUDES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
+                target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    endif ()
+
+    if (ARG_LIBRARIES)
+        set(current_visibility "PRIVATE")  # Default visibility for tests
+        foreach (item ${ARG_LIBRARIES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
                 target_link_libraries(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add compile definitions with visibility
-    if(ARG_COMPILE_DEFINITIONS)
+    if (ARG_COMPILE_DEFINITIONS)
         set(current_visibility "PRIVATE")  # Default visibility
-        foreach(item ${ARG_COMPILE_DEFINITIONS})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_COMPILE_DEFINITIONS})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_compile_definitions(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add compile options with visibility
-    if(ARG_COMPILE_OPTIONS)
+    if (ARG_COMPILE_OPTIONS)
         set(current_visibility "PRIVATE")  # Default visibility
-        foreach(item ${ARG_COMPILE_OPTIONS})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_COMPILE_OPTIONS})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_compile_options(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add compile features with visibility
-    if(ARG_COMPILE_FEATURES)
+    if (ARG_COMPILE_FEATURES)
         set(current_visibility "PRIVATE")  # Default visibility
-        foreach(item ${ARG_COMPILE_FEATURES})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_COMPILE_FEATURES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_compile_features(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Add link options with visibility
-    if(ARG_LINK_OPTIONS)
+    if (ARG_LINK_OPTIONS)
         set(current_visibility "PRIVATE")  # Default visibility
-        foreach(item ${ARG_LINK_OPTIONS})
-            if(item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+        foreach (item ${ARG_LINK_OPTIONS})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
-            else()
+            else ()
                 target_link_options(${TARGET_NAME} ${current_visibility} ${item})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     # Set target properties
-    if(ARG_PROPERTIES)
+    if (ARG_PROPERTIES)
         set_target_properties(${TARGET_NAME} PROPERTIES ${ARG_PROPERTIES})
-    endif()
-    
+    endif ()
+
     # Add dependencies
-    if(ARG_DEPENDENCIES)
+    if (ARG_DEPENDENCIES)
         add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
-    endif()
-    
+    endif ()
+
     # Copy shared library dependencies to build directory for direct execution
     _copy_shared_library_dependencies_to_build_dir(${TARGET_NAME})
 
-    if(framework_libs)
+    if (framework_libs)
         # Use the package manager that was actually used to download the framework
         get_property(framework_package_manager GLOBAL PROPERTY TEST_FRAMEWORK_PACKAGE_MANAGER)
-        if(framework_package_manager STREQUAL "XMake" AND COMMAND xrepo_target_packages)
+        if (framework_package_manager STREQUAL "XMake" AND COMMAND xrepo_target_packages)
             get_property(framework_name GLOBAL PROPERTY TEST_FRAMEWORK_NAME)
-            if(framework_name STREQUAL "doctest")
-                xrepo_target_packages(${TARGET_NAME} doctest)
-            elseif(framework_name STREQUAL "catch2")
-                xrepo_target_packages(${TARGET_NAME} catch2)
-            elseif(framework_name STREQUAL "gtest")
-                xrepo_target_packages(${TARGET_NAME} gtest)
-            elseif(framework_name STREQUAL "boost")
-                xrepo_target_packages(${TARGET_NAME} boost)
-            endif()
-        else()
+            xrepo_target_packages(${TARGET_NAME} ${framework_name})
+        else ()
             target_link_libraries(${TARGET_NAME} PRIVATE ${framework_libs})
-        endif()
-    endif()
+        endif ()
+    endif ()
 
     # Add framework-specific compile definitions
-    if(framework_defs)
+    if (framework_defs)
         target_compile_definitions(${TARGET_NAME} PRIVATE ${framework_defs})
-    endif()
+    endif ()
 
     # Include current project's include directory if it exists
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_include_directories(${TARGET_NAME} PRIVATE
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         )
-    endif()
+    endif ()
 
     # Register test with CTest
     # Use get_current_compiler to detect if we're building with Emscripten
     get_current_compiler(CURRENT_COMPILER)
-    if(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
+    if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         # For Emscripten tests, we need to generate .js files for Node.js execution
         # Override the global executable suffix for test targets
         set_target_properties(${TARGET_NAME} PROPERTIES
-            SUFFIX ".js"  # Generate .js files for Node.js compatibility
+                SUFFIX ".js"  # Generate .js files for Node.js compatibility
         )
-        
+
         # Add Emscripten-specific link options for test executables
         # These can be overridden by setting EMSCRIPTEN_TEST_OPTIONS before calling this function
-        if(NOT DEFINED EMSCRIPTEN_TEST_OPTIONS)
+        if (NOT DEFINED EMSCRIPTEN_TEST_OPTIONS)
             set(EMSCRIPTEN_TEST_OPTIONS
-                "SHELL:-s ENVIRONMENT=node"     # Target Node.js environment
-                "SHELL:-s EXIT_RUNTIME=1"       # Allow process to exit properly
-                "SHELL:-s NODEJS_CATCH_EXIT=0"  # Don't catch exit calls
-                "SHELL:-s EXPORTED_RUNTIME_METHODS=['callMain']"  # Export main function
+                    "SHELL:-s ENVIRONMENT=node"     # Target Node.js environment
+                    "SHELL:-s EXIT_RUNTIME=1"       # Allow process to exit properly
+                    "SHELL:-s NODEJS_CATCH_EXIT=0"  # Don't catch exit calls
+                    "SHELL:-s EXPORTED_RUNTIME_METHODS=['callMain']"  # Export main function
             )
-        endif()
+        endif ()
         target_link_options(${TARGET_NAME} PRIVATE ${EMSCRIPTEN_TEST_OPTIONS})
-        
+
         # Try to find Node.js executable
         # This can be overridden by setting EMSCRIPTEN_NODE_EXECUTABLE
-        if(NOT DEFINED EMSCRIPTEN_NODE_EXECUTABLE)
+        if (NOT DEFINED EMSCRIPTEN_NODE_EXECUTABLE)
             set(NODE_EXECUTABLE "node")
-            if(DEFINED ENV{EMSDK})
+            if (DEFINED ENV{EMSDK})
                 # Look for Node.js in EMSDK installation - handle both Unix and Windows paths
-                if(WIN32)
+                if (WIN32)
                     file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node.exe")
-                else()
+                else ()
                     file(GLOB_RECURSE EMSDK_NODE_PATHS "$ENV{EMSDK}/node/*/bin/node")
-                endif()
-                if(EMSDK_NODE_PATHS)
+                endif ()
+                if (EMSDK_NODE_PATHS)
                     list(GET EMSDK_NODE_PATHS 0 NODE_EXECUTABLE)
-                endif()
-            endif()
-            
+                endif ()
+            endif ()
+
             # Find the Node.js executable if not from EMSDK
-            if(NODE_EXECUTABLE STREQUAL "node")
+            if (NODE_EXECUTABLE STREQUAL "node")
                 find_program(NODE_EXECUTABLE node)
-                if(NOT NODE_EXECUTABLE)
+                if (NOT NODE_EXECUTABLE)
                     message(WARNING "Node.js not found. Emscripten tests may not run properly.")
                     set(NODE_EXECUTABLE "node")
-                endif()
-            endif()
+                endif ()
+            endif ()
             set(EMSCRIPTEN_NODE_EXECUTABLE ${NODE_EXECUTABLE} CACHE STRING "Path to Node.js executable for Emscripten tests")
-        endif()
-        
+        endif ()
+
         add_test(NAME ${TARGET_NAME} COMMAND ${EMSCRIPTEN_NODE_EXECUTABLE} $<TARGET_FILE:${TARGET_NAME}>)
         # Set working directory to where the test files are located
         set_tests_properties(${TARGET_NAME} PROPERTIES
-            WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_NAME}>
+                WORKING_DIRECTORY $<TARGET_FILE_DIR:${TARGET_NAME}>
         )
-    else()
+    else ()
         # For native builds, run the executable directly
         add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
-    endif()
-    
+    endif ()
+
     # Apply common project options (warnings, sanitizers, static analysis, etc.)
     set(COMMON_OPTIONS_ARGS)
-    if(DEFINED ARG_ENABLE_EXCEPTIONS)
+    if (DEFINED ARG_ENABLE_EXCEPTIONS)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_EXCEPTIONS ${ARG_ENABLE_EXCEPTIONS})
-    endif()
-    if(DEFINED ARG_ENABLE_IPO)
+    endif ()
+    if (DEFINED ARG_ENABLE_IPO)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_IPO ${ARG_ENABLE_IPO})
-    endif()
-    if(DEFINED ARG_WARNINGS_AS_ERRORS)
+    endif ()
+    if (DEFINED ARG_WARNINGS_AS_ERRORS)
         list(APPEND COMMON_OPTIONS_ARGS WARNINGS_AS_ERRORS ${ARG_WARNINGS_AS_ERRORS})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_ADDRESS)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_ADDRESS)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_ADDRESS ${ARG_ENABLE_SANITIZER_ADDRESS})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_LEAK)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_LEAK)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_LEAK ${ARG_ENABLE_SANITIZER_LEAK})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ${ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_THREAD)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_THREAD)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_THREAD ${ARG_ENABLE_SANITIZER_THREAD})
-    endif()
-    if(DEFINED ARG_ENABLE_SANITIZER_MEMORY)
+    endif ()
+    if (DEFINED ARG_ENABLE_SANITIZER_MEMORY)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_MEMORY ${ARG_ENABLE_SANITIZER_MEMORY})
-    endif()
-    if(DEFINED ARG_ENABLE_HARDENING)
+    endif ()
+    if (DEFINED ARG_ENABLE_HARDENING)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_HARDENING ${ARG_ENABLE_HARDENING})
-    endif()
-    if(DEFINED ARG_ENABLE_CLANG_TIDY)
+    endif ()
+    if (DEFINED ARG_ENABLE_CLANG_TIDY)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CLANG_TIDY ${ARG_ENABLE_CLANG_TIDY})
-    endif()
-    if(DEFINED ARG_ENABLE_CPPCHECK)
+    endif ()
+    if (DEFINED ARG_ENABLE_CPPCHECK)
         list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
-    endif()
-    
+    endif ()
+
     target_setup_common_options(${TARGET_NAME} ${COMMON_OPTIONS_ARGS})
 
     # Install if requested
-    if(ARG_INSTALL)
+    if (ARG_INSTALL)
         install_component(${TARGET_NAME})
-    endif()
+    endif ()
 
     message(STATUS "Created test '${TARGET_NAME}' using ${framework_name}")
 endfunction()

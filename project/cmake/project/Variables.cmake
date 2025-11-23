@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 # Disable CXX extensions to not use compiler-specific features
 set(CMAKE_CXX_EXTENSIONS OFF)
 

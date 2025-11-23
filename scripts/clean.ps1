@@ -2,15 +2,7 @@
 
 <#
 .SYNOPSIS
-    Cross-platform clean script for cmake-initializer projects
-
-.DESCRIPTION
-    Unified PowerShell script that cleans build artifacts on Windows, Linux, and macOS.
-    Removes build directories, cache files, and generated artifacts to ensure clean builds.
-    
-    This script provides granular control over what gets cleaned, from just CMake cache
-    files to complete removal of all build artifacts including install directories.
-    It includes safety features like confirmation prompts and detailed reporting.
+    Clean script for project to remove build artifacts.
 
 .PARAMETER All
     Remove all build artifacts including install directory and testing artifacts.
@@ -82,7 +74,7 @@
     will be removed before actual deletion occurs.
 
 .LINK
-    https://github.com/01Pollux/cmake-initializer
+    https://github.com/JustJam/cmake-initializer
 #>
 param(
     [switch]$All,
@@ -117,7 +109,7 @@ $Platform = if ($PSVersionTable.PSVersion.Major -ge 6) {
     if ($env:OS -eq "Windows_NT") { "Windows" } else { "Unix" }
 }
 
-Write-Host "🧹 cmake-initializer Clean Script" -ForegroundColor Cyan
+Write-Host "cmake-initializer Clean Script" -ForegroundColor Cyan
 Write-Host "Platform: $Platform" -ForegroundColor Green
 
 # Change to project directory
@@ -144,7 +136,7 @@ try {
             }
         }
         
-        Write-Host "🎯 Cleaning CMake cache files..." -ForegroundColor Yellow
+        Write-Host "Cleaning CMake cache files..." -ForegroundColor Yellow
     } else {
         # Clean build directory
         if (Test-Path $BuildPath) {
@@ -165,15 +157,15 @@ try {
                 }
             }
             
-            Write-Host "🗑️  Cleaning all build artifacts..." -ForegroundColor Yellow
+            Write-Host "Cleaning all build artifacts..." -ForegroundColor Yellow
         } else {
-            Write-Host "🗑️  Cleaning build directory..." -ForegroundColor Yellow
+            Write-Host "Cleaning build directory..." -ForegroundColor Yellow
         }
     }
     
     # Check if there's anything to clean
     if ($PathsToClean.Count -eq 0) {
-        Write-Host "✨ Nothing to clean - project is already clean!" -ForegroundColor Green
+        Write-Host "Nothing to clean - project is already clean!" -ForegroundColor Green
         return
     }
     
@@ -183,9 +175,9 @@ try {
         foreach ($Path in $PathsToClean) {
             $RelativePath = Resolve-Path -Relative $Path
             if (Test-Path $Path -PathType Container) {
-                Write-Host "  📁 $RelativePath/" -ForegroundColor DarkYellow
+                Write-Host "  | $RelativePath/" -ForegroundColor DarkYellow
             } else {
-                Write-Host "  📄 $RelativePath" -ForegroundColor DarkYellow
+                Write-Host "  | $RelativePath" -ForegroundColor DarkYellow
             }
         }
         Write-Host ""
@@ -195,7 +187,7 @@ try {
     if (-not $Force) {
         $Confirmation = Read-Host "Do you want to proceed? (y/N)"
         if ($Confirmation -notmatch "^[Yy]") {
-            Write-Host "❌ Operation cancelled by user" -ForegroundColor Yellow
+            Write-Host "Operation cancelled by user" -ForegroundColor Yellow
             return
         }
     }
@@ -231,13 +223,13 @@ try {
     
     # Show summary
     $TotalSizeMB = [math]::Round($TotalSize / 1MB, 2)
-    Write-Host "✅ Cleaned $RemovedCount item$(if ($RemovedCount -ne 1) { 's' })" -ForegroundColor Green
+    Write-Host "Cleaned $RemovedCount item$(if ($RemovedCount -ne 1) { 's' })" -ForegroundColor Green
     if ($TotalSizeMB -gt 0) {
-        Write-Host "💾 Freed ${TotalSizeMB} MB of disk space" -ForegroundColor Cyan
+        Write-Host "Freed ${TotalSizeMB} MB of disk space" -ForegroundColor Cyan
     }
 
 } catch {
-    Write-Host "❌ Clean failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Clean failed: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 } finally {
     Pop-Location
