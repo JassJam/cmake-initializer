@@ -89,10 +89,10 @@
         <canvas id="{{CANVAS_ID}}" width="800" height="600"></canvas>
         
         <div class="controls">
-            <button class="btn" onclick="toggleFullscreen()">🔍 Fullscreen</button>
-            <button class="btn" onclick="clearConsole()">🗑️ Clear Console</button>
-            <button class="btn" onclick="pauseApp()">⏸️ Pause</button>
-            <button class="btn" onclick="resumeApp()">▶️ Resume</button>
+            <button class="btn" onclick="toggleFullscreen()">Fullscreen</button>
+            <button class="btn" onclick="clearConsole()">Clear Console</button>
+            <button class="btn" onclick="pauseApp()">Pause</button>
+            <button class="btn" onclick="resumeApp()">Resume</button>
         </div>
         
         <div id="output" class="console-output"></div>
@@ -176,13 +176,13 @@
             
             // Lifecycle callbacks
             onRuntimeInitialized: function() {
-                document.getElementById('status').innerHTML = '✅ WebAssembly Ready';
+                document.getElementById('status').innerHTML = 'WebAssembly Ready';
                 document.getElementById('status').className = 'status-bar ready';
                 console.log('WebAssembly runtime initialized successfully');
             },
             
             onAbort: function(what) {
-                document.getElementById('status').innerHTML = '❌ WebAssembly Error: ' + what;
+                document.getElementById('status').innerHTML = 'WebAssembly Error: ' + what;
                 document.getElementById('status').className = 'status-bar error';
                 console.error('WebAssembly aborted:', what);
             },

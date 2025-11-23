@@ -47,11 +47,11 @@ runs:
         & "${{ github.workspace }}/scripts/build.ps1" -Preset "${{ inputs.config-preset }}"
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "❌ Build failed with exit code: $LASTEXITCODE"
+            Write-Error "Build failed with exit code: $LASTEXITCODE"
             exit $LASTEXITCODE
         }
         
-        Write-Host "✅ Build completed successfully"
+        Write-Host "Build completed successfully"
 
     - name: Install artifacts (${{ inputs.config-name }})
       shell: pwsh
@@ -62,7 +62,7 @@ runs:
         & "${{ github.workspace }}/scripts/install.ps1" -Preset "${{ inputs.config-preset }}" -Prefix "${{ runner.temp }}/${{ inputs.config-output }}/install"
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "❌ Install failed with exit code: $LASTEXITCODE"
+            Write-Error "Install failed with exit code: $LASTEXITCODE"
             exit $LASTEXITCODE
         }
         
@@ -73,7 +73,7 @@ runs:
           Get-ChildItem -Path $INSTALL_DIR -Recurse | Format-Table Name, Length, LastWriteTime
         }
         
-        Write-Host "✅ Installation completed successfully"
+        Write-Host "Installation completed successfully"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
