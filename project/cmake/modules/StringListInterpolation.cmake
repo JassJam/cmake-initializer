@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 function(string_to_list INPUT_STRING SEPERATOR OUTPUT_VAR)
     # Replace the delimiter with semicolons (CMake's list separator)
     string(REPLACE "${SEPERATOR}" ";" LIST_ITEMS "${INPUT_STRING}")

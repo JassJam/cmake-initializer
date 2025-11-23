@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 # Note: XMake package manager works with Emscripten, but XMake itself must be built with host compiler
 # Store cross-compilation environment variables to restore later
 if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR CMAKE_CROSSCOMPILING)

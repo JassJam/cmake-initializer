@@ -1,4 +1,4 @@
-include_guard(GLOBAL)
+include_guard(DIRECTORY)
 
 #
 # check if EMSDK is available and install it locally if needed

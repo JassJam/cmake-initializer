@@ -1,3 +1,4 @@
+include_guard(DIRECTORY)
 include(GetCurrentCompiler)
 
 set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED FALSE)

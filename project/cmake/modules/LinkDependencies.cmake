@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # Helper function to link dependencies and handle all shared library management
 # Usage:

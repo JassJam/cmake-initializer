@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # Check sanitizers support across different compilers
 #

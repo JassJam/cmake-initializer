@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # Compiler cache support (ccache/sccache)
 #

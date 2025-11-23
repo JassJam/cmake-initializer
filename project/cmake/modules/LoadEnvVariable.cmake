@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # usage:
 #  target_load_env_variable(TARGET VARIABLE VALUE)

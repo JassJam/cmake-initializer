@@ -10,9 +10,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 #
 
-include(./ProjectMetadata.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/ProjectMetadata.cmake)
 include(project/Policies)
-
 
 # Set up project with metadata
 project(${THIS_PROJECT_NAME}

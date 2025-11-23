@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # This function will prevent in-source builds
 #
