@@ -1,11 +1,11 @@
 include_guard(DIRECTORY)
+include(GetCurrentCompiler)
 
 #
 # usage:
 # enable_global_sanitizers()
 #
 function(enable_global_sanitizers)
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
 
     # Sanitizers are primarily debugging tools and work best in Debug builds

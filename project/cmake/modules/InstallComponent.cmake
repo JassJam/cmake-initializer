@@ -1,5 +1,6 @@
 include_guard(DIRECTORY)
 include(CMakePackageConfigHelpers)
+    include(GetCurrentCompiler)
 
 #
 # Helper function to install a target with specific components
@@ -96,7 +97,6 @@ function(install_component TARGET_NAME)
     )
 
     # Handle Emscripten WebAssembly files
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
     if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         get_target_property(target_type ${TARGET_NAME} TYPE)

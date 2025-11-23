@@ -102,7 +102,6 @@ function(register_library TARGET_NAME)
 
     # Copy AddressSanitizer runtime DLL to build directory for shared libraries
     if (LIB_TYPE STREQUAL "SHARED")
-        include(GetCurrentCompiler)
         get_current_compiler(CURRENT_COMPILER)
         if ("${CURRENT_COMPILER}" STREQUAL "MSVC")
             # Check if AddressSanitizer is enabled by looking for /fsanitize in flags

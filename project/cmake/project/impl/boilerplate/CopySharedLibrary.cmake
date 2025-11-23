@@ -1,5 +1,6 @@
 include_guard(DIRECTORY)
 include(CMakePackageConfigHelpers)
+    include(GetCurrentCompiler)
 
 #
 # usage:
@@ -85,7 +86,6 @@ function(install_component TARGET_NAME)
     endif ()
 
     # Handle Emscripten WebAssembly files
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
     if (CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         get_target_property(target_type ${TARGET_NAME} TYPE)
@@ -236,7 +236,6 @@ endfunction()
 # Helper function to copy AddressSanitizer runtime DLL to build directory for direct execution
 function(_copy_asan_dll_to_build_dir TARGET_NAME)
     # Only handle this for MSVC with AddressSanitizer enabled
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
 
     if (NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
@@ -379,7 +378,6 @@ endfunction()
 # Helper function to install AddressSanitizer runtime DLL alongside the executable
 function(_install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
     # Only handle this for MSVC with AddressSanitizer enabled
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
 
     if (NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")

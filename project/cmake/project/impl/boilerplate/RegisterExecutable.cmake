@@ -1,6 +1,7 @@
 include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
+include(GetCurrentCompiler)
 
 #
 # Register an executable target
@@ -175,7 +176,6 @@ function(register_executable TARGET_NAME)
     endif ()
 
     # Copy AddressSanitizer runtime DLL to build directory for direct execution
-    include(GetCurrentCompiler)
     get_current_compiler(CURRENT_COMPILER)
     if ("${CURRENT_COMPILER}" STREQUAL "MSVC")
         # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
