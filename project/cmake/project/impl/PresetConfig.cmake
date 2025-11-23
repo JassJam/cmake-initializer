@@ -1,3 +1,4 @@
+include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/RegisterTestFramework.cmake)
 
 # Auto-register test framework if DEFAULT_TEST_FRAMEWORK is defined in preset

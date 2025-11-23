@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # usage:
 # enable_global_sanitizers()

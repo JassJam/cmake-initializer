@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 # First, try to set up EMSDK if it's not available
 if (NOT DEFINED ENV{EMSDK} OR NOT EXISTS "$ENV{EMSDK}")
     # Include the EMSDK manager to install it automatically

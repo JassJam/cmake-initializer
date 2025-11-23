@@ -1,5 +1,4 @@
-include_guard(GLOBAL)
-
+include_guard(DIRECTORY)
 include(CompilerWarnings)
 include(TargetHardening)
 include(TargetSanitizers)
@@ -81,6 +80,7 @@ function(target_setup_common_options TARGET_NAME)
     if (DEFINED ARG_WARNINGS_AS_ERRORS)
         set(WARNINGS_AS_ERRORS_VALUE ${ARG_WARNINGS_AS_ERRORS})
     endif ()
+
     target_add_compiler_warnings(
             ${TARGET_NAME} PRIVATE
             WARNINGS_AS_ERRORS ${WARNINGS_AS_ERRORS_VALUE}

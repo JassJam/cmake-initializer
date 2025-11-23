@@ -1,3 +1,4 @@
+include_guard(DIRECTORY)
 include(GetCurrentCompiler)
 include(SetupCommonProjectOptions)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)

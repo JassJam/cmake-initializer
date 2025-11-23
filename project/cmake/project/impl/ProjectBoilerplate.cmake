@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 include(LinkDependencies)
 include(InstallComponent)
 

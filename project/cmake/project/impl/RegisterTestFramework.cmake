@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 # Global variables to store test framework configuration
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_REGISTERED FALSE)
 set_property(GLOBAL PROPERTY TEST_FRAMEWORK_NAME "")

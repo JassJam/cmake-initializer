@@ -1,5 +1,4 @@
-include_guard(GLOBAL)
-
+include_guard(DIRECTORY)
 include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 include(SetupCommonProjectOptions)
 

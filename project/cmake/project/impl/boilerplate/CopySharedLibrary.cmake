@@ -1,3 +1,4 @@
+include_guard(DIRECTORY)
 include(CMakePackageConfigHelpers)
 
 #

@@ -1,3 +1,5 @@
+include_guard(DIRECTORY)
+
 #
 # Include a system directory (which suppresses its warnings).
 #
@@ -14,7 +16,7 @@ function(target_include_system_directories TARGET_NAME)
             "${multiValueArgs}"
             ${ARGN})
 
-    foreach (scope IN ITEMS INTERFACE PUBLIC PRIVATE)
+    foreach (scope IN ITEMS CMAKE_TARGET_SCOPE_TYPES)
         foreach (lib_include_dirs IN LISTS ARG_${scope})
             if (${scope} STREQUAL "INTERFACE" OR ${scope} STREQUAL "PUBLIC")
                 target_include_directories(
@@ -89,7 +91,7 @@ function(target_link_system_libraries TARGET_NAME)
             "${multiValueArgs}"
             ${ARGN})
 
-    foreach (scope IN ITEMS INTERFACE PUBLIC PRIVATE)
+    foreach (scope IN ITEMS CMAKE_TARGET_SCOPE_TYPES)
         foreach (lib IN LISTS ARG_${scope})
             target_link_system_library(${TARGET_NAME} ${scope} ${lib})
         endforeach ()

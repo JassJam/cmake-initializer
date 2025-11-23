@@ -1,3 +1,4 @@
+include_guard(DIRECTORY)
 include(CMakeParseArguments)
 
 # Helper to get the current compiler
