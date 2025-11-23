@@ -23,7 +23,6 @@ A modern, cross-platform C++ project boilerplate with CMake setup.
 - CMake ≥ 3.21
 - C++ Compiler (MSVC, GCC, Clang, or Emscripten)
 - Ninja (recommended) or Visual Studio 2022 (Windows)
-- Docker (optional, for containerized development)
 
 ### Basic Usage
 
@@ -37,13 +36,6 @@ cd <your_new_repo>
 ./scripts/build.ps1 -Preset windows-msvc-release
 ./scripts/test.ps1 -Preset test-windows-msvc-release -VerboseOutput
 ./scripts/install.ps1 -Preset windows-msvc-release
-```
-
-**Containerized Development:**
-```bash
-# Cross-platform builds using Docker
-docker -f ./docker/docker-compose.dev.yml compose --profile linux-gcc run --rm project-linux-gcc build
-docker -f ./docker/docker-compose.dev.yml compose --profile linux-clang run --rm project-linux-clang test
 ```
 
 **Manual CMake:**
