@@ -109,7 +109,7 @@
       "displayName": "clang Debug",
       "description": "Target Windows with the clang compiler, debug build type",
       "inherits": ["conf-windows-common", "conf-debug-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
@@ -126,7 +126,7 @@
       "displayName": "clang Release",
       "description": "Target Windows with the clang compiler, release build type",
       "inherits": ["conf-windows-common", "conf-release-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
@@ -144,7 +144,7 @@
       "displayName": "gcc Debug",
       "description": "Target Unix-like OS with the gcc compiler, debug build type",
       "inherits": ["conf-unixlike-common", "conf-debug-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
@@ -156,7 +156,7 @@
       "displayName": "gcc Release",
       "description": "Target Unix-like OS with the gcc compiler, release build type",
       "inherits": ["conf-unixlike-common", "conf-release-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
@@ -169,7 +169,7 @@
       "displayName": "clang Debug",
       "description": "Target Unix-like OS with the clang compiler, debug build type",
       "inherits": ["conf-unixlike-common", "conf-debug-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
@@ -181,7 +181,7 @@
       "displayName": "clang Release",
       "description": "Target Unix-like OS with the clang compiler, release build type",
       "inherits": ["conf-unixlike-common", "conf-release-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
@@ -194,7 +194,7 @@
       "displayName": "Emscripten Debug",
       "description": "Target WebAssembly with Emscripten compiler, debug build type",
       "inherits": ["conf-common", "conf-debug-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
@@ -214,7 +214,7 @@
       "displayName": "Emscripten Release",
       "description": "Target WebAssembly with Emscripten compiler, release build type",
       "inherits": ["conf-common", "conf-release-common"],
-      "generator": "Ninja",
+      "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",

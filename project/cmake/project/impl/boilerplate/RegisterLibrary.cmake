@@ -17,12 +17,12 @@ include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 #     [SOURCES PRIVATE "lib.cpp" "utils.cpp" PUBLIC "api.cpp"]
 #     [INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"]
 #     [LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"]
-#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"
 #     [COMPILE_DEFINITIONS PRIVATE "PRIVATE_DEF" PUBLIC "PUBLIC_DEF" INTERFACE "INTERFACE_DEF"]
 #     [COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"]
 #     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
 #     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
 #     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
+#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"
 #     [EXPORT_MACRO "MY_EXPORT"]
 #
 #     # Sanity and analysis options
@@ -113,25 +113,29 @@ function(register_library TARGET_NAME)
     endif ()
 
     # Add sources with visibility (only for non-interface libraries)
-    if (NOT ARG_INTERFACE)
-        if (ARG_SOURCES)
-            set(current_visibility "PRIVATE")  # Default visibility for sources
-            foreach (item ${ARG_SOURCES})
-                if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
-                    set(current_visibility ${item})
-                else ()
-                    target_sources(${TARGET_NAME} ${current_visibility} ${item})
-                endif ()
-            endforeach ()
-        else ()
-            # Auto-discover sources
-            file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c")
+    if (ARG_SOURCES)
+        set(current_visibility "PRIVATE")  # Default visibility for sources
+        foreach (item ${ARG_SOURCES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_sources(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    else ()
+        # Auto-discover sources
+        if (NOT ARG_INTERFACE)
+            file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c" "${ARG_SOURCE_DIR}/*.hpp" "${ARG_SOURCE_DIR}/*.h")
             if (SOURCES)
                 target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
             endif ()
         endif ()
 
-        # Add headers for shared libraries
+        file(GLOB_RECURSE HEADER_FILES "${ARG_INCLUDE_DIR}/*.hpp" "${ARG_INCLUDE_DIR}/*.h")
+        if (HEADER_FILES)
+            target_sources(${TARGET_NAME} PRIVATE ${HEADER_FILES})
+        endif ()
+
         if (ARG_SHARED)
             file(GLOB_RECURSE HEADERS "${ARG_INCLUDE_DIR}/*.hpp" "${ARG_INCLUDE_DIR}/*.h")
             if (HEADERS)

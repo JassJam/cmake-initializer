@@ -7,12 +7,21 @@ include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 # Register an Emscripten/WebAssembly target
 # Usage:
 # register_emscripten(MyWebApp
-#     [SOURCES src1.cpp src2.cpp ...]        # Source files (required)
-#     [HEADERS header1.hpp header2.hpp ...]  # Header files for IDE integration
-#     [INCLUDES include/dir1 include/dir2]   # Include directories
-#     [LIBRARIES lib1 lib2 ...]              # Link libraries
-#     [DEPENDENCIES dep1 dep2 ...]           # Target dependencies
-#     
+#     # Source and include directories
+#     [SOURCE_DIR "src"]
+#     [INCLUDE_DIR "include"]
+#
+#     # project files and settings with visibility
+#     [SOURCES PRIVATE main.cpp utils.cpp PUBLIC api.cpp]
+#     [INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"]
+#     [LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"]
+#     [COMPILE_DEFINITIONS PRIVATE "PRIVATE_DEF" PUBLIC "PUBLIC_DEF" INTERFACE "INTERFACE_DEF"]
+#     [COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"]
+#     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
+#     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
+#     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
+#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"]
+#
 #     # HTML/Web Configuration
 #     [HTML_TEMPLATE path/to/template.html]  # Custom HTML shell template
 #     [HTML_TITLE "App Title"]               # HTML page title
@@ -64,8 +73,9 @@ function(register_emscripten TARGET_NAME)
             ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
             ENABLE_SANITIZER_THREAD ENABLE_SANITIZER_MEMORY
             ENABLE_HARDENING ENABLE_CLANG_TIDY ENABLE_CPPCHECK)
-    set(multiValueArgs SOURCES HEADERS INCLUDES LIBRARIES DEPENDENCIES EXPORTED_FUNCTIONS
-            EXPORTED_RUNTIME_METHODS PRELOAD_FILES EMBED_FILES)
+    set(multiValueArgs SOURCES INCLUDES LIBRARIES DEPENDENCIES
+            COMPILE_DEFINITIONS COMPILE_OPTIONS COMPILE_FEATURES LINK_OPTIONS PROPERTIES DEPENDENCIES
+            EXPORTED_FUNCTIONS EXPORTED_RUNTIME_METHODS PRELOAD_FILES EMBED_FILES)
 
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -78,26 +88,117 @@ function(register_emscripten TARGET_NAME)
 
     _ensure_emscripten_ready()
 
-    message(STATUS "Registering Emscripten target: ${TARGET_NAME}")
+    # Create executable
+    add_executable(${TARGET_NAME})
 
-    # Create the executable target
-    add_executable(${TARGET_NAME} ${ARG_SOURCES})
+    # Add sources with visibility
+    if (ARG_SOURCES)
+        set(current_visibility "PRIVATE")  # Default visibility for sources
+        foreach (item ${ARG_SOURCES})
+            if (${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_sources(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    else ()
+        # Auto-discover sources
+        file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c" "${ARG_SOURCE_DIR}/*.hpp" "${ARG_SOURCE_DIR}/*.h")
+        if (SOURCES)
+            target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
+        endif ()
 
-    # Add headers for IDE integration
-    if (ARG_HEADERS)
-        target_sources(${TARGET_NAME} PRIVATE ${ARG_HEADERS})
+        file(GLOB_RECURSE HEADER_FILES "${ARG_INCLUDE_DIR}/*.hpp" "${ARG_INCLUDE_DIR}/*.h")
+        if (HEADER_FILES)
+            target_sources(${TARGET_NAME} PRIVATE ${HEADER_FILES})
+        endif ()
     endif ()
 
-    # Configure include directories
+    # Add default include directory
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}")
+        target_include_directories(${TARGET_NAME} PRIVATE
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>)
+    endif ()
+
+    # Add includes with visibility
     if (ARG_INCLUDES)
-        target_include_directories(${TARGET_NAME} PRIVATE ${ARG_INCLUDES})
+        set(current_visibility "PUBLIC")  # Default visibility for libraries
+        if (ARG_INTERFACE)
+            set(current_visibility "INTERFACE")
+        endif ()
+        foreach (item ${ARG_INCLUDES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_include_directories(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
     endif ()
 
-    # Link libraries
     if (ARG_LIBRARIES)
-        target_link_libraries(${TARGET_NAME} PRIVATE ${ARG_LIBRARIES})
+        set(current_visibility "PRIVATE")  # Default visibility
+        foreach (item ${ARG_LIBRARIES})
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_link_libraries(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
     endif ()
 
+    # Add compile definitions with visibility
+    if (ARG_COMPILE_DEFINITIONS)
+        set(current_visibility "PRIVATE")  # Default visibility
+        foreach (item ${ARG_COMPILE_DEFINITIONS})
+            if (${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_compile_definitions(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    endif ()
+
+    # Add compile options with visibility
+    if (ARG_COMPILE_OPTIONS)
+        set(current_visibility "PRIVATE")  # Default visibility
+        foreach (item ${ARG_COMPILE_OPTIONS})
+            if (${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_compile_options(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    endif ()
+
+    # Add compile features with visibility
+    if (ARG_COMPILE_FEATURES)
+        set(current_visibility "PRIVATE")  # Default visibility
+        foreach (item ${ARG_COMPILE_FEATURES})
+            if (${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_compile_features(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    endif ()
+
+    # Add link options with visibility
+    if (ARG_LINK_OPTIONS)
+        set(current_visibility "PRIVATE")  # Default visibility
+        foreach (item ${ARG_LINK_OPTIONS})
+            if (${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+                set(current_visibility ${item})
+            else ()
+                target_link_options(${TARGET_NAME} ${current_visibility} ${item})
+            endif ()
+        endforeach ()
+    endif ()
+
+    # Set target properties
+    if (ARG_PROPERTIES)
+        set_target_properties(${TARGET_NAME} PROPERTIES ${ARG_PROPERTIES})
+    endif ()
+    
     # Add dependencies
     if (ARG_DEPENDENCIES)
         add_dependencies(${TARGET_NAME} ${ARG_DEPENDENCIES})
