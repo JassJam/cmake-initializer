@@ -128,12 +128,6 @@ if (ENABLE_GLOBAL_EXCEPTIONS)
     configure_global_exceptions(${ENABLE_GLOBAL_EXCEPTIONS})
 endif ()
 
-# Apply global static analysis if enabled
-if (ENABLE_GLOBAL_STATIC_ANALYSIS)
-    include(StaticAnalysis)
-    enable_global_static_analysis()
-endif ()
-
 # Configure static linking flags with auto-detection
 if (ENABLE_STATIC_RUNTIME)
     include(StaticLinking)

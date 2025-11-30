@@ -3,7 +3,6 @@ include(GetCurrentCompiler)
 
 set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED FALSE)
 
-
 #
 # usage:
 # target_enable_hardening(
@@ -12,6 +11,12 @@ set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED FALSE)
 # )
 #
 function(target_enable_hardening TARGET_NAME SCOPE_NAME)
+    # Call once
+    get_property(already_registered GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED)
+    if (already_registered)
+        return()
+    endif ()
+
     if (NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_enable_hardening() called without TARGET")
     endif ()
