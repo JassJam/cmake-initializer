@@ -15,12 +15,12 @@ include(GetCurrentCompiler)
 #     [SOURCES PRIVATE main.cpp utils.cpp PUBLIC api.cpp]
 #     [INCLUDES PRIVATE "private/include" PUBLIC "public/include" INTERFACE "interface/include"]
 #     [LIBRARIES PRIVATE "private_lib" PUBLIC "public_lib" INTERFACE "interface_lib"]
-#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"]
 #     [COMPILE_DEFINITIONS PRIVATE "PRIVATE_DEF" PUBLIC "PUBLIC_DEF" INTERFACE "INTERFACE_DEF"]
 #     [COMPILE_OPTIONS PRIVATE "-Wall" PUBLIC "-O2" INTERFACE "-fPIC"]
 #     [COMPILE_FEATURES PRIVATE "cxx_std_17" PUBLIC "cxx_std_20" INTERFACE "cxx_std_23"]
 #     [LINK_OPTIONS PRIVATE "-static" PUBLIC "-shared" INTERFACE "-fPIC"]
 #     [PROPERTIES "PROPERTY1" "value1" "PROPERTY2" "value2"]
+#     [DEPENDENCIES PRIVATE "dep1" PUBLIC "dep2" INTERFACE "dep3"]
 #
 #     # Sanity and analysis options
 #     [ENABLE_EXCEPTIONS ON|OFF]
@@ -76,6 +76,11 @@ function(register_executable TARGET_NAME)
         if (SOURCES)
             target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
         endif ()
+        
+        file(GLOB_RECURSE HEADER_FILES "${ARG_INCLUDE_DIR}/*.hpp" "${ARG_INCLUDE_DIR}/*.h")
+        if (HEADER_FILES)
+            target_sources(${TARGET_NAME} PRIVATE ${HEADER_FILES})
+        endif ()
     endif ()
 
     # Add default include directory
@@ -86,9 +91,12 @@ function(register_executable TARGET_NAME)
 
     # Add includes with visibility
     if (ARG_INCLUDES)
-        set(current_visibility "PRIVATE")  # Default visibility
+        set(current_visibility "PUBLIC")  # Default visibility for libraries
+        if (ARG_INTERFACE)
+            set(current_visibility "INTERFACE")
+        endif ()
         foreach (item ${ARG_INCLUDES})
-            if (${item} IN_LIST CMAKE_TARGET_SCOPE_TYPES)
+            if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
             else ()
                 target_include_directories(${TARGET_NAME} ${current_visibility} ${item})

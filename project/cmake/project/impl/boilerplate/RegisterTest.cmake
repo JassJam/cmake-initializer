@@ -119,10 +119,13 @@ function(register_test TARGET_NAME)
         target_include_directories(${TARGET_NAME} PRIVATE
                 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${ARG_INCLUDE_DIR}>)
     endif ()
-    
+
     # Add includes with visibility
     if (ARG_INCLUDES)
-        set(current_visibility "PRIVATE")  # Default visibility for tests
+        set(current_visibility "PUBLIC")  # Default visibility for libraries
+        if (ARG_INTERFACE)
+            set(current_visibility "INTERFACE")
+        endif ()
         foreach (item ${ARG_INCLUDES})
             if (item IN_LIST CMAKE_TARGET_SCOPE_TYPES)
                 set(current_visibility ${item})
