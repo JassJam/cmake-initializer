@@ -72,7 +72,7 @@ function(register_executable TARGET_NAME)
         endforeach ()
     else ()
         # Auto-discover sources
-        file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c")
+        file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c" "${ARG_SOURCE_DIR}/*.hpp" "${ARG_SOURCE_DIR}/*.h")
         if (SOURCES)
             target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
         endif ()

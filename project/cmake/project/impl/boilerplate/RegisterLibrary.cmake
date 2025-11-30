@@ -125,7 +125,7 @@ function(register_library TARGET_NAME)
     else ()
         # Auto-discover sources
         if (NOT ARG_INTERFACE)
-            file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c")
+            file(GLOB_RECURSE SOURCES "${ARG_SOURCE_DIR}/*.cpp" "${ARG_SOURCE_DIR}/*.c" "${ARG_SOURCE_DIR}/*.hpp" "${ARG_SOURCE_DIR}/*.h")
             if (SOURCES)
                 target_sources(${TARGET_NAME} PRIVATE ${SOURCES})
             endif ()
