@@ -29,7 +29,7 @@ A modern, cross-platform C++ project boilerplate with CMake setup.
 **Native Development:**
 ```powershell
 # Clone and navigate
-git clone https://github.com/<user>/<your_new_repo>.git
+git clone https://codeberg.org/<user>/<your_new_repo>.git
 cd <your_new_repo>
 
 # Build with mandatory preset specification
