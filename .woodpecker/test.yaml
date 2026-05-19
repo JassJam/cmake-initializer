@@ -7,6 +7,7 @@ steps:
   # Linux / Clang
   - name: test-linux-x64-clang
     image: ubuntu:latest
+    depends_on: []
     environment:
       CONFIG_NAME: linux-x64-clang
       CONFIG_OS: ubuntu-latest
@@ -21,6 +22,7 @@ steps:
   # Linux / GCC
   - name: test-linux-x64-gcc
     image: ubuntu:latest
+    depends_on: []
     environment:
       CONFIG_NAME: linux-x64-gcc
       CONFIG_OS: ubuntu-latest
@@ -35,6 +37,7 @@ steps:
   # macOS / Clang
   - name: test-macos-x64-clang
     image: dockurr/macos
+    depends_on: []
     environment:
       CONFIG_NAME: macOS-x64-clang
       CONFIG_OS: macos-latest
@@ -49,6 +52,7 @@ steps:
   # macOS / GCC
   - name: test-macos-x64-gcc
     image: dockurr/macos
+    depends_on: []
     environment:
       CONFIG_NAME: macOS-x64-gcc
       CONFIG_OS: macos-latest
@@ -63,6 +67,7 @@ steps:
   # Windows / Clang
   - name: test-windows-x64-clang
     image: dockurr/windows
+    depends_on: []
     environment:
       CONFIG_NAME: windows-x64-clang
       CONFIG_OS: windows-latest
@@ -76,6 +81,7 @@ steps:
   # Windows / MSVC
   - name: test-windows-x64-msvc
     image: dockurr/windows
+    depends_on: []
     environment:
       CONFIG_NAME: windows-x64-msvc
       CONFIG_OS: windows-latest
@@ -89,6 +95,7 @@ steps:
   # Emscripten
   - name: test-emscripten-debug
     image: emscripten/emsdk:latest
+    depends_on: []
     environment:
       CONFIG_NAME: emscripten-debug
       CONFIG_OS: ubuntu-latest
