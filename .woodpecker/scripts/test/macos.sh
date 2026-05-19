@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "=== Installing system dependencies (macOS) ==="
-brew install ninja cmake pwsh
+brew install ninja cmake pwsh git
 
 if [[ "$CONFIG_PRESET" == *clang* ]]; then
     echo "=== Ensuring Xcode CLI tools are available ==="
