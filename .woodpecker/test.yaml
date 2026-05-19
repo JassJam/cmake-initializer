@@ -1,18 +1,3 @@
-variables:
-  - &ctest_env
-    CTEST_SITE:
-      from_secret: CTEST_DASHBOARD_SITE
-    CTEST_LOCATION:
-      from_secret: CTEST_DASHBOARD_LOCATION
-    CTEST_TEST_TIMEOUT:
-      from_secret: CTEST_TEST_TIMEOUT_PRESET
-    CTEST_DROP_METHOD:
-      from_secret: CTEST_DROP_METHOD
-    CDASH_AUTH_TOKEN:
-      from_secret: CDASH_AUTH_TOKEN
-    CTEST_DASHBOARD_MODEL:
-      from_secret: CTEST_DASHBOARD_MODEL
-
 when:
   - event: [push, pull_request]
     branch: [main, dev]
@@ -23,7 +8,6 @@ steps:
   - name: test-linux-x64-clang
     image: ubuntu:latest
     environment:
-      <<: *ctest_env
       CONFIG_NAME: linux-x64-clang
       CONFIG_OS: ubuntu-latest
       CONFIG_PRESET: unixlike-clang-debug
@@ -38,7 +22,6 @@ steps:
   - name: test-linux-x64-gcc
     image: ubuntu:latest
     environment:
-      <<: *ctest_env
       CONFIG_NAME: linux-x64-gcc
       CONFIG_OS: ubuntu-latest
       CONFIG_PRESET: unixlike-gcc-debug
@@ -53,7 +36,6 @@ steps:
   - name: test-macos-x64-clang
     image: ghcr.io/cirruslabs/macos-runner:latest
     environment:
-      <<: *ctest_env
       CONFIG_NAME: macOS-x64-clang
       CONFIG_OS: macos-latest
       CONFIG_PRESET: unixlike-clang-debug
@@ -67,7 +49,6 @@ steps:
   - name: test-macos-x64-gcc
     image: macos-latest
     environment:
-      <<: *ctest_env
       CONFIG_NAME: macOS-x64-gcc
       CONFIG_OS: macos-latest
       CONFIG_PRESET: unixlike-gcc-debug
@@ -82,7 +63,6 @@ steps:
   - name: test-windows-x64-clang
     image: mcr.microsoft.com/windows/servercore:ltsc2022
     environment:
-      <<: *ctest_env
       CONFIG_NAME: windows-x64-clang
       CONFIG_OS: windows-latest
       CONFIG_PRESET: windows-clang-debug
@@ -95,7 +75,6 @@ steps:
   - name: test-windows-x64-msvc
     image: mcr.microsoft.com/windows/servercore:ltsc2022
     environment:
-      <<: *ctest_env
       CONFIG_NAME: windows-x64-msvc
       CONFIG_OS: windows-latest
       CONFIG_PRESET: windows-msvc-debug
@@ -109,7 +88,6 @@ steps:
   - name: test-emscripten-debug
     image: emscripten/emsdk:latest
     environment:
-      <<: *ctest_env
       CONFIG_NAME: emscripten-debug
       CONFIG_OS: ubuntu-latest
       CONFIG_PRESET: emscripten-debug
@@ -123,7 +101,6 @@ steps:
   - name: test-emscripten-release
     image: emscripten/emsdk:latest
     environment:
-      <<: *ctest_env
       CONFIG_NAME: emscripten-release
       CONFIG_OS: ubuntu-latest
       CONFIG_PRESET: emscripten-release

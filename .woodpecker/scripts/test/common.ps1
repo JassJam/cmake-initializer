@@ -4,8 +4,6 @@
 #
 # Required env vars:
 #   CONFIG_NAME, CONFIG_OS, CONFIG_PRESET, CONFIG_OUTPUT
-#   CTEST_SITE, CTEST_LOCATION, CTEST_TEST_TIMEOUT, CTEST_DROP_METHOD,
-#   CDASH_AUTH_TOKEN, CTEST_DASHBOARD_MODEL
 
 $ErrorActionPreference = "Stop"
 
@@ -45,17 +43,21 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Build and tests completed successfully"
 
 # CDash submission
-if ($env:CTEST_SITE -and $env:CTEST_LOCATION) {
+if ($env:CTEST_DASHBOARD_SITE -and $env:CTEST_DASHBOARD_LOCATION) {
+    if (-not $env:CTEST_TEST_TIMEOUT_PRESET)    { $env:CTEST_TEST_TIMEOUT_PRESET    = '300' }
+    if (-not $env:CTEST_DROP_METHOD)     { $env:CTEST_DROP_METHOD     = 'https' }
+    if (-not $env:CTEST_DASHBOARD_MODEL) { $env:CTEST_DASHBOARD_MODEL = 'Experimental' }
+
     Write-Host "=== Submitting test results to CDash ==="
     & "$env:CI_WORKSPACE/scripts/ci/submit-cdash.ps1" `
-        -BuildDir    "$env:CI_WORKSPACE/out/build/$env:CONFIG_PRESET" `
-        -SourceDir   "$env:CI_WORKSPACE/project" `
-        -BuildName   "$env:CONFIG_NAME-$env:CONFIG_OS" `
-        -Preset      "$env:CONFIG_PRESET" `
-        -CdashSite   "$env:CTEST_SITE" `
-        -CdashLocation "$env:CTEST_LOCATION" `
-        -AuthToken   "$env:CDASH_AUTH_TOKEN" `
-        -DropMethod  "$env:CTEST_DROP_METHOD" `
+        -BuildDir       "$env:CI_WORKSPACE/out/build/$env:CONFIG_PRESET" `
+        -SourceDir      "$env:CI_WORKSPACE/project" `
+        -BuildName      "$env:CONFIG_NAME-$env:CONFIG_OS" `
+        -Preset         "$env:CONFIG_PRESET" `
+        -CdashSite      "$env:CTEST_DASHBOARD_SITE" `
+        -CdashLocation  "$env:CTEST_DASHBOARD_LOCATION" `
+        -AuthToken      "$env:CDASH_AUTH_TOKEN" `
+        -DropMethod     "$env:CTEST_DROP_METHOD" `
         -DashboardModel "$env:CTEST_DASHBOARD_MODEL"
 
     if ($LASTEXITCODE -ne 0) {
