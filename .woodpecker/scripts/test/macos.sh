@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+sudo apt-get update -q && sudo apt-get install -y git
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
 # Install Homebrew if not present
 if ! command -v brew &>/dev/null; then
     echo "=== Installing Homebrew ==="
@@ -10,7 +13,7 @@ if ! command -v brew &>/dev/null; then
 fi
 
 echo "=== Installing system dependencies (macOS) ==="
-brew install ninja cmake pwsh git
+brew install ninja cmake pwsh
 
 if [[ "$CONFIG_PRESET" == *clang* ]]; then
     echo "=== Ensuring Xcode CLI tools are available ==="
