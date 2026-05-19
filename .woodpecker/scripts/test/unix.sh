@@ -8,13 +8,14 @@ apt-get install -y build-essential ninja-build cmake \
     curl apt-transport-https software-properties-common
 
 # Get Ubuntu version
-source /etc/os-release
-curl -fsSL "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb" \
-    -o /tmp/packages-microsoft-prod.deb
-dpkg -i /tmp/packages-microsoft-prod.deb
-rm /tmp/packages-microsoft-prod.deb
-apt-get update -q
-apt-get install -y powershell
+PWSH_VERSION="7.6.1"
+curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
+    -o /tmp/powershell.tar.gz
+mkdir -p /opt/powershell
+tar -xzf /tmp/powershell.tar.gz -C /opt/powershell
+chmod +x /opt/powershell/pwsh
+ln -sf /opt/powershell/pwsh /usr/local/bin/pwsh
+rm /tmp/powershell.tar.gz
 
 # Install Clang if the preset requires it
 if [[ "$CONFIG_PRESET" == *clang* ]]; then
