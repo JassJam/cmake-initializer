@@ -2,8 +2,8 @@
 set -euo pipefail
 
 echo "=== Installing system dependencies (Emscripten/Linux) ==="
-sudo apt-get update -q
-sudo apt-get install -y build-essential ninja-build cmake git python3 curl libicu-dev libssl-dev git
+apt-get update -q
+apt-get install -y build-essential ninja-build cmake curl git libicu-dev libssl-dev python3 xmake
 
 PWSH_VERSION="7.6.1"
 curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
