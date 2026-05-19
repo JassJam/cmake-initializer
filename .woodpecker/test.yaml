@@ -34,7 +34,7 @@ steps:
 
   # macOS / Clang
   - name: test-macos-x64-clang
-    image: ghcr.io/cirruslabs/macos-runner:latest
+    image: dockurr/macos
     environment:
       CONFIG_NAME: macOS-x64-clang
       CONFIG_OS: macos-latest
@@ -46,8 +46,9 @@ steps:
     when:
       event: [push, pull_request, tag]
 
+  # macOS / GCC
   - name: test-macos-x64-gcc
-    image: macos-latest
+    image: dockurr/macos
     environment:
       CONFIG_NAME: macOS-x64-gcc
       CONFIG_OS: macos-latest
@@ -61,7 +62,7 @@ steps:
 
   # Windows / Clang
   - name: test-windows-x64-clang
-    image: mcr.microsoft.com/windows/servercore:ltsc2022
+    image: dockurr/windows
     environment:
       CONFIG_NAME: windows-x64-clang
       CONFIG_OS: windows-latest
@@ -72,8 +73,9 @@ steps:
     when:
       event: [push, pull_request, tag]
 
+  # Windows / MSVC
   - name: test-windows-x64-msvc
-    image: mcr.microsoft.com/windows/servercore:ltsc2022
+    image: dockurr/windows
     environment:
       CONFIG_NAME: windows-x64-msvc
       CONFIG_OS: windows-latest
@@ -92,19 +94,6 @@ steps:
       CONFIG_OS: ubuntu-latest
       CONFIG_PRESET: emscripten-debug
       CONFIG_OUTPUT: wasm-debug
-    commands:
-      - chmod +x .woodpecker/scripts/test/emscripten.sh
-      - .woodpecker/scripts/test/emscripten.sh
-    when:
-      event: [push, pull_request, tag]
-
-  - name: test-emscripten-release
-    image: emscripten/emsdk:latest
-    environment:
-      CONFIG_NAME: emscripten-release
-      CONFIG_OS: ubuntu-latest
-      CONFIG_PRESET: emscripten-release
-      CONFIG_OUTPUT: wasm-release
     commands:
       - chmod +x .woodpecker/scripts/test/emscripten.sh
       - .woodpecker/scripts/test/emscripten.sh
