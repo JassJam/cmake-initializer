@@ -4,9 +4,8 @@ set -euo pipefail
 
 echo "=== Installing system dependencies (Linux) ==="
 apt-get update -q
-apt-get install -y build-essential ninja-build cmake curl libicu-dev libssl-dev
+apt-get install -y build-essential ninja-build cmake curl git libicu-dev libssl-dev
 
-# Get Ubuntu version
 PWSH_VERSION="7.6.1"
 curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
     -o /tmp/powershell.tar.gz
