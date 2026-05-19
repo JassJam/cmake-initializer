@@ -3,7 +3,8 @@ set -euo pipefail
 
 echo "=== Installing system dependencies (Linux) ==="
 apt-get update -q
-apt-get install -y build-essential ninja-build cmake pwsh
+apt-get install -y build-essential ninja-build cmake snap
+snap install powershell --classic -y
 
 # Install Clang if the preset requires it
 if [[ "$CONFIG_PRESET" == *clang* ]]; then
