@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Install Homebrew if not present
+if ! command -v brew &>/dev/null; then
+    echo "=== Installing Homebrew ==="
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    # Add brew to PATH for Apple Silicon or Intel
+    eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null
+fi
+
 echo "=== Installing system dependencies (macOS) ==="
 brew install ninja cmake pwsh git
 

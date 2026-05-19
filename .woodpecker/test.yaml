@@ -66,7 +66,7 @@ steps:
 
   # Windows / Clang
   - name: test-windows-x64-clang
-    image: dockurr/windows
+    image: mcr.microsoft.com/windows/servercore
     depends_on: []
     environment:
       CONFIG_NAME: windows-x64-clang
@@ -74,13 +74,13 @@ steps:
       CONFIG_PRESET: windows-clang-debug
       CONFIG_OUTPUT: windows-x64-clang
     commands:
-      - pwsh -NonInteractive -File .woodpecker/scripts/test/windows.ps1
+      - powershell -NonInteractive -File .woodpecker/scripts/test/windows.ps1
     when:
       event: [push, pull_request, tag]
 
   # Windows / MSVC
   - name: test-windows-x64-msvc
-    image: dockurr/windows
+    image: mcr.microsoft.com/windows/servercore
     depends_on: []
     environment:
       CONFIG_NAME: windows-x64-msvc
@@ -88,7 +88,7 @@ steps:
       CONFIG_PRESET: windows-msvc-debug
       CONFIG_OUTPUT: windows-x64-msvc
     commands:
-      - pwsh -NonInteractive -File .woodpecker/scripts/test/windows.ps1
+      - powershell -NonInteractive -File .woodpecker/scripts/test/windows.ps1
     when:
       event: [push, pull_request, tag]
 
