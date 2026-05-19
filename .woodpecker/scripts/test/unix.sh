@@ -4,8 +4,7 @@ set -euo pipefail
 
 echo "=== Installing system dependencies (Linux) ==="
 apt-get update -q
-apt-get install -y build-essential ninja-build cmake \
-    curl apt-transport-https software-properties-common
+apt-get install -y build-essential ninja-build cmake curl libicu-dev libssl-dev
 
 # Get Ubuntu version
 PWSH_VERSION="7.6.1"
