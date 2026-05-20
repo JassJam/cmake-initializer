@@ -30,6 +30,9 @@ steps:
     commands:
       - chmod +x .woodpecker/scripts/test/unix.sh
       - .woodpecker/scripts/test/unix.sh
+    when:
+    - event: [push, tag]
+      branch: [main, dev]
 
   # Linux / GCC
   - name: test-linux-x64-gcc
@@ -43,6 +46,9 @@ steps:
     commands:
       - chmod +x .woodpecker/scripts/test/unix.sh
       - .woodpecker/scripts/test/unix.sh
+    when:
+    - event: [push, tag]
+      branch: [main, dev]
 
   # Emscripten
   - name: test-emscripten-debug
@@ -56,3 +62,6 @@ steps:
     commands:
       - chmod +x .woodpecker/scripts/test/emscripten.sh
       - .woodpecker/scripts/test/emscripten.sh
+    when:
+    - event: [push, tag]
+      branch: [main, dev]
