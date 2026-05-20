@@ -1,0 +1,25 @@
+when:
+  - event: [pull_request]
+    branch: [main, dev]
+
+steps:
+  # Linux / Clang
+  - name: build-linux-x64-clang-debug
+    image: ubuntu:latest
+    commands:
+      - .woodpecker/scripts/test/setup-unix.sh
+      - cmake -S . -B ./out/build/build-linux-x64-clang-debug --preset unixlike-clang-debug
+
+  # Linux / GCC
+  - name: build-linux-x64-gcc-debug
+    image: ubuntu:latest
+    commands:
+      - .woodpecker/scripts/test/setup-unix.sh
+      - cmake -S . -B ./out/build/build-linux-x64-gcc-debug --preset unixlike-gcc-debug
+
+  # Emscripten
+  - name: build-emscripten-debug
+    image: emscripten/emsdk:latest
+    commands:
+      - .woodpecker/scripts/test/setup-unix.sh
+      - cmake -S . -B ./out/build/build-emscripten-debug --preset emscripten-debug
