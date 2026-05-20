@@ -34,25 +34,12 @@ steps:
 
   # Windows / Clang
   - name: test-windows-x64-clang
-    image: mcr.microsoft.com/windows/servercore
+    image: dockcross/windows-arm64
     environment:
       CONFIG_NAME: windows-x64-clang
       CONFIG_OS: windows-latest
       CONFIG_PRESET: windows-clang-debug
       CONFIG_OUTPUT: windows-x64-clang
-    commands:
-      - powershell -NonInteractive -File .woodpecker/scripts/test/windows.ps1
-    when:
-      event: [push, pull_request, tag]
-
-  # Windows / MSVC
-  - name: test-windows-x64-msvc
-    image: mcr.microsoft.com/windows/servercore
-    environment:
-      CONFIG_NAME: windows-x64-msvc
-      CONFIG_OS: windows-latest
-      CONFIG_PRESET: windows-msvc-debug
-      CONFIG_OUTPUT: windows-x64-msvc
     commands:
       - powershell -NonInteractive -File .woodpecker/scripts/test/windows.ps1
     when:
