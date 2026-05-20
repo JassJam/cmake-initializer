@@ -12,6 +12,7 @@ unset EMSDK
 
 curl -fsSL https://xmake.io/shget.text | bash
 export PATH="$HOME/.local/bin:$PATH"
+export XMAKE_ROOT=y
 xmake update -v dev
 
 export EMSDK="$_saved_EMSDK"
