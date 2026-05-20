@@ -7,6 +7,7 @@ steps:
   - name: build-linux-x64-clang-debug
     image: ubuntu:latest
     commands:
+      - chmod +x .woodpecker/scripts/test/setup-unix.sh
       - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-linux-x64-clang-debug --preset unixlike-clang-debug
     when:
@@ -17,6 +18,7 @@ steps:
   - name: build-linux-x64-gcc-debug
     image: ubuntu:latest
     commands:
+      - chmod +x .woodpecker/scripts/test/setup-unix.sh
       - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-linux-x64-gcc-debug --preset unixlike-gcc-debug
     when:
@@ -27,7 +29,8 @@ steps:
   - name: build-emscripten-debug
     image: emscripten/emsdk:latest
     commands:
-      - .woodpecker/scripts/test/setup-unix.sh
+      - chmod +x .woodpecker/scripts/test/setup-emscripten.sh
+      - .woodpecker/scripts/test/setup-emscripten.sh
       - cmake -S . -B ./out/build/build-emscripten-debug --preset emscripten-debug
     when:
     - event: [pull_request]
