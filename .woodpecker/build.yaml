@@ -6,6 +6,8 @@ steps:
   # Linux / Clang
   - name: build-linux-x64-clang-debug
     image: ubuntu:latest
+    environment:
+      CONFIG_PRESET: unixlike-clang-debug
     commands:
       - chmod +x .woodpecker/scripts/test/setup-unix.sh
       - .woodpecker/scripts/test/setup-unix.sh
@@ -17,6 +19,8 @@ steps:
   # Linux / GCC
   - name: build-linux-x64-gcc-debug
     image: ubuntu:latest
+    environment:
+      CONFIG_PRESET: unixlike-gcc-debug
     commands:
       - chmod +x .woodpecker/scripts/test/setup-unix.sh
       - .woodpecker/scripts/test/setup-unix.sh

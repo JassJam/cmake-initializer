@@ -6,7 +6,6 @@ apt-get update -q
 apt-get install -y build-essential ninja-build cmake curl git libicu-dev libssl-dev python3
 
 # Install xmake/xrepo
-
 _saved_EMSDK="${EMSDK:-}"
 unset EMSDK
 
