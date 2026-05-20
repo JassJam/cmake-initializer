@@ -316,9 +316,10 @@ function(_xrepo_detect_json_support)
     elseif (XREPO_CMD)
         execute_process(COMMAND ${XREPO_CMD} fetch --help
                 OUTPUT_VARIABLE help_output
+                ERROR_VARIABLE help_output
                 RESULT_VARIABLE exit_code)
         if (NOT "${exit_code}" STREQUAL "0")
-            message(FATAL_ERROR "xrepo fetch --help failed, exit code: ${exit_code}")
+            message(FATAL_ERROR "xrepo fetch --help failed, exit code: ${exit_code} -- ${help_output}")
         endif ()
 
         if (NOT "${help_output}" MATCHES "--json")
