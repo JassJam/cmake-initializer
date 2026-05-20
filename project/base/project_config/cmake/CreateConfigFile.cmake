@@ -64,7 +64,7 @@ function(_create_config_file version)
         if (Git_FOUND)
             execute_process(
                     COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     OUTPUT_VARIABLE GIT_SHA
                     OUTPUT_STRIP_TRAILING_WHITESPACE
                     ERROR_QUIET

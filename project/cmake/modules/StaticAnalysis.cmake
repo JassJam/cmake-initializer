@@ -56,8 +56,8 @@ function(_add_clang_tidy_custom_target TARGET_NAME ENABLE_EXCEPTIONS CLANG_TIDY_
 
     # Build clang-tidy arguments
     set(CXX_CLANG_TIDY_ARGS "${CLANG_TIDY_EXE}")
-    list(APPEND CXX_CLANG_TIDY_ARGS "--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
-    file(RELATIVE_PATH BINARY_DIR_RELATIVE "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
+    list(APPEND CXX_CLANG_TIDY_ARGS "--config-file=${PROJECT_SOURCE_DIR}/.clang-tidy")
+    file(RELATIVE_PATH BINARY_DIR_RELATIVE "${PROJECT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
 
     if (WIN32)
         list(APPEND CXX_CLANG_TIDY_ARGS "--extra-arg=-Wno-dll-attribute-on-redeclaration")
@@ -256,9 +256,8 @@ endfunction()
 
 function(_build_clang_tidy_command OUT_CLANG_TIDY_COMMAND CLANG_TIDY_EXE SOURCE_FILE ENABLE_EXCEPTIONS)
     set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}")
-    list(APPEND CLANG_TIDY_COMMAND "--config-file=${CMAKE_SOURCE_DIR}/.clang-tidy")
-    file(RELATIVE_PATH BINARY_DIR_RELATIVE "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}")
-    list(APPEND CLANG_TIDY_COMMAND "--header-filter=^${CMAKE_SOURCE_DIR}/(?!out/build/.*/_deps/|${BINARY_DIR_RELATIVE}/).*")
+    list(APPEND CLANG_TIDY_COMMAND "--config-file=${PROJECT_SOURCE_DIR}/.clang-tidy")
+    list(APPEND CLANG_TIDY_COMMAND "--header-filter=(.*\/(out|build\/).*)")
 
     if (WIN32)
         list(APPEND CLANG_TIDY_COMMAND "--extra-arg=-Wno-dll-attribute-on-redeclaration")

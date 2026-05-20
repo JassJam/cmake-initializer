@@ -714,7 +714,7 @@ function(_configure_emscripten_html_generation)
     endif ()
 
     # Set default HTML shell file template
-    set(EMSCRIPTEN_HTML_SHELL_TEMPLATE "${CMAKE_SOURCE_DIR}/.emsdk/emscripten_shell.html")
+    set(EMSCRIPTEN_HTML_SHELL_TEMPLATE "${PROJECT_SOURCE_DIR}/.emsdk/emscripten_shell.html")
 
     # Create HTML template if it doesn't exist
     if (NOT EXISTS "${EMSCRIPTEN_HTML_SHELL_TEMPLATE}")
