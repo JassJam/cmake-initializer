@@ -9,6 +9,9 @@ steps:
     commands:
       - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-linux-x64-clang-debug --preset unixlike-clang-debug
+    when:
+    - event: [pull_request]
+      branch: [main, dev]
 
   # Linux / GCC
   - name: build-linux-x64-gcc-debug
@@ -16,6 +19,9 @@ steps:
     commands:
       - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-linux-x64-gcc-debug --preset unixlike-gcc-debug
+    when:
+    - event: [pull_request]
+      branch: [main, dev]
 
   # Emscripten
   - name: build-emscripten-debug
@@ -23,3 +29,6 @@ steps:
     commands:
       - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-emscripten-debug --preset emscripten-debug
+    when:
+    - event: [pull_request]
+      branch: [main, dev]
