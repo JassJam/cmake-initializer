@@ -207,7 +207,7 @@
         "CMAKE_SYSTEM_NAME": "Emscripten",
         "PACKAGE_MANAGERS": "XMake"
       },
-      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake"
+      "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     },
     {
       "name": "emscripten-release",
@@ -227,7 +227,7 @@
         "CMAKE_SYSTEM_NAME": "Emscripten",
         "PACKAGE_MANAGERS": "XMake"
       },
-      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake"
+      "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     }
 
   ],
