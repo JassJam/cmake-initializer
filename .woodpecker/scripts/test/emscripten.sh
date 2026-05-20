@@ -9,7 +9,7 @@ apt-get install -y build-essential ninja-build cmake curl git libicu-dev libssl-
 curl -fsSL https://xmake.io/shget.text | bash
 
 export PATH="$HOME/.local/bin:$PATH"
-export XMAKE_ROOT=y
+xmake update -v dev
 
 PWSH_VERSION="7.6.1"
 curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
