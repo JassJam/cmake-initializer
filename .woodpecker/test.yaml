@@ -32,7 +32,6 @@ steps:
   #   when:
   #     event: [push, pull_request, tag]
 
-
   # Emscripten
   - name: test-emscripten-debug
     image: emscripten/emsdk:latest
