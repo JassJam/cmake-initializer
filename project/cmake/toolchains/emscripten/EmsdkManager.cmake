@@ -20,7 +20,7 @@ function(ensure_emsdk_available)
     endif ()
 
     # Check if we have a local installation
-    set(LOCAL_EMSDK_DIR "${CMAKE_SOURCE_DIR}/.emsdk")
+    set(LOCAL_EMSDK_DIR "${PROJECT_SOURCE_DIR}/.emsdk")
     set(EMSDK_SCRIPT "${LOCAL_EMSDK_DIR}/emsdk")
 
     if (CMAKE_HOST_WIN32)
@@ -80,7 +80,7 @@ function(get_emsdk_toolchain_file output_var)
     if (DEFINED ENV{EMSDK})
         set(TOOLCHAIN_FILE "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
     else ()
-        set(TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/.emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
+        set(TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/.emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
     endif ()
 
     if (NOT EXISTS "${TOOLCHAIN_FILE}")
@@ -100,7 +100,7 @@ function(verify_and_setup_emscripten_compilers)
     if (DEFINED ENV{EMSDK})
         set(EMSDK_DIR "$ENV{EMSDK}")
     else ()
-        set(EMSDK_DIR "${CMAKE_SOURCE_DIR}/.emsdk")
+        set(EMSDK_DIR "${PROJECT_SOURCE_DIR}/.emsdk")
     endif ()
 
     # Set up the toolchain file FIRST
