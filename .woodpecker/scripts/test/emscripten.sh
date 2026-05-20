@@ -6,10 +6,15 @@ apt-get update -q
 apt-get install -y build-essential ninja-build cmake curl git libicu-dev libssl-dev python3
 
 # Install xmake/xrepo
-curl -fsSL https://xmake.io/shget.text | bash
 
+_saved_EMSDK="${EMSDK:-}"
+unset EMSDK
+
+curl -fsSL https://xmake.io/shget.text | bash
 export PATH="$HOME/.local/bin:$PATH"
 xmake update -v dev
+
+export EMSDK="$_saved_EMSDK"
 
 PWSH_VERSION="7.6.1"
 curl -fsSL "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz" \
