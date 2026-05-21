@@ -5,12 +5,10 @@ when:
 steps:
   # Linux / Clang
   - name: build-linux-x64-clang-debug
-    image: ubuntu:latest
+    image: dockcross/linux-x64-clang
     environment:
       CONFIG_PRESET: unixlike-clang-debug
     commands:
-      - chmod +x .woodpecker/scripts/test/setup-unix.sh
-      - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-linux-x64-clang-debug --preset unixlike-clang-debug
     when:
     - event: [pull_request]
@@ -18,12 +16,10 @@ steps:
 
   # Linux / GCC
   - name: build-linux-x64-gcc-debug
-    image: ubuntu:latest
+    image: dockcross/linux-x86_64-full
     environment:
       CONFIG_PRESET: unixlike-gcc-debug
     commands:
-      - chmod +x .woodpecker/scripts/test/setup-unix.sh
-      - .woodpecker/scripts/test/setup-unix.sh
       - cmake -S . -B ./out/build/build-linux-x64-gcc-debug --preset unixlike-gcc-debug
     when:
     - event: [pull_request]
@@ -31,7 +27,7 @@ steps:
 
   # Emscripten
   - name: build-emscripten-debug
-    image: emscripten/emsdk:latest
+    image: dockcross/web-wasm
     commands:
       - chmod +x .woodpecker/scripts/test/setup-emscripten.sh
       - .woodpecker/scripts/test/setup-emscripten.sh
