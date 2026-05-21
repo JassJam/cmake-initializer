@@ -28,6 +28,8 @@ steps:
   # Emscripten
   - name: build-emscripten-debug
     image: dockcross/web-wasm
+    environment:
+      DOCKER_IMAGE_VERSION: latest
     commands:
       - chmod +x .woodpecker/scripts/test/setup-emscripten.sh
       - .woodpecker/scripts/test/setup-emscripten.sh
