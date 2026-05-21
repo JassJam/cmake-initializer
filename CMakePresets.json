@@ -52,14 +52,6 @@
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       },
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "toolset": {
-        "value": "host=x64",
-        "strategy": "external"
-      },
       "cacheVariables": {}
     },
     {
@@ -114,11 +106,6 @@
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_BUILD_TYPE": "Debug"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "intelliSenseMode": "windows-clang-x64"
-        }
       }
     },
     {
@@ -131,11 +118,6 @@
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_BUILD_TYPE": "Release"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "intelliSenseMode": "windows-clang-x64"
-        }
       }
     },
 
@@ -165,15 +147,31 @@
     },
 
     {
-      "name": "unixlike-clang-debug",
-      "displayName": "clang Debug",
-      "description": "Target Unix-like OS with the clang compiler, debug build type",
+      "name": "unixlike-clang-debug-x86_x64",
+      "displayName": "clang Debug (x86_x64)",
+      "description": "Target Unix-like OS with the clang compiler, debug build type, 64-bit x64",
       "inherits": ["conf-unixlike-common", "conf-debug-common"],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+      {
+      "name": "unixlike-clang-debug-x86",
+      "displayName": "clang Debug (x86)",
+      "description": "Target Unix-like OS with the clang compiler, debug build type, 32-bit x86",
+      "inherits": ["conf-unixlike-common", "conf-debug-common"],
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32",
+        "CMAKE_EXE_LINKER_FLAGS": "-m32",
+        "CMAKE_SHARED_LINKER_FLAGS": "-m32"
       }
     },
     {
