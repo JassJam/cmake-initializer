@@ -202,8 +202,7 @@
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
-        "CMAKE_SYSTEM_NAME": "Emscripten",
-        "PACKAGE_MANAGERS": "XMake"
+        "CMAKE_SYSTEM_NAME": "Emscripten"
       },
       "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     },

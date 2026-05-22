@@ -40,9 +40,6 @@ steps:
   - name: build-emscripten-debug
     image: dockcross/web-wasm
     commands:
-      - export XMAKE_ROOT=y
-      - chmod +x .woodpecker/scripts/test/setup-emscripten.sh
-      - .woodpecker/scripts/test/setup-emscripten.sh
       - cmake -S . -B ./out/build/build-emscripten-debug --preset emscripten-debug
     when:
     - event: [pull_request]
