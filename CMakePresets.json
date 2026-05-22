@@ -5,7 +5,6 @@
     "minor": 21,
     "patch": 0
   },
-
   "configurePresets": [
     {
       "name": "conf-common",
@@ -17,31 +16,34 @@
         "DEFAULT_TEST_FRAMEWORK": "doctest"
       }
     },
-
     {
       "name": "conf-debug-common",
-      "description": "Settings common to all debug configurations",
-      "hidden": true,
       "inherits": "conf-common",
+      "hidden": true,
+      "description": "Settings common to all debug configurations",
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_DEFAULT_BUILD_TYPE": "Debug",
+        "CMAKE_CONFIGURATION_TYPES": "Debug",
         "DEV_MODE": "ON",
         "RELEASE_MODE": "OFF",
         "BUILD_TESTING": "ON"
       }
     },
-
     {
       "name": "conf-release-common",
       "description": "Settings common to all release configurations",
       "hidden": true,
       "inherits": "conf-common",
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_DEFAULT_BUILD_TYPE": "Release",
+        "CMAKE_CONFIGURATION_TYPES": "Release",
         "DEV_MODE": "OFF",
         "RELEASE_MODE": "ON",
         "BUILD_TESTING": "OFF"
       }
     },
-
     {
       "name": "conf-windows-common",
       "description": "Windows settings for MSBuild toolchain that apply to msvc and clang",
@@ -62,7 +64,10 @@
       "condition": {
         "type": "inList",
         "string": "${hostSystemName}",
-        "list": [ "Linux", "Darwin" ]
+        "list": [
+          "Linux",
+          "Darwin"
+        ]
       },
       "vendor": {
         "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
@@ -71,36 +76,83 @@
       }
     },
 
-    {
-      "name": "windows-msvc-debug",
-      "displayName": "msvc Debug",
-      "description": "Target Windows with the msvc compiler, debug build type",
-      "inherits": ["conf-windows-common", "conf-debug-common"],
-      "generator": "Visual Studio 17 2022",
+     {
+      "name": "windows-x64-msvc-debug",
+      "displayName": "Windows x64 MSVC Debug",
+      "description": "Target Windows x64 with MSVC, debug build type",
+      "inherits": [
+        "conf-windows-common",
+        "conf-debug-common"
+      ],
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl",
-        "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
       }
     },
     {
-      "name": "windows-msvc-release",
-      "displayName": "msvc Release",
-      "description": "Target Windows with the msvc compiler, release build type",
-      "inherits": ["conf-windows-common", "conf-release-common"],
-      "generator": "Visual Studio 17 2022",
+      "name": "windows-x86-msvc-debug",
+      "displayName": "Windows x86 MSVC Debug",
+      "description": "Target Windows x86 with MSVC, debug build type",
+      "inherits": [
+        "conf-windows-common",
+        "conf-debug-common"
+      ],
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl",
-        "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "architecture": {
+        "value": "Win32",
+        "strategy": "set"
       }
     },
-
+    {
+      "name": "windows-x64-msvc-release",
+      "displayName": "Windows x64 MSVC Release",
+      "description": "Target Windows x64 with MSVC, release build type",
+      "inherits": [
+        "conf-windows-common",
+        "conf-release-common"
+      ],
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      }
+    },
+    {
+      "name": "windows-x86-msvc-release",
+      "displayName": "Windows x86 MSVC Release",
+      "description": "Target Windows x86 with MSVC, release build type",
+      "inherits": [
+        "conf-windows-common",
+        "conf-release-common"
+      ],
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl"
+      },
+      "architecture": {
+        "value": "Win32",
+        "strategy": "set"
+      }
+    },
+    
     {
       "name": "windows-clang-debug",
-      "displayName": "clang Debug",
+      "displayName": "clang-cl Debug",
       "description": "Target Windows with the clang compiler, debug build type",
-      "inherits": ["conf-windows-common", "conf-debug-common"],
+      "inherits": [
+        "conf-windows-common",
+        "conf-debug-common"
+      ],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
@@ -110,9 +162,12 @@
     },
     {
       "name": "windows-clang-release",
-      "displayName": "clang Release",
+      "displayName": "clang-cl Release",
       "description": "Target Windows with the clang compiler, release build type",
-      "inherits": ["conf-windows-common", "conf-release-common"],
+      "inherits": [
+        "conf-windows-common",
+        "conf-release-common"
+      ],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
@@ -122,68 +177,128 @@
     },
 
     {
-      "name": "unixlike-gcc-debug",
-      "displayName": "gcc Debug",
-      "description": "Target Unix-like OS with the gcc compiler, debug build type",
-      "inherits": ["conf-unixlike-common", "conf-debug-common"],
-      "generator": "Ninja Multi-Config",
+      "name": "unixlike-x64-gcc-debug",
+      "displayName": "Unix-Like x64 GCC Debug",
+      "description": "Target Unix-like OS with the gcc compiler, debug build type (x64)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-debug-common"
+      ],
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
       }
     },
     {
-      "name": "unixlike-gcc-release",
-      "displayName": "gcc Release",
-      "description": "Target Unix-like OS with the gcc compiler, release build type",
-      "inherits": ["conf-unixlike-common", "conf-release-common"],
-      "generator": "Ninja Multi-Config",
+      "name": "unixlike-x86-gcc-debug",
+      "displayName": "Unix-Like x86 GCC Debug",
+      "description": "Target Unix-like OS with the gcc compiler, debug build type (x86)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-debug-common"
+      ],
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "unixlike-x64-gcc-release",
+      "displayName": "Unix-Like x64 GCC Release",
+      "description": "Target Unix-like OS with the gcc compiler, release build type (x64)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-release-common"
+      ],
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
+      }
+    },
+    {
+      "name": "unixlike-x64-gcc-release",
+      "displayName": "Unix-Like x86 GCC Release",
+      "description": "Target Unix-like OS with the gcc compiler, release build type (x86)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-release-common"
+      ],
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
       }
     },
 
     {
-      "name": "unixlike-clang-debug-x86_x64",
-      "displayName": "clang Debug (x86_x64)",
-      "description": "Target Unix-like OS with the clang compiler, debug build type, 64-bit x64",
-      "inherits": ["conf-unixlike-common", "conf-debug-common"],
+      "name": "unixlike-x64-clang-debug",
+      "displayName": "Unix-Like x64 Clang Debug",
+      "description": "Target Unix-like OS with the clang compiler, debug build type (x64)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-debug-common"
+      ],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    },
-      {
-      "name": "unixlike-clang-debug-x86",
-      "displayName": "clang Debug (x86)",
-      "description": "Target Unix-like OS with the clang compiler, debug build type, 32-bit x86",
-      "inherits": ["conf-unixlike-common", "conf-debug-common"],
-      "generator": "Ninja Multi-Config",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_FLAGS": "-m32",
-        "CMAKE_CXX_FLAGS": "-m32",
-        "CMAKE_EXE_LINKER_FLAGS": "-m32",
-        "CMAKE_SHARED_LINKER_FLAGS": "-m32"
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
       }
     },
     {
-      "name": "unixlike-clang-release",
-      "displayName": "clang Release",
-      "description": "Target Unix-like OS with the clang compiler, release build type",
-      "inherits": ["conf-unixlike-common", "conf-release-common"],
+      "name": "unixlike-x86-clang-debug",
+      "displayName": "Unix-Like x86 Clang Debug",
+      "description": "Target Unix-like OS with the clang compiler, debug build type (x86)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-debug-common"
+      ],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "unixlike-x64-clang-release",
+      "displayName": "Unix-Like x64 Clang Release",
+      "description": "Target Unix-like OS with the clang compiler, release build type (x64)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-release-common"
+      ],
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
+      }
+    },
+    {
+      "name": "unixlike-x64-clang-release",
+      "displayName": "Unix-Like x86 Clang Release",
+      "description": "Target Unix-like OS with the clang compiler, release build type (x86)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-release-common"
+      ],
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
       }
     },
 
@@ -191,14 +306,15 @@
       "name": "emscripten-debug",
       "displayName": "Emscripten Debug",
       "description": "Target WebAssembly with Emscripten compiler, debug build type",
-      "inherits": ["conf-common", "conf-debug-common"],
+      "inherits": [
+        "conf-debug-common"
+      ],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
         "ENABLE_EMSDK_AUTO_INSTALL": true,
         "EMSCRIPTEN_GENERATE_HTML": true,
-        "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
@@ -210,22 +326,21 @@
       "name": "emscripten-release",
       "displayName": "Emscripten Release",
       "description": "Target WebAssembly with Emscripten compiler, release build type",
-      "inherits": ["conf-common", "conf-release-common"],
+      "inherits": [
+        "conf-release-common"
+      ],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXECUTABLE_SUFFIX": ".html",
         "ENABLE_EMSDK_AUTO_INSTALL": true,
         "EMSCRIPTEN_GENERATE_HTML": true,
-        "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
-        "CMAKE_SYSTEM_NAME": "Emscripten",
-        "PACKAGE_MANAGERS": "XMake"
+        "CMAKE_SYSTEM_NAME": "Emscripten"
       },
       "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     }
-
   ]
 }
