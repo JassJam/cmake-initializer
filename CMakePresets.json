@@ -222,7 +222,7 @@
       }
     },
     {
-      "name": "unixlike-x64-gcc-release",
+      "name": "unixlike-x86-gcc-release",
       "displayName": "Unix-Like x86 GCC Release",
       "description": "Target Unix-like OS with the gcc compiler, release build type (x86)",
       "inherits": [
@@ -286,7 +286,7 @@
       }
     },
     {
-      "name": "unixlike-x64-clang-release",
+      "name": "unixlike-x86-clang-release",
       "displayName": "Unix-Like x86 Clang Release",
       "description": "Target Unix-like OS with the clang compiler, release build type (x86)",
       "inherits": [
