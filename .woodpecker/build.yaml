@@ -20,7 +20,7 @@ steps:
     environment:
       CONFIG_PRESET: unixlike-clang-debug
     commands:
-      - cmake -S .--preset unixlike-x86-clang-debug
+      - cmake -S . --preset unixlike-x86-clang-debug
     when:
     - event: [pull_request]
       branch: [main, dev]
