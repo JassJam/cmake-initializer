@@ -21,7 +21,6 @@
       "description": "Settings common to all debug configurations",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_DEFAULT_BUILD_TYPE": "Debug",
         "CMAKE_CONFIGURATION_TYPES": "Debug",
         "DEV_MODE": "ON",
         "RELEASE_MODE": "OFF",
