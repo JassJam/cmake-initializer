@@ -9,7 +9,7 @@ steps:
     environment:
       CONFIG_PRESET: unixlike-clang-debug
     commands:
-      - cmake -S . --preset unixlike-clang-debug-x86_x64
+      - cmake -S . --preset unixlike-x64-clang-debug
     when:
     - event: [pull_request]
       branch: [main, dev]
@@ -20,7 +20,7 @@ steps:
     environment:
       CONFIG_PRESET: unixlike-clang-debug
     commands:
-      - cmake -S .--preset unixlike-clang-debug-x86
+      - cmake -S .--preset unixlike-x86-clang-debug
     when:
     - event: [pull_request]
       branch: [main, dev]
@@ -31,7 +31,7 @@ steps:
     environment:
       CONFIG_PRESET: unixlike-gcc-debug
     commands:
-      - cmake -S . --preset unixlike-gcc-debug-x86_x64
+      - cmake -S . --preset unixlike-x64-gcc-debug
     when:
     - event: [pull_request]
       branch: [main, dev]
@@ -42,7 +42,7 @@ steps:
     environment:
       CONFIG_PRESET: unixlike-gcc-debug
     commands:
-      - cmake -S . --preset unixlike-gcc-debug-x86
+      - cmake -S . --preset unixlike-x86-gcc-debug
     when:
     - event: [pull_request]
       branch: [main, dev]
