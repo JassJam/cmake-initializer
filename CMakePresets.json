@@ -303,9 +303,7 @@
       "name": "emscripten-debug",
       "displayName": "Emscripten Debug",
       "description": "Target WebAssembly with Emscripten compiler, debug build type",
-      "inherits": [
-        "conf-debug-common"
-      ],
+      "inherits": ["conf-debug-common"],
       "generator": "Ninja Multi-Config",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -315,7 +313,9 @@
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
-        "CMAKE_SYSTEM_NAME": "Emscripten"
+        "CMAKE_SYSTEM_NAME": "Emscripten",
+        "ENABLE_SANITIZER_ADDRESS": "OFF",
+        "ENABLE_SANITIZER_UNDEFINED_BEHAVIOR": "OFF"
       },
       "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     },
@@ -335,7 +335,9 @@
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
-        "CMAKE_SYSTEM_NAME": "Emscripten"
+        "CMAKE_SYSTEM_NAME": "Emscripten",
+        "ENABLE_SANITIZER_ADDRESS": "OFF",
+        "ENABLE_SANITIZER_UNDEFINED_BEHAVIOR": "OFF"
       },
       "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     }

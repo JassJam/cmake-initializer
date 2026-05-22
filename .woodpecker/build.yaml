@@ -17,8 +17,8 @@ steps:
   - name: build-linux-x86-clang-debug
     image: dockcross/linux-x64-clang
     commands:
-      - chmod +x ./.woodpecker/scripts/test/setup-unix-x86.sh
-      - .woodpecker/scripts/test/setup-unix-x86.sh
+      - chmod +x ./.woodpecker/scripts/test/setup-clang-unix-x86.sh
+      - .woodpecker/scripts/test/setup-clang-unix-x86.sh
       - cmake -S . -B build/unixlike-x86-clang-debug --preset unixlike-x86-clang-debug
       - cmake --build build/unixlike-x86-clang-debug
     when:
