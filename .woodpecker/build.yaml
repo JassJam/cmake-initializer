@@ -38,7 +38,7 @@ steps:
 
   # Emscripten
   - name: build-emscripten-debug
-    image: emscripten/emsdk:latest
+    image: dockcross/web-wasm
     commands:
       - export XMAKE_ROOT=y
       - chmod +x .woodpecker/scripts/test/setup-emscripten.sh
