@@ -1,3 +1,5 @@
+depends_on:
+  - build
 when:
   - event: [pull_request]
     branch: [main, dev]
@@ -6,9 +8,10 @@ steps:
   # Linux / Clang - x86_x64
   - name: test-linux-x86_x64-clang-debug
     image: dockcross/linux-x64-clang
-    depends_on: [build-linux-x86_x64-clang-debug]
     commands:
       - ctest --test-dir build/unixlike-x64-clang-debug --build-config Debug --output-on-failure
+    depends_on:
+      - build
     when:
       - event: [pull_request]
         branch: [main, dev]
@@ -16,9 +19,10 @@ steps:
   # Linux / Clang - x86
   - name: test-linux-x86-clang-debug
     image: dockcross/linux-x64-clang
-    depends_on: [build-linux-x86-clang-debug]
     commands:
       - ctest --test-dir build/unixlike-x86-clang-debug --build-config Debug --output-on-failure
+    depends_on:
+      - build
     when:
       - event: [pull_request]
         branch: [main, dev]
@@ -26,9 +30,10 @@ steps:
   # Linux / GCC - x86_x64
   - name: test-linux-x86_x64-gcc-debug
     image: dockcross/linux-x86_64-full
-    depends_on: [build-linux-x86_x64-gcc-debug]
     commands:
       - ctest --test-dir build/unixlike-x64-gcc-debug --build-config Debug --output-on-failure
+    depends_on:
+      - build
     when:
       - event: [pull_request]
         branch: [main, dev]
@@ -36,9 +41,10 @@ steps:
   # Linux / GCC - x86
   - name: test-linux-x86-gcc-debug
     image: dockcross/linux-x86
-    depends_on: [build-linux-x86-gcc-debug]
     commands:
       - ctest --test-dir build/unixlike-x86-gcc-debug --build-config Debug --output-on-failure
+    depends_on:
+      - build
     when:
       - event: [pull_request]
         branch: [main, dev]
