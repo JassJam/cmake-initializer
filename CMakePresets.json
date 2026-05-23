@@ -43,7 +43,6 @@
       "inherits": "conf-common",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_DEFAULT_BUILD_TYPE": "Release",
         "CMAKE_CONFIGURATION_TYPES": "Release",
         "DEV_MODE": "OFF",
         "RELEASE_MODE": "ON",
