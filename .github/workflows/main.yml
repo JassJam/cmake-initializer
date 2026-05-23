@@ -14,45 +14,67 @@ jobs:
     runs-on: ${{ matrix.config.os }}
     continue-on-error: false
     strategy:
-      fail-fast: true  # Stop all jobs if any test fails
+      fail-fast: true
       max-parallel: 4
       matrix:
         config:
+          # Linux / Clang
           - name: linux-x64-clang
             os: ubuntu-latest
-            preset: unixlike-clang-debug
+            preset: unixlike-x64-clang-debug
             output: linux-x64-clang
+          - name: linux-x86-clang
+            os: ubuntu-latest
+            preset: unixlike-x86-clang-debug
+            output: linux-x86-clang
+
+          # Linux / GCC
           - name: linux-x64-gcc
             os: ubuntu-latest
-            preset: unixlike-gcc-debug
+            preset: unixlike-x64-gcc-debug
             output: linux-x64-gcc
+          - name: linux-x86-gcc
+            os: ubuntu-latest
+            preset: unixlike-x86-gcc-debug
+            output: linux-x86-gcc
 
-          - name: macOS-x64-clang
+          # macOS / Clang
+          - name: macos-x64-clang
             os: macos-latest
-            preset: unixlike-clang-debug
-            output: macOS-x64-clang
-          - name: macOS-x64-gcc
+            preset: unixlike-x64-clang-debug
+            output: macos-x64-clang
+          - name: macos-arm64-clang
             os: macos-latest
-            preset: unixlike-gcc-debug
-            output: macOS-x64-gcc
+            preset: unixlike-x64-clang-debug
+            output: macos-arm64-clang
 
+          # macOS / GCC
+          - name: macos-x64-gcc
+            os: macos-latest
+            preset: unixlike-x64-gcc-debug
+            output: macos-x64-gcc
+
+          # Windows / MSVC
+          - name: windows-x64-msvc
+            os: windows-latest
+            preset: windows-x64-msvc-debug
+            output: windows-x64-msvc
+          - name: windows-x86-msvc
+            os: windows-latest
+            preset: windows-x86-msvc-debug
+            output: windows-x86-msvc
+
+          # Windows / Clang
           - name: windows-x64-clang
             os: windows-latest
             preset: windows-clang-debug
             output: windows-x64-clang
-          - name: windows-x64-msvc
-            os: windows-latest
-            preset: windows-msvc-debug
-            output: windows-x64-msvc
 
+          # Emscripten
           - name: emscripten-debug
             os: ubuntu-latest
             preset: emscripten-debug
             output: wasm-debug
-          - name: emscripten-release
-            os: ubuntu-latest
-            preset: emscripten-release
-            output: wasm-release
 
     steps:
       - name: Checkout code
@@ -60,8 +82,6 @@ jobs:
         with:
           submodules: recursive
 
-      # Test phase using our PowerShell scripts
-      # Scripts automatically handle preset-based builds and testing
       - name: Run ${{ matrix.config.name }} Tests
         uses: ./.github/actions/test/unix
         if: contains(matrix.config.os, 'ubuntu')
@@ -70,7 +90,6 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
-
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
@@ -86,7 +105,6 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
-          
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
@@ -102,7 +120,6 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
-
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
@@ -118,7 +135,6 @@ jobs:
           config-os: ${{ matrix.config.os }}
           config-preset: ${{ matrix.config.preset }}
           config-output: ${{ matrix.config.output }}
-
           ctest-site: ${{ secrets.CTEST_DASHBOARD_SITE }}
           ctest-location: ${{ secrets.CTEST_DASHBOARD_LOCATION }}
           ctest-test-timeout: ${{ secrets.CTEST_TEST_TIMEOUT_PRESET || '300' }}
@@ -129,40 +145,66 @@ jobs:
   build:
     name: Build (${{ matrix.config.name }})
     runs-on: ${{ matrix.config.os }}
-    needs: test  # Only run build after all tests pass
+    needs: test
     continue-on-error: false
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
         config:
+          # Linux / Clang
           - name: linux-x64-clang
             os: ubuntu-latest
-            preset: unixlike-clang-release
+            preset: unixlike-x64-clang-release
             output: linux-x64-clang
+          - name: linux-x86-clang
+            os: ubuntu-latest
+            preset: unixlike-x86-clang-release
+            output: linux-x86-clang
+
+          # Linux / GCC
           - name: linux-x64-gcc
             os: ubuntu-latest
-            preset: unixlike-gcc-release
+            preset: unixlike-x64-gcc-release
             output: linux-x64-gcc
+          - name: linux-x86-gcc
+            os: ubuntu-latest
+            preset: unixlike-x86-gcc-release
+            output: linux-x86-gcc
 
-          - name: macOS-x64-clang
+          # macOS / Clang
+          - name: macos-x64-clang
             os: macos-latest
-            preset: unixlike-clang-release
-            output: macOS-x64-clang
-          - name: macOS-x64-gcc
+            preset: unixlike-x64-clang-release
+            output: macos-x64-clang
+          - name: macos-arm64-clang
             os: macos-latest
-            preset: unixlike-gcc-release
-            output: macOS-x64-gcc
+            preset: unixlike-x64-clang-release
+            output: macos-arm64-clang
 
+          # macOS / GCC
+          - name: macos-x64-gcc
+            os: macos-latest
+            preset: unixlike-x64-gcc-release
+            output: macos-x64-gcc
+
+          # Windows / MSVC
+          - name: windows-x64-msvc
+            os: windows-latest
+            preset: windows-x64-msvc-release
+            output: windows-x64-msvc
+          - name: windows-x86-msvc
+            os: windows-latest
+            preset: windows-x86-msvc-release
+            output: windows-x86-msvc
+
+          # Windows / Clang
           - name: windows-x64-clang
             os: windows-latest
             preset: windows-clang-release
             output: windows-x64-clang
-          - name: windows-x64-msvc
-            os: windows-latest
-            preset: windows-msvc-release
-            output: windows-x64-msvc
 
+          # Emscripten
           - name: emscripten-release
             os: ubuntu-latest
             preset: emscripten-release
@@ -174,8 +216,6 @@ jobs:
         with:
           submodules: recursive
 
-      # Production build phase using our PowerShell scripts  
-      # Scripts handle preset-based builds and artifact creation
       - name: Run ${{ matrix.config.name }} Build
         uses: ./.github/actions/build/unix
         if: contains(matrix.config.name, 'linux')
@@ -214,10 +254,10 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    needs: [test, build]  # Depends on both test and build
+    needs: [test, build]
     continue-on-error: false
     if: github.event_name == 'push' && github.ref_type == 'tag'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
