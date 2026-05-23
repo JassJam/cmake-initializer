@@ -29,8 +29,8 @@ int main()
 
 #ifdef __EMSCRIPTEN__
     std::cout << "Running in WebAssembly environment!" << std::endl;
-    std::cout << "Emscripten version: " << __EMSCRIPTEN_MAJOR__ << "." << __EMSCRIPTEN_MINOR__
-              << "." << __EMSCRIPTEN_TINY__ << std::endl;
+    std::cout << "Emscripten version: " << __EMSCRIPTEN_major__ << "." << __EMSCRIPTEN_minor__
+              << "." << __EMSCRIPTEN_tiny__ << std::endl;
 
     // Print some information about the environment
     std::cout << "This example demonstrates:" << std::endl;
