@@ -86,6 +86,7 @@ steps:
   - name: test-linux-x86_x64-gcc-debug
     image: dockcross/linux-x86_64-full
     commands:
+      - apt-get install -y libasan6
       - ctest --test-dir build/unixlike-x64-gcc-debug --build-config Debug --output-on-failure
     when:
       - event: [pull_request]
@@ -95,6 +96,7 @@ steps:
   - name: test-linux-x86-gcc-debug
     image: dockcross/linux-x86
     commands:
+      - apt-get install -y libasan6
       - ctest --test-dir build/unixlike-x86-gcc-debug --build-config Debug --output-on-failure
     when:
       - event: [pull_request]
