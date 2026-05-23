@@ -313,9 +313,7 @@
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
-        "CMAKE_SYSTEM_NAME": "Emscripten",
-        "ENABLE_SANITIZER_ADDRESS": "OFF",
-        "ENABLE_SANITIZER_UNDEFINED_BEHAVIOR": "OFF"
+        "CMAKE_SYSTEM_NAME": "Emscripten"
       },
       "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     },
@@ -335,9 +333,7 @@
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_CROSSCOMPILING": true,
-        "CMAKE_SYSTEM_NAME": "Emscripten",
-        "ENABLE_SANITIZER_ADDRESS": "OFF",
-        "ENABLE_SANITIZER_UNDEFINED_BEHAVIOR": "OFF"
+        "CMAKE_SYSTEM_NAME": "Emscripten"
       },
       "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
     }
