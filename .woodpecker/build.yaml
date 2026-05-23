@@ -5,100 +5,28 @@ when:
 steps:
 
 #################
-# TEST PIPELINE #
+# BUILD PIPELINE #
 #################
 
-  # # Linux / Clang - x86_x64
-  # - name: build-linux-x86_x64-clang-debug
-  #   image: dockcross/linux-x64-clang
-  #   commands:
-  #     - cmake -S . -B build/unixlike-x64-clang-debug --preset unixlike-x64-clang-debug
-  #     - cmake --build build/unixlike-x64-clang-debug
-  #   when:
-  #   - event: [pull_request]
-  #     branch: [main, dev]
-
-  # # Linux / Clang - x86
-  # - name: build-linux-x86-clang-debug
-  #   image: dockcross/linux-x64-clang
-  #   commands:
-  #     - chmod +x ./.woodpecker/scripts/test/setup-clang-unix-x86.sh
-  #     - .woodpecker/scripts/test/setup-clang-unix-x86.sh
-  #     - cmake -S . -B build/unixlike-x86-clang-debug --preset unixlike-x86-clang-debug
-  #     - cmake --build build/unixlike-x86-clang-debug
-  #   when:
-  #   - event: [pull_request]
-  #     branch: [main, dev]
-
-  # Linux / GCC - x86_x64
-  - name: build-linux-x86_x64-gcc-debug
-    image: dockcross/linux-x86_64-full
+  # Linux / Clang - x86_x64
+  - name: build-linux-x86_x64-clang-debug
+    image: dockcross/linux-x64-clang
     commands:
-      - cmake -S . -B build/unixlike-x64-gcc-debug --preset unixlike-x64-gcc-debug
-      - cmake --build build/unixlike-x64-gcc-debug
+      - cmake -S . -B build/unixlike-x64-clang-debug --preset unixlike-x64-clang-debug
+      - cmake --build build/unixlike-x64-clang-debug
     when:
     - event: [pull_request]
       branch: [main, dev]
 
-  # # Linux / GCC - x86
-  # - name: build-linux-x86-gcc-debug
-  #   image: dockcross/linux-x86
-  #   commands:
-  #     - cmake -S . -B build/unixlike-x86-gcc-debug --preset unixlike-x86-gcc-debug
-  #     - cmake --build build/unixlike-x86-gcc-debug
-  #   when:
-  #   - event: [pull_request]
-  #     branch: [main, dev]
-
-  # # Emscripten
-  # - name: build-emscripten-debug
-  #   image: dockcross/web-wasm
-  #   commands:
-  #     - cmake -S . -B build/emscripten-debug --preset emscripten-debug
-  #     - cmake --build build/emscripten-debug
-  #   when:
-  #   - event: [pull_request]
-  #     branch: [main, dev]
-
 #################
 # TEST PIPELINE #
 #################
 
-  # # Linux / Clang - x86_x64
-  # - name: test-linux-x86_x64-clang-debug
-  #   image: dockcross/linux-x64-clang
-  #   commands:
-  #     - ctest --test-dir build/unixlike-x64-clang-debug --build-config Debug --output-on-failure
-  #   when:
-  #     - event: [pull_request]
-  #       branch: [main, dev]
-
-  # # Linux / Clang - x86
-  # - name: test-linux-x86-clang-debug
-  #   image: dockcross/linux-x64-clang
-  #   commands:
-  #     - ctest --test-dir build/unixlike-x86-clang-debug --build-config Debug --output-on-failure
-  #   when:
-  #     - event: [pull_request]
-  #       branch: [main, dev]
-
-  # Linux / GCC - x86_x64
-  - name: test-linux-x86_x64-gcc-debug
-    image: dockcross/linux-x86_64-full
+  # Linux / Clang - x86_x64
+  - name: test-linux-x86_x64-clang-debug
+    image: dockcross/linux-x64-clang
     commands:
-      - apt-get install -y libasan6
-      - ldd --version
-      - ctest --test-dir build/unixlike-x64-gcc-debug --build-config Debug --output-on-failure
-    when:
-      - event: [pull_request]
-        branch: [main, dev]
-
-  # Linux / GCC - x86
-  - name: test-linux-x86-gcc-debug
-    image: dockcross/linux-x86
-    commands:
-      - apt-get install -y libasan6
-      - ctest --test-dir build/unixlike-x86-gcc-debug --build-config Debug --output-on-failure
+      - ctest --test-dir build/unixlike-x64-clang-debug --build-config Debug --output-on-failure
     when:
       - event: [pull_request]
         branch: [main, dev]
