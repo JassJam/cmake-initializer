@@ -18,6 +18,15 @@ steps:
     - event: [pull_request]
       branch: [main, dev]
 
+  # Emscripten
+  - name: build-emscripten-debug
+    image: dockcross/web-wasm
+    commands:
+      - cmake -S . -B build/emscripten-debug --preset emscripten-debug
+      - cmake --build build/emscripten-debug --config Debug
+    when:
+      - event: tag
+
 #################
 # TEST PIPELINE #
 #################
