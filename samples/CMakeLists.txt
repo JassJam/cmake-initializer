@@ -5,7 +5,7 @@ set(SUBDIRS
         hello_shared_library
         hello_static_library
         hello_testing_frameworks
-        # hello_emscripten
+        hello_emscripten
 )
 
 foreach(subdir ${SUBDIRS})

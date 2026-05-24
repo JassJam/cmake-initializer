@@ -77,7 +77,6 @@ function(_register_target_common target)
     if(DEFINED ARG_EXPORT_SET)
         set(_dest "${ARG_INSTALL_DESTINATION}")
         if(NOT _dest)
-            # Sensible defaults per target type
             get_target_property(_type ${target} TYPE)
             if(_type STREQUAL "EXECUTABLE")
                 set(_dest "bin")
@@ -96,15 +95,11 @@ function(_register_target_common target)
             RUNTIME DESTINATION bin
             LIBRARY DESTINATION ${_dest}
             ARCHIVE DESTINATION ${_dest}
-            # C++ module interface files (CMake 3.28+)
             CXX_MODULES_BMI DESTINATION lib/bmi
             FILE_SET HEADERS        DESTINATION include
             FILE_SET CXX_MODULES    DESTINATION include/modules
         )
 
-        # Install the export set the first time it is encountered.
-        # Callers should invoke install(EXPORT …) once after all targets are
-        # registered; this block is a convenience for single-target projects.
         get_property(_exported_sets GLOBAL PROPERTY _REGISTER_EXPORTED_SETS)
         if(NOT ARG_EXPORT_SET IN_LIST _exported_sets)
             list(APPEND _exported_sets ${ARG_EXPORT_SET})
@@ -121,9 +116,9 @@ endfunction()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# _register_forward_quality_opts(<target> <ARG_prefix>)
-# Collects the quality/analysis kwargs and calls target_setup_common_options()
-# if it exists, otherwise silently skips (project may not use that helper).
+# _register_forward_quality_opts(<target>)
+# Reads ARG_ENABLE_* from the calling scope and forwards to
+# target_setup_common_options() if that command exists.
 # ──────────────────────────────────────────────────────────────────────────────
 macro(_register_forward_quality_opts target)
     set(_quality_args)
@@ -155,7 +150,7 @@ endmacro()
 #     [COMPILE_DEFINITIONS <def> …]
 #     [PROPERTIES         <key val> …]
 #     [NAMESPACE          <ns>]
-#     [EXPORT_SET         <set>]       install + add to named export set
+#     [EXPORT_SET         <set>]
 #     [INSTALL_DESTINATION <dir>]
 # )
 # ──────────────────────────────────────────────────────────────────────────────
@@ -217,16 +212,13 @@ endfunction()
 #     [LINK_LIBS          <tgt>  …]
 #     [CXX_STANDARD       <std>]       default: 23 with modules, else 17
 #     [NAMESPACE          <ns>]
-#     [EXPORT_SET         <set>]       install + add to named export set
+#     [EXPORT_SET         <set>]
 #     [INSTALL_DESTINATION <dir>]
 #     [COMPILE_OPTIONS     <opt> …]
 #     [COMPILE_DEFINITIONS <def> …]
 #     [PROPERTIES         <key val> …]
 #     [EXPORT_HEADER      <relative/path/export.hpp>]
-#                                      generates dllexport/dllimport/visibility
-#                                      macros; see implementation for details
-#     [EXPORT_MACRO_NAME  <MACRO>]     override the default <TARGETNAME>_EXPORT
-#                                      macro name, e.g. MY_API or MYLIB_API
+#     [EXPORT_MACRO_NAME  <MACRO>]
 #     [ENABLE_EXCEPTIONS ON|OFF]
 #     [ENABLE_IPO ON|OFF]
 #     [WARNINGS_AS_ERRORS ON|OFF]
@@ -243,7 +235,12 @@ endfunction()
 function(register_library name)
     cmake_parse_arguments(PARSE_ARGV 1 ARG
         "STATIC;SHARED"
-        "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;EXPORT_HEADER;EXPORT_MACRO_NAME"
+        "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;EXPORT_HEADER;EXPORT_MACRO_NAME;
+         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
+         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
+         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
+         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
+         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
         "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES"
     )
 
@@ -290,23 +287,11 @@ function(register_library name)
         "$<INSTALL_INTERFACE:include>"
     )
 
-    # Generates a header in the build tree that defines a macro you use to
-    # annotate your public API:
-    #
-    #   #include <mylib/export.hpp>
-    #   class MYLIB_EXPORT Foo { … };   // default macro name
-    #   class MY_API    Foo { … };      // with EXPORT_MACRO_NAME MY_API
-    #
-    # The macro resolves to:
-    #   - building the shared lib  → __declspec(dllexport) / visibility("default")
-    #   - consuming the shared lib → __declspec(dllimport) / (nothing on GCC/Clang)
-    #   - static lib               → nothing
     if(DEFINED ARG_EXPORT_HEADER)
         include(GenerateExportHeader)
 
         set(_export_file "${CMAKE_CURRENT_BINARY_DIR}/${ARG_EXPORT_HEADER}")
 
-        # Build optional args for generate_export_header
         set(_geh_extra)
         if(DEFINED ARG_EXPORT_MACRO_NAME)
             list(APPEND _geh_extra EXPORT_MACRO_NAME "${ARG_EXPORT_MACRO_NAME}")
@@ -317,21 +302,17 @@ function(register_library name)
             ${_geh_extra}
         )
 
-        # Add the generated header into the PUBLIC FILE_SET so it is
-        # installed alongside the hand-written headers.
         target_sources(${name} PUBLIC
             FILE_SET HEADERS
             BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}"
             FILES     "${_export_file}"
         )
 
-        # Consumers need the binary dir on their include path to find the header.
         target_include_directories(${name} PUBLIC
             "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
             "$<INSTALL_INTERFACE:include>"
         )
 
-        # For static builds suppress all decoration automatically.
         get_target_property(_lib_type ${name} TYPE)
         if(_lib_type STREQUAL "STATIC_LIBRARY")
             string(TOUPPER "${name}" _upper)
@@ -352,7 +333,6 @@ function(register_library name)
     endforeach()
 
     _register_target_common(${name} ${_forward})
-
     _register_forward_quality_opts(${name})
 endfunction()
 
@@ -360,14 +340,13 @@ endfunction()
 # ──────────────────────────────────────────────────────────────────────────────
 # register_executable(<name>
 #     [SOURCES            <file> …]
-#     [HEADERS            <file> …]    IDE visibility; adds include/ automatically
+#     [HEADERS            <file> …]
 #     [CXX_MODULES        <file> …]
 #     [INCLUDE_DIRS       <dir>  …]
 #     [LINK_LIBS          <tgt>  …]
 #     [CXX_STANDARD       <std>]
 #     [NAMESPACE          <ns>]
-#     [EXPORT_SET         <set>]       install + add to named export set
-#     [INSTALL]                        install without an export set
+#     [EXPORT_SET         <set>]
 #     [INSTALL_DESTINATION <dir>]      default: bin
 #     [COMPILE_OPTIONS     <opt> …]
 #     [COMPILE_DEFINITIONS <def> …]
@@ -403,7 +382,6 @@ function(register_executable name)
         target_sources(${name} PRIVATE ${ARG_SOURCES})
     endif()
 
-    # Headers: PRIVATE FILE_SET for IDE visibility
     if(ARG_HEADERS)
         target_sources(${name} PRIVATE
             FILE_SET HEADERS
@@ -444,7 +422,6 @@ function(register_executable name)
     endforeach()
 
     _register_target_common(${name} ${_forward})
-
     _register_forward_quality_opts(${name})
 endfunction()
 
@@ -452,7 +429,7 @@ endfunction()
 # ──────────────────────────────────────────────────────────────────────────────
 # register_test(<name>
 #     [SOURCES            <file> …]
-#     [HEADERS            <file> …]    IDE visibility; adds include/ automatically
+#     [HEADERS            <file> …]
 #     [CXX_MODULES        <file> …]
 #     [INCLUDE_DIRS       <dir>  …]
 #     [LINK_LIBS          <tgt>  …]
@@ -496,7 +473,6 @@ function(register_test name)
         target_sources(${name} PRIVATE ${ARG_SOURCES})
     endif()
 
-    # Headers: PRIVATE FILE_SET for IDE visibility
     if(ARG_HEADERS)
         target_sources(${name} PRIVATE
             FILE_SET HEADERS
@@ -505,7 +481,6 @@ function(register_test name)
         )
     endif()
 
-    # Auto include path
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_include_directories(${name} PRIVATE
             "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -535,10 +510,8 @@ function(register_test name)
     endforeach()
 
     _register_target_common(${name} ${_forward})
-
     _register_forward_quality_opts(${name})
 
-    # CTest registration
     set(_wd "${CMAKE_CURRENT_BINARY_DIR}")
     if(DEFINED ARG_WORKING_DIRECTORY)
         set(_wd "${ARG_WORKING_DIRECTORY}")
@@ -561,4 +534,314 @@ function(register_test name)
     if(ARG_ENVIRONMENT)
         set_tests_properties(${name} PROPERTIES ENVIRONMENT "${ARG_ENVIRONMENT}")
     endif()
+endfunction()
+
+# register_emscripten(<name>
+#     [SOURCES            <file> …]
+#     [HEADERS            <file> …]
+#     [CXX_MODULES        <file> …]
+#     [INCLUDE_DIRS       <dir>  …]
+#     [LINK_LIBS          <tgt>  …]
+#     [CXX_STANDARD       <std>]
+#     [COMPILE_OPTIONS    <opt>  …]
+#     [COMPILE_DEFINITIONS <def> …]
+#     [PROPERTIES         <key val> …]
+#     [DEPENDENCIES       <tgt> …]
+#
+#     # HTML / Web
+#     [HTML_TEMPLATE      <path/to/shell.html>]
+#     [HTML_TITLE         <string>]               default: "<name> - WebAssembly"
+#     [CANVAS_ID          <id>]                   default: "canvas"
+#     [OUTPUT_DIR         <dir>]
+#
+#     # Symbol exports
+#     [EXPORTED_FUNCTIONS       <_func> …]
+#     [EXPORTED_RUNTIME_METHODS <method> …]       e.g. ccall cwrap
+#
+#     # Virtual filesystem
+#     [PRELOAD_FILES      <file> …]
+#     [EMBED_FILES        <file> …]
+#
+#     # Memory  (raw bytes or units: 16MB 128MB 1GB)
+#     [INITIAL_MEMORY <size>]
+#     [MAXIMUM_MEMORY <size>]
+#     [STACK_SIZE <size>]
+#
+#     # Feature flags
+#     [WASM]
+#     [STANDALONE_WASM]
+#     [NODE_JS]
+#     [PTHREAD]
+#     [SIMD]
+#     [ASYNCIFY]
+#     [ASSERTIONS]
+#     [SAFE_HEAP]
+#     [ALLOW_MEMORY_GROWTH]
+#     [CLOSURE_COMPILER]
+#
+#     # Installation — triggered by INSTALL_DESTINATION (same pattern as EXPORT_SET)
+#     [INSTALL_DESTINATION <dir>]
+#
+#     [ENABLE_EXCEPTIONS ON|OFF]
+#     [ENABLE_IPO ON|OFF]  [WARNINGS_AS_ERRORS ON|OFF]
+#     [ENABLE_SANITIZER_ADDRESS ON|OFF]
+#     [ENABLE_SANITIZER_LEAK ON|OFF]
+#     [ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ON|OFF]
+#     [ENABLE_SANITIZER_THREAD ON|OFF]
+#     [ENABLE_SANITIZER_MEMORY ON|OFF]
+#     [ENABLE_HARDENING ON|OFF]
+#     [ENABLE_CLANG_TIDY ON|OFF]
+#     [ENABLE_CPPCHECK ON|OFF]
+# )
+#
+# No-op when EMSCRIPTEN is not defined (non-web builds are unaffected).
+function(register_emscripten name)
+    if(NOT DEFINED EMSCRIPTEN)
+        message(STATUS "[register_emscripten] Skipping '${name}' — not an Emscripten build")
+        return()
+    endif()
+
+    cmake_parse_arguments(PARSE_ARGV 1 ARG
+        "WASM;STANDALONE_WASM;NODE_JS;PTHREAD;SIMD;ASYNCIFY;ASSERTIONS;
+         SAFE_HEAP;ALLOW_MEMORY_GROWTH;CLOSURE_COMPILER"
+        "CXX_STANDARD;HTML_TEMPLATE;HTML_TITLE;CANVAS_ID;OUTPUT_DIR;
+         INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE;INSTALL_DESTINATION;
+         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
+         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
+         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
+         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
+         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
+        "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;
+         COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES;DEPENDENCIES;
+         EXPORTED_FUNCTIONS;EXPORTED_RUNTIME_METHODS;
+         PRELOAD_FILES;EMBED_FILES"
+    )
+
+    add_executable(${name})
+
+    if(ARG_SOURCES)
+        target_sources(${name} PRIVATE ${ARG_SOURCES})
+    endif()
+
+    if(ARG_HEADERS)
+        target_sources(${name} PRIVATE
+            FILE_SET HEADERS
+            BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+            FILES     ${ARG_HEADERS}
+        )
+    endif()
+
+    if(ARG_CXX_MODULES)
+        if(NOT DEFINED ARG_CXX_STANDARD)
+            set(ARG_CXX_STANDARD 23)
+        endif()
+        target_sources(${name} PRIVATE
+            FILE_SET CXX_MODULES
+            BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+            FILES     ${ARG_CXX_MODULES}
+        )
+    endif()
+
+    if(NOT DEFINED ARG_CXX_STANDARD)
+        set(ARG_CXX_STANDARD 17)
+    endif()
+
+    if(ARG_DEPENDENCIES)
+        add_dependencies(${name} ${ARG_DEPENDENCIES})
+    endif()
+
+    set(_forward CXX_STANDARD ${ARG_CXX_STANDARD})
+    foreach(_mv INCLUDE_DIRS LINK_LIBS COMPILE_OPTIONS COMPILE_DEFINITIONS PROPERTIES)
+        if(ARG_${_mv})
+            list(APPEND _forward ${_mv} ${ARG_${_mv}})
+        endif()
+    endforeach()
+
+    _register_target_common(${name} ${_forward})
+    _register_forward_quality_opts(${name})
+
+    if(NOT ARG_HTML_TITLE)
+        set(ARG_HTML_TITLE "${name} - WebAssembly Application")
+    endif()
+    if(NOT ARG_CANVAS_ID)
+        set(ARG_CANVAS_ID "canvas")
+    endif()
+
+    if(ARG_HTML_TEMPLATE)
+        set(_shell "${ARG_HTML_TEMPLATE}")
+    else()
+        set(_shell "${CMAKE_CURRENT_BINARY_DIR}/${name}_shell.html")
+        _register_emscripten_write_shell("${_shell}" "${ARG_HTML_TITLE}" "${ARG_CANVAS_ID}")
+    endif()
+
+    set_target_properties(${name} PROPERTIES SUFFIX ".html")
+    target_link_options(${name} PRIVATE "SHELL:--shell-file ${_shell}")
+
+    if(ARG_OUTPUT_DIR)
+        set_target_properties(${name} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${ARG_OUTPUT_DIR}"
+        )
+    endif()
+
+    # ── WebAssembly flags ─────────────────────────────────────────────────────
+    if(NOT DEFINED ARG_WASM OR ARG_WASM)
+        target_link_options(${name} PRIVATE "SHELL:-s WASM=1")
+    endif()
+
+    if(ARG_STANDALONE_WASM)
+        target_link_options(${name} PRIVATE "SHELL:-s STANDALONE_WASM=1")
+    endif()
+
+    # ── Memory ────────────────────────────────────────────────────────────────
+    if(ARG_INITIAL_MEMORY)
+        _register_emscripten_parse_memory("${ARG_INITIAL_MEMORY}" _bytes)
+        target_link_options(${name} PRIVATE "SHELL:-s INITIAL_MEMORY=${_bytes}")
+    endif()
+    if(ARG_MAXIMUM_MEMORY)
+        _register_emscripten_parse_memory("${ARG_MAXIMUM_MEMORY}" _bytes)
+        target_link_options(${name} PRIVATE "SHELL:-s MAXIMUM_MEMORY=${_bytes}")
+    endif()
+    if(ARG_STACK_SIZE)
+        _register_emscripten_parse_memory("${ARG_STACK_SIZE}" _bytes)
+        target_link_options(${name} PRIVATE "SHELL:-s STACK_SIZE=${_bytes}")
+    endif()
+    if(ARG_ALLOW_MEMORY_GROWTH)
+        target_link_options(${name} PRIVATE "SHELL:-s ALLOW_MEMORY_GROWTH=1")
+    endif()
+
+    # ── Exported symbols ──────────────────────────────────────────────────────
+    if(ARG_EXPORTED_FUNCTIONS)
+        string(JOIN "," _funcs ${ARG_EXPORTED_FUNCTIONS})
+        target_link_options(${name} PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=[${_funcs}]")
+    endif()
+    if(ARG_EXPORTED_RUNTIME_METHODS)
+        string(JOIN "," _methods ${ARG_EXPORTED_RUNTIME_METHODS})
+        target_link_options(${name} PRIVATE "SHELL:-s EXPORTED_RUNTIME_METHODS=[${_methods}]")
+    endif()
+
+    foreach(_f IN LISTS ARG_PRELOAD_FILES)
+        target_link_options(${name} PRIVATE "SHELL:--preload-file ${_f}")
+    endforeach()
+    foreach(_f IN LISTS ARG_EMBED_FILES)
+        target_link_options(${name} PRIVATE "SHELL:--embed-file ${_f}")
+    endforeach()
+
+    if(ARG_PTHREAD)
+        target_compile_options(${name} PRIVATE "SHELL:-s USE_PTHREADS=1")
+        target_link_options(${name} PRIVATE "SHELL:-s USE_PTHREADS=1")
+    endif()
+
+    if(ARG_NODE_JS)
+        target_link_options(${name} PRIVATE "SHELL:-s ENVIRONMENT=node")
+    elseif(ARG_PTHREAD)
+        target_link_options(${name} PRIVATE "SHELL:-s ENVIRONMENT=web,worker")
+    else()
+        target_link_options(${name} PRIVATE "SHELL:-s ENVIRONMENT=web")
+    endif()
+
+    if(ARG_SIMD)
+        target_compile_options(${name} PRIVATE "-msimd128")
+    endif()
+    if(ARG_ASYNCIFY)
+        target_link_options(${name} PRIVATE "SHELL:-s ASYNCIFY=1")
+    endif()
+    if(ARG_ASSERTIONS)
+        target_link_options(${name} PRIVATE "SHELL:-s ASSERTIONS=1")
+    endif()
+    if(ARG_SAFE_HEAP)
+        target_link_options(${name} PRIVATE "SHELL:-s SAFE_HEAP=1")
+    endif()
+    if(ARG_CLOSURE_COMPILER)
+        target_link_options(${name} PRIVATE "SHELL:--closure 1")
+    endif()
+
+    # Uses INSTALL_DESTINATION as the gate (same logic as EXPORT_SET elsewhere).
+    # Can't go through _register_target_common because Emscripten output is a
+    # file trio (.html/.js/.wasm), not an installable CMake target binary.
+    if(DEFINED ARG_INSTALL_DESTINATION)
+        install(FILES
+            "$<TARGET_FILE_DIR:${name}>/${name}.html"
+            "$<TARGET_FILE_DIR:${name}>/${name}.js"
+            "$<TARGET_FILE_DIR:${name}>/${name}.wasm"
+            DESTINATION "${ARG_INSTALL_DESTINATION}"
+            OPTIONAL
+        )
+    endif()
+
+    message(STATUS "[register_emscripten] configured '${name}'")
+endfunction()
+
+
+# _register_emscripten_parse_memory(<input> <output_var>)
+# Converts "16MB" / "1GB" / raw bytes → byte count.
+function(_register_emscripten_parse_memory size_str out_var)
+    string(TOUPPER "${size_str}" _up)
+    if(_up MATCHES "^([0-9]+)(KB|MB|GB)$")
+        set(_n "${CMAKE_MATCH_1}")
+        set(_u "${CMAKE_MATCH_2}")
+        if(_u STREQUAL "KB")
+            math(EXPR _b "${_n} * 1024")
+        elseif(_u STREQUAL "MB")
+            math(EXPR _b "${_n} * 1024 * 1024")
+        elseif(_u STREQUAL "GB")
+            math(EXPR _b "${_n} * 1024 * 1024 * 1024")
+        endif()
+        set(${out_var} "${_b}" PARENT_SCOPE)
+    elseif(_up MATCHES "^[0-9]+$")
+        set(${out_var} "${size_str}" PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR
+            "register_emscripten: invalid memory size '${size_str}'. "
+            "Use '16MB', '128MB', '1GB', or a raw byte count.")
+    endif()
+endfunction()
+
+
+# _register_emscripten_write_shell(<output_file> <title> <canvas_id>)
+# Writes a minimal Emscripten HTML shell to disk at configure time.
+function(_register_emscripten_write_shell output_file title canvas_id)
+    file(WRITE "${output_file}" "\
+<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+  <title>${title}</title>
+  <style>
+    body { margin:0; background:#1a1a2e; color:#eee;
+           font-family:'Segoe UI',sans-serif; display:flex;
+           flex-direction:column; align-items:center; padding:20px; }
+    h1   { margin-bottom:16px; }
+    #${canvas_id} { border:1px solid #444; background:#000; display:block; }
+    #output { width:800px; height:160px; overflow-y:auto; background:#0d0d0d;
+              color:#00ff41; font-family:monospace; padding:8px;
+              border:1px solid #333; margin-top:12px; box-sizing:border-box; }
+    .status { margin-top:8px; font-size:.85em; color:#aaa; }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <canvas id=\"${canvas_id}\" width=\"800\" height=\"600\"></canvas>
+  <div id=\"output\"></div>
+  <div id=\"status\" class=\"status\">Loading...</div>
+  <script>
+    var Module = {
+      canvas: document.getElementById('${canvas_id}'),
+      print: function(t) {
+        var o = document.getElementById('output');
+        o.textContent += t + '\\n'; o.scrollTop = o.scrollHeight;
+      },
+      printErr: function(t) {
+        var o = document.getElementById('output');
+        o.textContent += '[err] ' + t + '\\n'; o.scrollTop = o.scrollHeight;
+      },
+      onRuntimeInitialized: function() {
+        document.getElementById('status').textContent = 'Ready';
+      }
+    };
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>
+")
 endfunction()
