@@ -71,12 +71,6 @@ option(ENABLE_EMSDK_AUTO_INSTALL "Automatically install EMSDK locally if not fou
 
 # === TESTING OPTIONS ==
 set(BUILD_TESTING ON CACHE BOOL "Build and enable testing")
-set(DEFAULT_TEST_FRAMEWORK "doctest" CACHE STRING "Test framework to use")
-
-set(DOCTEST_VERSION "2.5.2" CACHE STRING "Doctest framework version")
-set(CATCH2_VERSION "3.5.2" CACHE STRING "Catch2 framework version")
-set(GTEST_VERSION "1.14.0" CACHE STRING "Google Test framework version")
-set(BOOST_VERSION "boost-1.84.0" CACHE STRING "Boost Test framework version")
 
 #
 
