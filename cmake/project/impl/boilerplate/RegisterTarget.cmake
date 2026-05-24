@@ -3,12 +3,11 @@ include(${CMAKE_CURRENT_LIST_DIR}/CopySharedLibrary.cmake)
 
 function(_register_target_common target)
     cmake_parse_arguments(PARSE_ARGV 1 ARG
-        ""                              # options
+        ""
         "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD"
         "COMPILE_OPTIONS;COMPILE_DEFINITIONS;INCLUDE_DIRS;LINK_LIBS;PROPERTIES"
     )
 
-    # ── C++ standard ──────────────────────────────────────────────────────────
     if(DEFINED ARG_CXX_STANDARD)
         set_target_properties(${target} PROPERTIES
             CXX_STANDARD          ${ARG_CXX_STANDARD}
@@ -17,52 +16,64 @@ function(_register_target_common target)
         )
     endif()
 
-    # ── Extra compile options / definitions ───────────────────────────────────
     if(ARG_COMPILE_OPTIONS)
-        target_compile_options(${target} PRIVATE ${ARG_COMPILE_OPTIONS})
+        target_compile_options(${target} ${ARG_COMPILE_OPTIONS})
     endif()
 
     if(ARG_COMPILE_DEFINITIONS)
-        target_compile_definitions(${target} PRIVATE ${ARG_COMPILE_DEFINITIONS})
+        target_compile_definitions(${target} ${ARG_COMPILE_DEFINITIONS})
     endif()
 
-    # ── Additional include directories ────────────────────────────────────────
     if(ARG_INCLUDE_DIRS)
-        target_include_directories(${target} PUBLIC
-            "$<BUILD_INTERFACE:${ARG_INCLUDE_DIRS}>"
-            "$<INSTALL_INTERFACE:include>"
-        )
+        set(_vis PUBLIC)
+        foreach(_inc IN LISTS ARG_INCLUDE_DIRS)
+            if(_inc STREQUAL "PUBLIC" OR _inc STREQUAL "PRIVATE" OR _inc STREQUAL "INTERFACE")
+                set(_vis "${_inc}")
+            else()
+                if(_vis STREQUAL "PRIVATE")
+                    target_include_directories(${target} PRIVATE
+                        "$<BUILD_INTERFACE:${_inc}>"
+                    )
+                elseif(_vis STREQUAL "INTERFACE")
+                    target_include_directories(${target} INTERFACE
+                        "$<BUILD_INTERFACE:${_inc}>"
+                        "$<INSTALL_INTERFACE:include>"
+                    )
+                else()
+                    target_include_directories(${target} PUBLIC
+                        "$<BUILD_INTERFACE:${_inc}>"
+                        "$<INSTALL_INTERFACE:include>"
+                    )
+                endif()
+            endif()
+        endforeach()
     endif()
 
-    # ── Link libraries ────────────────────────────────────────────────────────
     if(ARG_LINK_LIBS)
-        target_link_libraries(${target} PUBLIC ${ARG_LINK_LIBS})
+        target_link_libraries(${target} ${ARG_LINK_LIBS})
     endif()
 
-    # ── Arbitrary target properties ───────────────────────────────────────────
     if(ARG_PROPERTIES)
         set_target_properties(${target} PROPERTIES ${ARG_PROPERTIES})
     endif()
 
     # Configure RPATH for shared library dependencies
-    if (UNIX)
+    if(UNIX)
         set_target_properties(${target} PROPERTIES
-                # Don't skip the full RPATH for the build tree
-                SKIP_BUILD_RPATH FALSE
-                # When building, don't use the install RPATH already
-                BUILD_WITH_INSTALL_RPATH FALSE
-                # Add the automatically determined parts of the RPATH
-                # which point to directories outside the build tree to the install RPATH
-                INSTALL_RPATH_USE_LINK_PATH TRUE
-                # The RPATH to be used when installing - executables and libraries in same directory
-                INSTALL_RPATH "$ORIGIN"
+            # Don't skip the full RPATH for the build tree
+            SKIP_BUILD_RPATH FALSE
+            # When building, don't use the install RPATH already
+            BUILD_WITH_INSTALL_RPATH FALSE
+            # Add the automatically determined parts of the RPATH
+            # which point to directories outside the build tree to the install RPATH
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+            # The RPATH to be used when installing - executables and libraries in same directory
+            INSTALL_RPATH "$ORIGIN"
         )
-    endif ()
+    endif()
 
-    # Copy shared library dependencies to build directory for direct execution
     _copy_shared_library_dependencies_to_build_dir(${target})
 
-    # ── Install + export (optional) ───────────────────────────────────────────
     if(DEFINED ARG_EXPORT_SET)
         set(_dest "${ARG_INSTALL_DESTINATION}")
         if(NOT _dest)
@@ -110,14 +121,42 @@ endfunction()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# _register_forward_quality_opts(<target> <ARG_prefix>)
+# Collects the quality/analysis kwargs and calls target_setup_common_options()
+# if it exists, otherwise silently skips (project may not use that helper).
+# ──────────────────────────────────────────────────────────────────────────────
+macro(_register_forward_quality_opts target)
+    set(_quality_args)
+    foreach(_q
+        ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
+        ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK
+        ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ENABLE_SANITIZER_THREAD
+        ENABLE_SANITIZER_MEMORY ENABLE_HARDENING
+        ENABLE_CLANG_TIDY ENABLE_CPPCHECK
+    )
+        if(DEFINED ARG_${_q})
+            list(APPEND _quality_args ${_q} ${ARG_${_q}})
+        endif()
+    endforeach()
+
+    if(_quality_args AND COMMAND target_setup_common_options)
+        target_setup_common_options(${target} ${_quality_args})
+    endif()
+    unset(_quality_args)
+    unset(_q)
+endmacro()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # register_header_only_library(<name>
-#     HEADERS         <file> …
-#     [INCLUDE_DIRS   <dir>  …]
-#     [LINK_LIBS      <tgt>  …]
-#     [NAMESPACE      <ns>]
-#     [EXPORT_SET     <set>]
+#     [HEADERS            <file> …]
+#     [INCLUDE_DIRS       <dir>  …]
+#     [LINK_LIBS          <tgt>  …]
 #     [COMPILE_DEFINITIONS <def> …]
-#     [PROPERTIES     <key val> …]
+#     [PROPERTIES         <key val> …]
+#     [NAMESPACE          <ns>]
+#     [EXPORT_SET         <set>]       install + add to named export set
+#     [INSTALL_DESTINATION <dir>]
 # )
 # ──────────────────────────────────────────────────────────────────────────────
 function(register_header_only_library name)
@@ -131,7 +170,6 @@ function(register_header_only_library name)
     add_library(${name}::${name} ALIAS ${name})
 
     if(ARG_HEADERS)
-        # FILE_SET (CMake 3.23+) so headers are installed correctly
         target_sources(${name} INTERFACE
             FILE_SET HEADERS
             BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -158,7 +196,6 @@ function(register_header_only_library name)
         set_target_properties(${name} PROPERTIES ${ARG_PROPERTIES})
     endif()
 
-    # Propagate install/export args
     set(_forward)
     foreach(_kw NAMESPACE EXPORT_SET INSTALL_DESTINATION CXX_STANDARD)
         if(DEFINED ARG_${_kw})
@@ -173,28 +210,43 @@ endfunction()
 # ──────────────────────────────────────────────────────────────────────────────
 # register_library(<name>
 #     [STATIC | SHARED]
-#     SOURCES         <file> …
-#     [HEADERS        <file> …]
-#     [CXX_MODULES    <file> …]   ← C++20 named module sources (.cppm/.ixx)
-#     [INCLUDE_DIRS   <dir>  …]
-#     [LINK_LIBS      <tgt>  …]
-#     [CXX_STANDARD   <std>]      (default: 23 when CXX_MODULES used, else 17)
-#     [NAMESPACE      <ns>]
-#     [EXPORT_SET     <set>]
+#     [SOURCES            <file> …]
+#     [HEADERS            <file> …]
+#     [CXX_MODULES        <file> …]
+#     [INCLUDE_DIRS       <dir>  …]
+#     [LINK_LIBS          <tgt>  …]
+#     [CXX_STANDARD       <std>]       default: 23 with modules, else 17
+#     [NAMESPACE          <ns>]
+#     [EXPORT_SET         <set>]       install + add to named export set
 #     [INSTALL_DESTINATION <dir>]
 #     [COMPILE_OPTIONS     <opt> …]
 #     [COMPILE_DEFINITIONS <def> …]
-#     [PROPERTIES     <key val> …]
+#     [PROPERTIES         <key val> …]
+#     [EXPORT_HEADER      <relative/path/export.hpp>]
+#                                      generates dllexport/dllimport/visibility
+#                                      macros; see implementation for details
+#     [EXPORT_MACRO_NAME  <MACRO>]     override the default <TARGETNAME>_EXPORT
+#                                      macro name, e.g. MY_API or MYLIB_API
+#     [ENABLE_EXCEPTIONS ON|OFF]
+#     [ENABLE_IPO ON|OFF]
+#     [WARNINGS_AS_ERRORS ON|OFF]
+#     [ENABLE_SANITIZER_ADDRESS ON|OFF]
+#     [ENABLE_SANITIZER_LEAK ON|OFF]
+#     [ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ON|OFF]
+#     [ENABLE_SANITIZER_THREAD ON|OFF]
+#     [ENABLE_SANITIZER_MEMORY ON|OFF]
+#     [ENABLE_HARDENING ON|OFF]
+#     [ENABLE_CLANG_TIDY ON|OFF]
+#     [ENABLE_CPPCHECK ON|OFF]
 # )
 # ──────────────────────────────────────────────────────────────────────────────
 function(register_library name)
     cmake_parse_arguments(PARSE_ARGV 1 ARG
         "STATIC;SHARED"
-        "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD"
+        "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;EXPORT_HEADER;EXPORT_MACRO_NAME"
         "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES"
     )
 
-    # Determine linkage
     if(ARG_STATIC)
         set(_linkage STATIC)
     elseif(ARG_SHARED)
@@ -206,12 +258,10 @@ function(register_library name)
     add_library(${name} ${_linkage})
     add_library(${name}::${name} ALIAS ${name})
 
-    # ── Regular sources ───────────────────────────────────────────────────────
     if(ARG_SOURCES)
         target_sources(${name} PRIVATE ${ARG_SOURCES})
     endif()
 
-    # ── Public headers via FILE_SET ───────────────────────────────────────────
     if(ARG_HEADERS)
         target_sources(${name} PUBLIC
             FILE_SET HEADERS
@@ -220,13 +270,10 @@ function(register_library name)
         )
     endif()
 
-    # ── C++20 named modules ───────────────────────────────────────────────────
     if(ARG_CXX_MODULES)
-        # Require at least C++20; bump to 23 when not set explicitly
         if(NOT DEFINED ARG_CXX_STANDARD)
             set(ARG_CXX_STANDARD 23)
         endif()
-
         target_sources(${name} PUBLIC
             FILE_SET CXX_MODULES
             BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -234,19 +281,64 @@ function(register_library name)
         )
     endif()
 
-    # ── Default standard ──────────────────────────────────────────────────────
     if(NOT DEFINED ARG_CXX_STANDARD)
         set(ARG_CXX_STANDARD 17)
     endif()
 
-    # ── Include directories ───────────────────────────────────────────────────
-    target_include_directories(${name}
-        PUBLIC
-            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-            "$<INSTALL_INTERFACE:include>"
+    target_include_directories(${name} PUBLIC
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+        "$<INSTALL_INTERFACE:include>"
     )
 
-    # ── Forward to common helper ──────────────────────────────────────────────
+    # Generates a header in the build tree that defines a macro you use to
+    # annotate your public API:
+    #
+    #   #include <mylib/export.hpp>
+    #   class MYLIB_EXPORT Foo { … };   // default macro name
+    #   class MY_API    Foo { … };      // with EXPORT_MACRO_NAME MY_API
+    #
+    # The macro resolves to:
+    #   - building the shared lib  → __declspec(dllexport) / visibility("default")
+    #   - consuming the shared lib → __declspec(dllimport) / (nothing on GCC/Clang)
+    #   - static lib               → nothing
+    if(DEFINED ARG_EXPORT_HEADER)
+        include(GenerateExportHeader)
+
+        set(_export_file "${CMAKE_CURRENT_BINARY_DIR}/${ARG_EXPORT_HEADER}")
+
+        # Build optional args for generate_export_header
+        set(_geh_extra)
+        if(DEFINED ARG_EXPORT_MACRO_NAME)
+            list(APPEND _geh_extra EXPORT_MACRO_NAME "${ARG_EXPORT_MACRO_NAME}")
+        endif()
+
+        generate_export_header(${name}
+            EXPORT_FILE_NAME "${_export_file}"
+            ${_geh_extra}
+        )
+
+        # Add the generated header into the PUBLIC FILE_SET so it is
+        # installed alongside the hand-written headers.
+        target_sources(${name} PUBLIC
+            FILE_SET HEADERS
+            BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}"
+            FILES     "${_export_file}"
+        )
+
+        # Consumers need the binary dir on their include path to find the header.
+        target_include_directories(${name} PUBLIC
+            "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+            "$<INSTALL_INTERFACE:include>"
+        )
+
+        # For static builds suppress all decoration automatically.
+        get_target_property(_lib_type ${name} TYPE)
+        if(_lib_type STREQUAL "STATIC_LIBRARY")
+            string(TOUPPER "${name}" _upper)
+            target_compile_definitions(${name} PUBLIC ${_upper}_STATIC_DEFINE)
+        endif()
+    endif()
+
     set(_forward CXX_STANDARD ${ARG_CXX_STANDARD})
     foreach(_kw NAMESPACE EXPORT_SET INSTALL_DESTINATION)
         if(DEFINED ARG_${_kw})
@@ -260,24 +352,26 @@ function(register_library name)
     endforeach()
 
     _register_target_common(${name} ${_forward})
+
+    _register_forward_quality_opts(${name})
 endfunction()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # register_executable(<name>
-#     SOURCES         <file> …
-#     [CXX_MODULES    <file> …]
-#     [INCLUDE_DIRS   <dir>  …]
-#     [LINK_LIBS      <tgt>  …]
-#     [CXX_STANDARD   <std>]
-#     [NAMESPACE      <ns>]
-#     [EXPORT_SET     <set>]
-#     [INSTALL_DESTINATION <dir>]   (default: bin)
+#     [SOURCES            <file> …]
+#     [HEADERS            <file> …]    IDE visibility; adds include/ automatically
+#     [CXX_MODULES        <file> …]
+#     [INCLUDE_DIRS       <dir>  …]
+#     [LINK_LIBS          <tgt>  …]
+#     [CXX_STANDARD       <std>]
+#     [NAMESPACE          <ns>]
+#     [EXPORT_SET         <set>]       install + add to named export set
+#     [INSTALL]                        install without an export set
+#     [INSTALL_DESTINATION <dir>]      default: bin
 #     [COMPILE_OPTIONS     <opt> …]
 #     [COMPILE_DEFINITIONS <def> …]
-#     [PROPERTIES     <key val> …]
-#
-#     # Sanity and analysis options
+#     [PROPERTIES         <key val> …]
 #     [ENABLE_EXCEPTIONS ON|OFF]
 #     [ENABLE_IPO ON|OFF]
 #     [WARNINGS_AS_ERRORS ON|OFF]
@@ -294,14 +388,28 @@ endfunction()
 function(register_executable name)
     cmake_parse_arguments(PARSE_ARGV 1 ARG
         ""
-        "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD"
-        "SOURCES;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES"
+        "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;
+         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
+         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
+         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
+         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
+         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
+        "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES"
     )
 
     add_executable(${name})
 
     if(ARG_SOURCES)
         target_sources(${name} PRIVATE ${ARG_SOURCES})
+    endif()
+
+    # Headers: PRIVATE FILE_SET for IDE visibility
+    if(ARG_HEADERS)
+        target_sources(${name} PRIVATE
+            FILE_SET HEADERS
+            BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+            FILES     ${ARG_HEADERS}
+        )
     endif()
 
     if(ARG_CXX_MODULES)
@@ -335,64 +443,28 @@ function(register_executable name)
         endif()
     endforeach()
 
-    # Apply common project options (warnings, sanitizers, static analysis, etc.)
-    set(COMMON_OPTIONS_ARGS)
-    if (DEFINED ARG_ENABLE_EXCEPTIONS)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_EXCEPTIONS ${ARG_ENABLE_EXCEPTIONS})
-    endif ()
-    if (DEFINED ARG_ENABLE_IPO)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_IPO ${ARG_ENABLE_IPO})
-    endif ()
-    if (DEFINED ARG_WARNINGS_AS_ERRORS)
-        list(APPEND COMMON_OPTIONS_ARGS WARNINGS_AS_ERRORS ${ARG_WARNINGS_AS_ERRORS})
-    endif ()
-    if (DEFINED ARG_ENABLE_SANITIZER_ADDRESS)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_ADDRESS ${ARG_ENABLE_SANITIZER_ADDRESS})
-    endif ()
-    if (DEFINED ARG_ENABLE_SANITIZER_LEAK)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_LEAK ${ARG_ENABLE_SANITIZER_LEAK})
-    endif ()
-    if (DEFINED ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ${ARG_ENABLE_SANITIZER_UNDEFINED_BEHAVIOR})
-    endif ()
-    if (DEFINED ARG_ENABLE_SANITIZER_THREAD)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_THREAD ${ARG_ENABLE_SANITIZER_THREAD})
-    endif ()
-    if (DEFINED ARG_ENABLE_SANITIZER_MEMORY)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_SANITIZER_MEMORY ${ARG_ENABLE_SANITIZER_MEMORY})
-    endif ()
-    if (DEFINED ARG_ENABLE_HARDENING)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_HARDENING ${ARG_ENABLE_HARDENING})
-    endif ()
-    if (DEFINED ARG_ENABLE_CLANG_TIDY)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_CLANG_TIDY ${ARG_ENABLE_CLANG_TIDY})
-    endif ()
-    if (DEFINED ARG_ENABLE_CPPCHECK)
-        list(APPEND COMMON_OPTIONS_ARGS ENABLE_CPPCHECK ${ARG_ENABLE_CPPCHECK})
-    endif ()
-
     _register_target_common(${name} ${_forward})
+
+    _register_forward_quality_opts(${name})
 endfunction()
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # register_test(<name>
-#     SOURCES         <file> …
-#     [CXX_MODULES    <file> …]
-#     [INCLUDE_DIRS   <dir>  …]
-#     [LINK_LIBS      <tgt>  …]
-#     [CXX_STANDARD   <std>]
+#     [SOURCES            <file> …]
+#     [HEADERS            <file> …]    IDE visibility; adds include/ automatically
+#     [CXX_MODULES        <file> …]
+#     [INCLUDE_DIRS       <dir>  …]
+#     [LINK_LIBS          <tgt>  …]
+#     [CXX_STANDARD       <std>]
 #     [COMPILE_OPTIONS     <opt> …]
 #     [COMPILE_DEFINITIONS <def> …]
-#     [PROPERTIES     <key val> …]
-#
-#     # CTest integration
-#     [TEST_ARGS      <arg> …]      passed to add_test() as COMMAND args
-#     [WORKING_DIRECTORY <dir>]     working dir for the test runner
-#     [LABELS         <label> …]    CTest LABELS (e.g. "unit" "integration")
-#     [TIMEOUT        <seconds>]    CTest TIMEOUT property
-#     [ENVIRONMENT    <VAR=val> …]  CTest ENVIRONMENT property
-#
-#     # Sanity and analysis options (same as register_executable)
+#     [PROPERTIES         <key val> …]
+#     [TEST_ARGS          <arg> …]
+#     [WORKING_DIRECTORY  <dir>]
+#     [LABELS             <label> …]
+#     [TIMEOUT            <seconds>]
+#     [ENVIRONMENT        <VAR=val> …]
 #     [ENABLE_EXCEPTIONS ON|OFF]
 #     [ENABLE_IPO ON|OFF]
 #     [WARNINGS_AS_ERRORS ON|OFF]
@@ -409,14 +481,35 @@ endfunction()
 function(register_test name)
     cmake_parse_arguments(PARSE_ARGV 1 ARG
         ""
-        "CXX_STANDARD;WORKING_DIRECTORY;TIMEOUT"
-        "SOURCES;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES;TEST_ARGS;LABELS;ENVIRONMENT"
+        "CXX_STANDARD;WORKING_DIRECTORY;TIMEOUT;
+         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
+         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
+         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
+         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
+         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
+        "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES;TEST_ARGS;LABELS;ENVIRONMENT"
     )
 
     add_executable(${name})
 
     if(ARG_SOURCES)
         target_sources(${name} PRIVATE ${ARG_SOURCES})
+    endif()
+
+    # Headers: PRIVATE FILE_SET for IDE visibility
+    if(ARG_HEADERS)
+        target_sources(${name} PRIVATE
+            FILE_SET HEADERS
+            BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+            FILES     ${ARG_HEADERS}
+        )
+    endif()
+
+    # Auto include path
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_include_directories(${name} PRIVATE
+            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+        )
     endif()
 
     if(ARG_CXX_MODULES)
@@ -441,23 +534,11 @@ function(register_test name)
         endif()
     endforeach()
 
-    # Apply common project options (warnings, sanitizers, static analysis, etc.)
-    set(COMMON_OPTIONS_ARGS)
-    foreach(_opt
-        ENABLE_EXCEPTIONS ENABLE_IPO WARNINGS_AS_ERRORS
-        ENABLE_SANITIZER_ADDRESS ENABLE_SANITIZER_LEAK
-        ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ENABLE_SANITIZER_THREAD
-        ENABLE_SANITIZER_MEMORY ENABLE_HARDENING
-        ENABLE_CLANG_TIDY ENABLE_CPPCHECK
-    )
-        if(DEFINED ARG_${_opt})
-            list(APPEND COMMON_OPTIONS_ARGS ${_opt} ${ARG_${_opt}})
-        endif()
-    endforeach()
-
     _register_target_common(${name} ${_forward})
 
-    # ── CTest registration ─────────────────────────────────────────────────────
+    _register_forward_quality_opts(${name})
+
+    # CTest registration
     set(_wd "${CMAKE_CURRENT_BINARY_DIR}")
     if(DEFINED ARG_WORKING_DIRECTORY)
         set(_wd "${ARG_WORKING_DIRECTORY}")
