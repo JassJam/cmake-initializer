@@ -102,7 +102,7 @@ runs:
         $scriptPath = "${{ github.workspace }}/scripts/ci/submit-cdash.ps1"
         & $scriptPath `
           -BuildDir "${{ github.workspace }}/out/build/${{ inputs.config-preset }}" `
-          -SourceDir "${{ github.workspace }}/project" `
+          -SourceDir "${{ github.workspace }}" `
           -BuildName "${{ inputs.config-name }}-${{ runner.os }}" `
           -Preset "${{ inputs.config-preset }}" `
           -CdashSite "${{ inputs.ctest-site }}" `

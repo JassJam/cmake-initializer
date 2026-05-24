@@ -45,6 +45,13 @@ runs:
         sudo apt-get update
         sudo apt-get install -y build-essential ninja-build
 
+    - name: Install 32-bit dependencies
+      shell: bash
+      if: contains(matrix.config.name, 'x86')
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-multilib g++-multilib
+
     - name: Install Clang
       if: contains(inputs.config-preset, 'clang')
       shell: bash

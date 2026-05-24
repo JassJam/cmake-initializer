@@ -1,1 +1,0 @@
-register_library(HelloWorld_StaticLibrary_Library STATIC INSTALL)

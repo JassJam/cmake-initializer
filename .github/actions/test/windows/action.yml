@@ -11,7 +11,6 @@ inputs:
   config-output:
     description: 'Output directory for the test artifacts'
     required: true
-
   ctest-site:
     description: 'CTest dashboard site URL (optional)'
     required: false
@@ -39,7 +38,14 @@ runs:
   steps:
     - uses: actions/checkout@v4
 
-    - name: Setup MSVC environment
+    - name: Setup MSVC environment (x86)
+      if: contains(inputs.config-preset, 'x86')
+      uses: TheMrMilchmann/setup-msvc-dev@v3
+      with:
+        arch: x86
+
+    - name: Setup MSVC environment (x64)
+      if: ${{ !contains(inputs.config-preset, 'x86') }}
       uses: TheMrMilchmann/setup-msvc-dev@v3
       with:
         arch: x64
