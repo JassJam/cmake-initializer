@@ -11,5 +11,4 @@ include(${CMAKE_CURRENT_LIST_DIR}/impl/PackageManager.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/impl/Toolchains.cmake)
 
 include(${CMAKE_CURRENT_LIST_DIR}/impl/CompilerCache.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/impl/PresetConfig.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/impl/ProjectBoilerplate.cmake)
