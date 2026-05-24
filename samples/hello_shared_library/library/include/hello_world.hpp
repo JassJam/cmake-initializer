@@ -1,6 +1,6 @@
 #pragma once
 
 #include <string>
-#include "HelloWorld_SharedLibrary_Library/HelloWorld_SharedLibrary_Library_export.h"
+#include "export.hpp"
 
 HELLOWORLD_EXPORT std::string HelloWorld();
