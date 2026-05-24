@@ -11,7 +11,6 @@
       "description": "General settings that apply to all configurations. See docs/CMAKE_VARIABLES.md for all available options.",
       "hidden": true,
       "cacheVariables": {
-        "DEFAULT_TEST_FRAMEWORK": "doctest",
         "CMAKE_CXX_STANDARD": "23",
 
         "THIS_PROJECT_NAME": "cmake_initializer",
@@ -323,7 +322,7 @@
         "CMAKE_CROSSCOMPILING": true,
         "CMAKE_SYSTEM_NAME": "Emscripten"
       },
-      "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
+      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake"
     },
     {
       "name": "emscripten-release",
@@ -343,7 +342,7 @@
         "CMAKE_CROSSCOMPILING": true,
         "CMAKE_SYSTEM_NAME": "Emscripten"
       },
-      "toolchainFile": "${sourceDir}/project/cmake/toolchains/emscripten.cmake"
+      "toolchainFile": "${sourceDir}/cmake/toolchains/emscripten.cmake"
     }
   ]
 }

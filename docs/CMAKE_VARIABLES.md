@@ -70,7 +70,6 @@ This document lists all available CMake cache variables that can be used in pres
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `DEFAULT_TEST_FRAMEWORK` | STRING | doctest | Auto-register test framework: `doctest`, `catch2`, `gtest`, `boost` |
 | `BUILD_TESTING` | BOOL | ON | Enable/disable testing (CTest) |
 
 ## Emscripten-Specific Variables

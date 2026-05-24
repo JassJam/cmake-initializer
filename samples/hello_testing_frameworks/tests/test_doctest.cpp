@@ -89,7 +89,8 @@ TEST_CASE("Comprehensive Prime Testing")
 {
     SUBCASE("Testing primes from 2 to 20")
     {
-        for (int primes[] = { 2, 3, 5, 7, 11, 13, 17, 19 }; int prime : primes)
+        int primes[] = { 2, 3, 5, 7, 11, 13, 17, 19 }; 
+        for (int prime : primes)
         {
             CHECK(math_utils::IsPrime(prime));
         }
@@ -97,8 +98,8 @@ TEST_CASE("Comprehensive Prime Testing")
 
     SUBCASE("Testing non-primes from 1 to 20")
     {
-        for (int nonPrimes[] = { 1, 4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20 };
-             int nonPrime : nonPrimes)
+        int nonPrimes[] = { 1, 4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20 };
+        for (int nonPrime : nonPrimes)
         {
             CHECK_FALSE(math_utils::IsPrime(nonPrime));
         }
