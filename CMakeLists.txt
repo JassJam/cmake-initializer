@@ -30,7 +30,6 @@ endif ()
 include(PreventInSourceBuilds)
 include(project/Initialization)
 
-add_subdirectory(base)
 add_subdirectory(samples)
 
 register_package_config(
