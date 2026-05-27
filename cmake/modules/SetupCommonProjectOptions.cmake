@@ -186,19 +186,4 @@ function(target_setup_common_options TARGET_NAME)
                 UNITY_BUILD ${ARG_ENABLE_UNITY_BUILD}
         )
     endif ()
-
-    # Set PCH headers if needed
-    if (ARG_ENABLE_PCH)
-        target_precompile_headers(
-                ${TARGET_NAME}
-                PRIVATE
-                <vector>
-                <string>
-                <utility>
-                <algorithm>
-        )
-    endif ()
-
-    # Link to config TARGET_NAME for project configuration
-    target_link_libraries(${TARGET_NAME} PRIVATE ${THIS_PROJECT_NAMESPACE}::config)
 endfunction()

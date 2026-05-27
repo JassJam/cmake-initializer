@@ -30,5 +30,11 @@ endif ()
 include(PreventInSourceBuilds)
 include(project/Initialization)
 
-add_subdirectory(base)
 add_subdirectory(samples)
+
+register_package_config(
+    NAME    ${THIS_PROJECT_NAMESPACE}
+    NAMESPACE    ${THIS_PROJECT_NAMESPACE}
+    EXPORT_SET   "${THIS_PROJECT_NAMESPACE}Targets"
+    COMPATIBILITY SameMajorVersion
+)

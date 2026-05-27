@@ -8,4 +8,6 @@ register_emscripten(HelloEmscripten
     EXPORTED_RUNTIME_METHODS ccall cwrap UTF8ToString lengthBytesUTF8
     PTHREAD
     INSTALL_DESTINATION bin
+    NAMESPACE    ${THIS_PROJECT_NAMESPACE}
+    EXPORT_SET   "${THIS_PROJECT_NAMESPACE}Targets"
 )
