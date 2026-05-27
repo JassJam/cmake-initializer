@@ -135,7 +135,6 @@ if (ENABLE_EDIT_AND_CONTINUE OR ENABLE_DEBUG_INFO)
 endif ()
 
 # Print configuration summary
-message(STATUS "=== ${THIS_PROJECT_PRETTY_NAME} Configuration ===")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "DEV_MODE: ${DEV_MODE}")
