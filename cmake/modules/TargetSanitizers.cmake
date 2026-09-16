@@ -80,8 +80,8 @@ function(enable_global_sanitizers)
         elseif (MSVC_VERSION GREATER_EQUAL 1928)  # VS 2019 16.9+
             # Apply sanitizer flags globally
             foreach (sanitizer ${LIST_OF_SANITIZERS})
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=${sanitizer}" CACHE STRING "Global CXX flags with sanitizers" FORCE)
-                set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=${sanitizer}" CACHE STRING "Global C flags with sanitizers" FORCE)
+                append_flags_if_missing(CMAKE_CXX_FLAGS "/fsanitize=${sanitizer}" "Global CXX flags with sanitizers")
+                append_flags_if_missing(CMAKE_C_FLAGS "/fsanitize=${sanitizer}" "Global C flags with sanitizers")
             endforeach ()
 
             # Special handling for AddressSanitizer: it's incompatible with debug runtime for MSVC
@@ -93,9 +93,9 @@ function(enable_global_sanitizers)
 
             # Disable incremental linking when sanitizers are enabled to avoid LNK4300 warning
             # Sanitizers are incompatible with incremental linking
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL:NO" CACHE STRING "Global linker flags for executables with sanitizers" FORCE)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCREMENTAL:NO" CACHE STRING "Global linker flags for shared libraries with sanitizers" FORCE)
-            set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /INCREMENTAL:NO" CACHE STRING "Global linker flags for modules with sanitizers" FORCE)
+            append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS "/INCREMENTAL:NO" "Global linker flags for executables with sanitizers")
+            append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS "/INCREMENTAL:NO" "Global linker flags for shared libraries with sanitizers")
+            append_flags_if_missing(CMAKE_MODULE_LINKER_FLAGS "/INCREMENTAL:NO" "Global linker flags for modules with sanitizers")
 
             # Also disable incremental linking in MSBuild by setting property globally
             add_link_options(/INCREMENTAL:NO)
@@ -183,12 +183,12 @@ function(enable_global_sanitizers)
             endif ()
 
             # Always add debug info when using sanitizers to avoid C5072 warning
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi" CACHE STRING "Global CXX flags with debug info" FORCE)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zi" CACHE STRING "Global C flags with debug info" FORCE)
+            append_flags_if_missing(CMAKE_CXX_FLAGS "/Zi" "Global CXX flags with debug info")
+            append_flags_if_missing(CMAKE_C_FLAGS "/Zi" "Global C flags with debug info")
 
             # Disable the ASAN warning about missing debug info since we're adding it
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5072" CACHE STRING "Global CXX flags to disable ASAN warning" FORCE)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd5072" CACHE STRING "Global C flags to disable ASAN warning" FORCE)
+            append_flags_if_missing(CMAKE_CXX_FLAGS "/wd5072" "Global CXX flags to disable ASAN warning")
+            append_flags_if_missing(CMAKE_C_FLAGS "/wd5072" "Global C flags to disable ASAN warning")
         else ()
             message(WARNING "AddressSanitizer requires Visual Studio 2019 16.9 or later. Current MSVC version: ${MSVC_VERSION}")
             message(STATUS "Disabling global sanitizers due to unsupported MSVC version")
@@ -200,9 +200,9 @@ function(enable_global_sanitizers)
         string(REPLACE ";" "," SANITIZER_FLAGS "${LIST_OF_SANITIZERS}")
         set(SANITIZER_FLAGS "-fsanitize=${SANITIZER_FLAGS}")
 
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZER_FLAGS}" CACHE STRING "Global CXX flags with sanitizers" FORCE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZER_FLAGS}" CACHE STRING "Global C flags with sanitizers" FORCE)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZER_FLAGS}" CACHE STRING "Global EXE linker flags with sanitizers" FORCE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZER_FLAGS}" CACHE STRING "Global SHARED linker flags with sanitizers" FORCE)
+        append_flags_if_missing(CMAKE_CXX_FLAGS "${SANITIZER_FLAGS}" "Global CXX flags with sanitizers")
+        append_flags_if_missing(CMAKE_C_FLAGS "${SANITIZER_FLAGS}" "Global C flags with sanitizers")
+        append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS "${SANITIZER_FLAGS}" "Global EXE linker flags with sanitizers")
+        append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS "${SANITIZER_FLAGS}" "Global SHARED linker flags with sanitizers")
     endif ()
 endfunction()

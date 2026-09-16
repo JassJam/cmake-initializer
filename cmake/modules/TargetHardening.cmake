@@ -1,5 +1,6 @@
 include_guard(DIRECTORY)
 include(GetCurrentCompiler)
+include(Flags)
 
 set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED FALSE)
 
@@ -11,12 +12,6 @@ set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED FALSE)
 # )
 #
 function(target_enable_hardening TARGET_NAME SCOPE_NAME)
-    # Call once
-    get_property(already_registered GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED)
-    if (already_registered)
-        return()
-    endif ()
-
     if (NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
         message(FATAL_ERROR "target_enable_hardening() called without TARGET")
     endif ()
@@ -33,17 +28,14 @@ function(target_enable_hardening TARGET_NAME SCOPE_NAME)
     message(STATUS "** Hardening Linker Flags: ${NEW_LINK_OPTIONS}")
     message(STATUS "** Hardening Compiler Defines: ${NEW_CXX_DEFINITIONS}")
 
-    # if NEW_COMPILE_OPTIONS is not empty, set it
     if (NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
         target_compile_options(${TARGET_NAME} ${SCOPE_NAME} ${NEW_COMPILE_OPTIONS})
     endif ()
 
-    # if NEW_LINK_OPTIONS is not empty, set it
     if (NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
         target_link_options(${TARGET_NAME} ${SCOPE_NAME} ${NEW_LINK_OPTIONS})
     endif ()
 
-    # if NEW_CXX_DEFINITIONS is not empty, set it
     if (NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
         target_compile_definitions(${TARGET_NAME} ${SCOPE_NAME} ${NEW_CXX_DEFINITIONS})
     endif ()
@@ -54,9 +46,9 @@ endfunction()
 # enable_global_hardening()
 #
 function(enable_global_hardening)
-    # Call once
-    get_property(already_registered GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED)
-    if (already_registered)
+    # Cache-backed guard: unlike a GLOBAL property, this survives a reconfigure,
+    # so this function can never run twice against an already-hardened cache.
+    if (DEFINED CACHE{PROJECT_GLOBAL_HARDENING_ENABLED_CACHE})
         return()
     endif ()
 
@@ -71,27 +63,25 @@ function(enable_global_hardening)
 
     message(STATUS "** Setting hardening options globally for all dependencies")
 
-    # Set global compile options
     if (NOT "${NEW_COMPILE_OPTIONS}" STREQUAL "")
         string(JOIN " " COMPILE_FLAGS_STR ${NEW_COMPILE_OPTIONS})
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS_STR}" CACHE STRING "Global CXX flags with hardening" FORCE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILE_FLAGS_STR}" CACHE STRING "Global C flags with hardening" FORCE)
+        append_flags_if_missing(CMAKE_CXX_FLAGS "${COMPILE_FLAGS_STR}" "Global CXX flags with hardening")
+        append_flags_if_missing(CMAKE_C_FLAGS "${COMPILE_FLAGS_STR}" "Global C flags with hardening")
     endif ()
 
-    # Set global link options
     if (NOT "${NEW_LINK_OPTIONS}" STREQUAL "")
         string(JOIN " " LINK_FLAGS_STR ${NEW_LINK_OPTIONS})
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINK_FLAGS_STR}" CACHE STRING "Global EXE linker flags with hardening" FORCE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS_STR}" CACHE STRING "Global SHARED linker flags with hardening" FORCE)
+        append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS "${LINK_FLAGS_STR}" "Global EXE linker flags with hardening")
+        append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS "${LINK_FLAGS_STR}" "Global SHARED linker flags with hardening")
     endif ()
 
-    # Set global compile definitions
     if (NOT "${NEW_CXX_DEFINITIONS}" STREQUAL "")
         foreach (DEFINITION ${NEW_CXX_DEFINITIONS})
             add_compile_definitions(${DEFINITION})
         endforeach ()
     endif ()
 
+    set(PROJECT_GLOBAL_HARDENING_ENABLED_CACHE TRUE CACHE INTERNAL "Guards enable_global_hardening() across reconfigures")
     set_property(GLOBAL PROPERTY PROJECT_GLOBAL_HARDENING_ENABLED TRUE)
 endfunction()
 
@@ -113,17 +103,13 @@ endfunction()
 
 # Helper function to configure MSVC hardening flags
 function(_configure_msvc_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEFINITIONS_VAR)
-    # Check if Edit and Continue is enabled globally (for compatibility)
     if (ENABLE_EDIT_AND_CONTINUE)
         message(STATUS "*** Hardening MSVC flags: /DYNAMICBASE /NXCOMPAT /CETCOMPAT (Control Flow Guard disabled due to Edit and Continue)")
-        # Skip /guard:cf when Edit and Continue is enabled
     else ()
         message(STATUS "*** Hardening MSVC flags: /DYNAMICBASE /guard:cf /NXCOMPAT /CETCOMPAT")
-        # /guard:cf is a compiler flag for Control Flow Guard
         list(APPEND ${COMPILE_OPTIONS_VAR} /guard:cf)
     endif ()
 
-    # /DYNAMICBASE, /NXCOMPAT, /CETCOMPAT are linker flags
     list(APPEND ${LINK_OPTIONS_VAR} /DYNAMICBASE /NXCOMPAT /CETCOMPAT)
 
     set(${COMPILE_OPTIONS_VAR} ${${COMPILE_OPTIONS_VAR}} PARENT_SCOPE)
@@ -140,7 +126,6 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
         list(APPEND ${COMPILE_OPTIONS_VAR} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3)
     endif()
 
-    # Stack protector
     check_cxx_compiler_flag(-fstack-protector-strong STACK_PROTECTOR)
     if (STACK_PROTECTOR)
         message(STATUS "*** g++/clang -fstack-protector-strong enabled")
@@ -149,7 +134,6 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
         message(STATUS "*** g++/clang -fstack-protector-strong NOT enabled (not supported)")
     endif ()
 
-    # Control flow protection
     check_cxx_compiler_flag(-fcf-protection CF_PROTECTION)
     if (CF_PROTECTION)
         message(STATUS "*** g++/clang -fcf-protection enabled")
@@ -158,7 +142,6 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
         message(STATUS "*** g++/clang -fcf-protection NOT enabled (not supported)")
     endif ()
 
-    # Stack clash protection
     check_cxx_compiler_flag(-fstack-clash-protection CLASH_PROTECTION)
     if (CLASH_PROTECTION)
         if (LINUX OR "${CURRENT_COMPILER}" MATCHES "GCC")
@@ -171,7 +154,6 @@ function(_configure_gcc_clang_hardening COMPILE_OPTIONS_VAR LINK_OPTIONS_VAR DEF
         message(STATUS "*** g++/clang -fstack-clash-protection NOT enabled (not supported)")
     endif ()
 
-    # UBSan minimal runtime - only enable if compatible with other sanitizers
     _should_enable_ubsan_minimal_runtime(SHOULD_ENABLE_MINIMAL_RUNTIME)
     if (SHOULD_ENABLE_MINIMAL_RUNTIME)
         check_cxx_compiler_flag("-fsanitize=undefined -fno-sanitize-recover=undefined -fsanitize-minimal-runtime"

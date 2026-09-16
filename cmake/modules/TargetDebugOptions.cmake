@@ -17,14 +17,14 @@ function(target_enable_debug_options TARGET_NAME)
             ENABLE_DEBUG_INFO
             DEBUG_INFO_LEVEL
     )
-    
+
     cmake_parse_arguments(ARG
             ""
             "${oneValueArgs}"
             ""
             ${ARGN}
     )
-    
+
     #
 
     if (NOT TARGET_NAME OR NOT TARGET ${TARGET_NAME})
@@ -151,20 +151,20 @@ endfunction()
 function(_configure_global_msvc_debug_options)
     if (${ENABLE_EDIT_AND_CONTINUE})
         # Apply Edit and Continue globally
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /ZI" CACHE STRING "Global CXX Debug flags with Edit and Continue" FORCE)
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /ZI" CACHE STRING "Global C Debug flags with Edit and Continue" FORCE)
+        append_flags_if_missing(CMAKE_CXX_FLAGS_DEBUG "/ZI" "Global CXX Debug flags with Edit and Continue")
+        append_flags_if_missing(CMAKE_C_FLAGS_DEBUG "/ZI" "Global C Debug flags with Edit and Continue")
 
         # Enable incremental linking for debug builds
-        set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL" CACHE STRING "Global EXE linker Debug flags for Edit and Continue" FORCE)
-        set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /INCREMENTAL" CACHE STRING "Global SHARED linker Debug flags for Edit and Continue" FORCE)
+        append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS_DEBUG "/INCREMENTAL" "Global EXE linker Debug flags for Edit and Continue")
+        append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/INCREMENTAL" "Global SHARED linker Debug flags for Edit and Continue")
 
         message(STATUS "  - Global Edit and Continue: enabled (/ZI)")
         message(STATUS "  - Global incremental linking: enabled (Debug builds)")
 
     elseif (${ENABLE_DEBUG_INFO})
         # Apply basic debug info globally
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi" CACHE STRING "Global CXX Debug flags with debug info" FORCE)
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /Zi" CACHE STRING "Global C Debug flags with debug info" FORCE)
+        append_flags_if_missing(CMAKE_CXX_FLAGS_DEBUG "/Zi" "Global CXX Debug flags with debug info")
+        append_flags_if_missing(CMAKE_C_FLAGS_DEBUG "/Zi" "Global C Debug flags with debug info")
 
         message(STATUS "  - Global debug information: enabled (/Zi)")
     endif ()
@@ -192,8 +192,8 @@ function(_configure_global_gcc_clang_debug_options)
             message(STATUS "  - Global debug information: default (-g)")
         endif ()
         if (DEBUG_FLAG)
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DEBUG_FLAG}" CACHE STRING "Global CXX Debug flags with debug info" FORCE)
-            set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${DEBUG_FLAG}" CACHE STRING "Global C Debug flags with debug info" FORCE)
+            append_flags_if_missing(CMAKE_CXX_FLAGS_DEBUG "${DEBUG_FLAG}" "Global CXX Debug flags with debug info")
+            append_flags_if_missing(CMAKE_C_FLAGS_DEBUG "${DEBUG_FLAG}" "Global C Debug flags with debug info")
         endif ()
     endif ()
 endfunction()

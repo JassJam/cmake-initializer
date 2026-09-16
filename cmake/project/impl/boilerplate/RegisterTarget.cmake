@@ -116,7 +116,6 @@ function(_register_target_common target)
     endif ()
 endfunction()
 
-
 # _register_forward_quality_opts(<target>)
 # Reads ARG_ENABLE_* from the calling scope and forwards to
 # target_setup_common_options() if that command exists.
@@ -153,14 +152,23 @@ endmacro()
 #     [INSTALL_DESTINATION <dir>]
 # )
 function(register_header_only_library name)
-    cmake_parse_arguments(PARSE_ARGV 1 ARG
-            ""
-            "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;HEADER_BASE_DIR"
-            "HEADERS;INCLUDE_DIRS;LINK_LIBS;COMPILE_DEFINITIONS;PROPERTIES"
+    set(oneValArgs
+            NAMESPACE
+            EXPORT_SET
+            INSTALL_DESTINATION
+            CXX_STANDARD
+            HEADER_BASE_DIR
     )
+    set(multValArgs
+            HEADERS
+            INCLUDE_DIRS
+            LINK_LIBS
+            COMPILE_DEFINITIONS
+            PROPERTIES
+    )
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "" "${oneValArgs}" "${multValArgs}")
 
     add_library(${name} INTERFACE)
-    add_library(${name}::${name} ALIAS ${name})
 
     if (NOT ARG_HEADER_BASE_DIR)
         set(ARG_HEADER_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -241,16 +249,41 @@ endfunction()
 #     [ENABLE_CPPCHECK ON|OFF]
 # )
 function(register_library name)
-    cmake_parse_arguments(PARSE_ARGV 1 ARG
-            "STATIC;SHARED"
-            "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;EXPORT_HEADER;EXPORT_MACRO_NAME;HEADER_BASE_DIR;
-         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
-         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
-         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
-         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
-         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
-            "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES"
+    set(optionArgs
+            STATIC SHARED
     )
+    set(oneValArgs
+            NAMESPACE
+            EXPORT_SET
+            INSTALL_DESTINATION
+            CXX_STANDARD
+            EXPORT_HEADER
+            EXPORT_MACRO_NAME
+            HEADER_BASE_DIR
+            ENABLE_EXCEPTIONS
+            ENABLE_IPO
+            WARNINGS_AS_ERRORS
+            ENABLE_SANITIZER_ADDRESS
+            ENABLE_SANITIZER_LEAK
+            ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
+            ENABLE_SANITIZER_THREAD
+            ENABLE_SANITIZER_MEMORY
+            ENABLE_HARDENING
+            ENABLE_CLANG_TIDY
+            ENABLE_CPPCHECK
+            ENABLE_LTO
+    )
+    set(multValArgs
+            SOURCES
+            HEADERS
+            CXX_MODULES
+            INCLUDE_DIRS
+            LINK_LIBS
+            COMPILE_OPTIONS
+            COMPILE_DEFINITIONS
+            PROPERTIES
+    )
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "${optionArgs}" "${oneValArgs}" "${multValArgs}")
 
     if (ARG_STATIC)
         set(_linkage STATIC)
@@ -261,7 +294,6 @@ function(register_library name)
     endif ()
 
     add_library(${name} ${_linkage})
-    add_library(${name}::${name} ALIAS ${name})
 
     if (ARG_SOURCES)
         target_sources(${name} PRIVATE ${ARG_SOURCES})
@@ -378,16 +410,35 @@ endfunction()
 #     [ENABLE_CPPCHECK ON|OFF]
 # )
 function(register_executable name)
-    cmake_parse_arguments(PARSE_ARGV 1 ARG
-            ""
-            "NAMESPACE;EXPORT_SET;INSTALL_DESTINATION;CXX_STANDARD;HEADER_BASE_DIR;
-         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
-         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
-         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
-         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
-         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
-            "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES"
+    set(oneValArgs
+            NAMESPACE EXPORT_SET
+            INSTALL_DESTINATION
+            CXX_STANDARD
+            HEADER_BASE_DIR
+            ENABLE_EXCEPTIONS
+            ENABLE_IPO
+            WARNINGS_AS_ERRORS
+            ENABLE_SANITIZER_ADDRESS
+            ENABLE_SANITIZER_LEAK
+            ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
+            ENABLE_SANITIZER_THREAD
+            ENABLE_SANITIZER_MEMORY
+            ENABLE_HARDENING
+            ENABLE_CLANG_TIDY
+            ENABLE_CPPCHECK
+            ENABLE_LTO
     )
+    set(multValArgs
+            SOURCES
+            HEADERS
+            CXX_MODULES
+            INCLUDE_DIRS
+            LINK_LIBS
+            COMPILE_OPTIONS
+            COMPILE_DEFINITIONS
+            PROPERTIES
+    )
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "" "${oneValArgs}" "${multValArgs}")
 
     add_executable(${name})
 
@@ -443,6 +494,7 @@ function(register_executable name)
 
     _register_target_common(${name} ${_forward})
     _register_forward_quality_opts(${name})
+#    _register_apply_lto(${name} "${ARG_ENABLE_LTO}")
 endfunction()
 
 
@@ -474,16 +526,37 @@ endfunction()
 #     [ENABLE_CPPCHECK ON|OFF]
 # )
 function(register_test name)
-    cmake_parse_arguments(PARSE_ARGV 1 ARG
-            ""
-            "CXX_STANDARD;WORKING_DIRECTORY;TIMEOUT;
-         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
-         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
-         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
-         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
-         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
-            "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES;TEST_ARGS;LABELS;ENVIRONMENT"
+    set(oneValArgs
+            CXX_STANDARD
+            WORKING_DIRECTORY
+            TIMEOUT
+            ENABLE_EXCEPTIONS
+            ENABLE_IPO
+            WARNINGS_AS_ERRORS
+            ENABLE_SANITIZER_ADDRESS
+            ENABLE_SANITIZER_LEAK
+            ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
+            ENABLE_SANITIZER_THREAD
+            ENABLE_SANITIZER_MEMORY
+            ENABLE_HARDENING
+            ENABLE_CLANG_TIDY
+            ENABLE_CPPCHECK
+            ENABLE_LTO
     )
+    set(multValArgs
+            SOURCES
+            HEADERS
+            CXX_MODULES
+            INCLUDE_DIRS
+            LINK_LIBS
+            COMPILE_OPTIONS
+            COMPILE_DEFINITIONS
+            PROPERTIES
+            TEST_ARGS
+            LABELS
+            ENVIRONMENT
+    )
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "" "${oneValArgs}" "${multValArgs}")
 
     add_executable(${name})
 
@@ -622,22 +695,57 @@ function(register_emscripten name)
         message(STATUS "[register_emscripten] Skipping '${name}' — not an Emscripten build")
         return()
     endif ()
-
-    cmake_parse_arguments(PARSE_ARGV 1 ARG
-            "WASM;STANDALONE_WASM;NODE_JS;PTHREAD;SIMD;ASYNCIFY;ASSERTIONS;
-         SAFE_HEAP;ALLOW_MEMORY_GROWTH;CLOSURE_COMPILER"
-            "CXX_STANDARD;HTML_TEMPLATE;HTML_TITLE;CANVAS_ID;OUTPUT_DIR;
-         INITIAL_MEMORY;MAXIMUM_MEMORY;STACK_SIZE;INSTALL_DESTINATION;
-         ENABLE_EXCEPTIONS;ENABLE_IPO;WARNINGS_AS_ERRORS;
-         ENABLE_SANITIZER_ADDRESS;ENABLE_SANITIZER_LEAK;
-         ENABLE_SANITIZER_UNDEFINED_BEHAVIOR;ENABLE_SANITIZER_THREAD;
-         ENABLE_SANITIZER_MEMORY;ENABLE_HARDENING;
-         ENABLE_CLANG_TIDY;ENABLE_CPPCHECK"
-            "SOURCES;HEADERS;CXX_MODULES;INCLUDE_DIRS;LINK_LIBS;
-         COMPILE_OPTIONS;COMPILE_DEFINITIONS;PROPERTIES;DEPENDENCIES;
-         EXPORTED_FUNCTIONS;EXPORTED_RUNTIME_METHODS;
-         PRELOAD_FILES;EMBED_FILES"
+    set(optionArgs
+            WASM
+            STANDALONE_WASM
+            NODE_JS
+            PTHREAD
+            SIMD
+            ASYNCIFY
+            ASSERTIONS
+            SAFE_HEAP
+            ALLOW_MEMORY_GROWTH
+            CLOSURE_COMPILER
     )
+    set(oneValArgs
+            CXX_STANDARD
+            HTML_TEMPLATE
+            HTML_TITLE
+            CANVAS_ID
+            OUTPUT_DIR
+            INITIAL_MEMORY
+            MAXIMUM_MEMORY
+            STACK_SIZE
+            INSTALL_DESTINATION
+            ENABLE_EXCEPTIONS
+            ENABLE_IPO
+            WARNINGS_AS_ERRORS
+            ENABLE_SANITIZER_ADDRESS
+            ENABLE_SANITIZER_LEAK
+            ENABLE_SANITIZER_UNDEFINED_BEHAVIOR
+            ENABLE_SANITIZER_THREAD
+            ENABLE_SANITIZER_MEMORY
+            ENABLE_HARDENING
+            ENABLE_CLANG_TIDY
+            ENABLE_CPPCHECK
+            ENABLE_LTO
+    )
+    set(multValArgs
+            SOURCES
+            HEADERS
+            CXX_MODULES
+            INCLUDE_DIRS
+            LINK_LIBS
+            COMPILE_OPTIONS
+            COMPILE_DEFINITIONS
+            PROPERTIES
+            DEPENDENCIES
+            EXPORTED_FUNCTIONS
+            EXPORTED_RUNTIME_METHODS
+            PRELOAD_FILES
+            EMBED_FILES
+    )
+    cmake_parse_arguments(PARSE_ARGV 1 ARG "${optionArgs}" "${oneValArgs}" "${multValArgs}")
 
     add_executable(${name})
 

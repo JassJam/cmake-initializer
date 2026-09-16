@@ -117,7 +117,7 @@ if (ENABLE_GLOBAL_SANITIZERS)
 endif ()
 
 # Apply global exceptions settings
-if (ENABLE_GLOBAL_EXCEPTIONS)
+if (DEFINED ENABLE_GLOBAL_EXCEPTIONS)
     include(TargetExceptions)
     configure_global_exceptions(${ENABLE_GLOBAL_EXCEPTIONS})
 endif ()

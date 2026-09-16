@@ -820,3 +820,240 @@ macro(_xrepo_fetch_cflags)
 
     set(_cache_xrepo_vars_${package_name} "${xrepo_vars_${package_name}}" CACHE INTERNAL "")
 endmacro()
+
+# xrepo_from_xmake:
+#
+# Run `xmake install` on the given xmake.lua file (which contains add_requires,
+# add_packages, etc.) so all declared packages are installed via xrepo.
+#
+# Parameters:
+#      XMAKEFILE: optional
+#          Path to the xmake.lua file. Defaults to xmake.lua in the current
+#          source directory. Non-absolute paths are relative to
+#          CMAKE_CURRENT_LIST_DIR.
+#      MODE: optional, debug|release
+#          Passed as --mode to xmake install.
+#      OUTPUT: optional, verbose|diagnosis|quiet
+#          Controls verbosity of xmake install.
+#
+# Example:
+#
+#      xrepo_from_xmake()                          # uses ./xmake.lua
+#      xrepo_from_xmake(XMAKEFILE path/to/xmake.lua [MODE debug] [OUTPUT verbose])
+#
+# After this call every package declared with add_requires() in the xmake.lua
+# can be fetched with xrepo_fetch_package().
+function(xrepo_from_xmake)
+    if (XREPO_PACKAGE_DISABLE)
+        return()
+    endif ()
+
+    set(one_value_args XMAKEFILE MODE OUTPUT)
+    cmake_parse_arguments(ARG "" "${one_value_args}" "" ${ARGN})
+
+    # Resolve xmake.lua path
+    if (DEFINED ARG_XMAKEFILE)
+        if (IS_ABSOLUTE "${ARG_XMAKEFILE}")
+            set(_xmakefile "${ARG_XMAKEFILE}")
+        else ()
+            set(_xmakefile "${CMAKE_CURRENT_LIST_DIR}/${ARG_XMAKEFILE}")
+        endif ()
+    else ()
+        set(_xmakefile "${CMAKE_CURRENT_LIST_DIR}/xmake.lua")
+    endif ()
+
+    if (NOT EXISTS "${_xmakefile}")
+        message(FATAL_ERROR "xrepo_from_xmake: xmake.lua not found at ${_xmakefile}")
+    endif ()
+
+    get_filename_component(_xmakefile_dir "${_xmakefile}" DIRECTORY)
+
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_xmakefile}")
+
+    # Build args
+    if (XREPO_PACKAGE_VERBOSE)
+        set(_verbose "-vD")
+    elseif (DEFINED ARG_OUTPUT)
+        string(TOLOWER "${ARG_OUTPUT}" _out)
+        if (_out STREQUAL "diagnosis")
+            set(_verbose "-vD")
+        elseif (_out STREQUAL "verbose")
+            set(_verbose "-v")
+        elseif (_out STREQUAL "quiet")
+            set(_verbose "-q")
+        endif ()
+    endif ()
+
+    if (NOT "${XREPO_PLATFORM}" STREQUAL "")
+        set(_platform "--plat=${XREPO_PLATFORM}")
+    endif ()
+    if (NOT "${XREPO_ARCH}" STREQUAL "")
+        set(_arch "--arch=${XREPO_ARCH}")
+    endif ()
+    if (NOT "${XREPO_TOOLCHAIN}" STREQUAL "")
+        set(_toolchain "--toolchain=${XREPO_TOOLCHAIN}")
+    endif ()
+    if (XREPO_BUILD_PARALLEL_JOBS)
+        set(_jobs -j${XREPO_BUILD_PARALLEL_JOBS})
+    endif ()
+
+    # Cache check
+    file(TIMESTAMP "${_xmakefile}" _xmakefile_mtime)
+    set(_cache_key "${_xmakefile}:mtime=${_xmakefile_mtime}:platform=${XREPO_PLATFORM}:arch=${XREPO_ARCH}:toolchain=${XREPO_TOOLCHAIN}")
+
+    if ("${_cache_xrepo_from_xmake_key}" STREQUAL "${_cache_key}")
+        message(STATUS "xrepo_from_xmake: packages already installed (xmake.lua unchanged), skipping")
+        return()
+    endif ()
+
+    # Use `xmake f` (configure) in the project dir — this triggers add_requires()
+    # package installation without needing a build target.
+    message(STATUS "xrepo_from_xmake: configuring packages from ${_xmakefile}")
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD
+            ${XMAKE_CMD} f
+            --yes
+            ${_verbose}
+            ${_platform}
+            ${_arch}
+            ${_toolchain}
+            WORKING_DIRECTORY "${_xmakefile_dir}"
+            RESULT_VARIABLE _exit_code
+    )
+    if (NOT "${_exit_code}" STREQUAL "0")
+        message(FATAL_ERROR "xrepo_from_xmake: xmake f failed (exit code: ${_exit_code})")
+    endif ()
+
+    # `xmake f` installs packages declared with add_requires() but you can
+    # also explicitly trigger it with require --yes if needed:
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD
+            ${XMAKE_CMD} require
+            --yes
+            ${_verbose}
+            ${_jobs}
+            ${_platform}
+            ${_arch}
+            ${_toolchain}
+            WORKING_DIRECTORY "${_xmakefile_dir}"
+            RESULT_VARIABLE _exit_code
+    )
+    if (NOT "${_exit_code}" STREQUAL "0")
+        message(FATAL_ERROR "xrepo_from_xmake: xmake require failed (exit code: ${_exit_code})")
+    endif ()
+
+    set(XREPO_ACTIVE_XMAKEFILE "${_xmakefile}" CACHE INTERNAL "")
+    set(_cache_xrepo_from_xmake_key "${_cache_key}" CACHE INTERNAL "")
+endfunction()
+
+
+# xrepo_fetch_package:
+#
+# Fetch include/library info for a package that was installed either by
+# xrepo_from_xmake() (declared via add_requires in xmake.lua) or by
+# a prior xrepo_package() call, and expose it as CMake variables.
+#
+# Parameters:
+#      package: required
+#          The package name as declared in add_requires() or xrepo_package(),
+#          e.g. "zlib", "boost", "openssl 3.x".
+#      ALIAS: optional
+#          Override the variable prefix (default: package name).
+#      DEPS: optional
+#          Include dependent libraries in the fetched variables.
+#      USE_ABSOLUTE_LIBS: optional
+#          Use absolute library file paths instead of -l flags.
+#      DIRECTORY_SCOPE: optional
+#          Call include_directories / link_directories for the package.
+#
+# After a successful call the following variables are set in parent scope:
+#      <name>_INCLUDE_DIRS
+#      <name>_LIBRARY_DIRS
+#      <name>_LINK_LIBRARIES
+#      <name>_SYS_LIBRARIES
+#      <name>_DEFINITIONS
+#
+# Example:
+#
+#      xrepo_from_xmake(XMAKEFILE deps/xmake.lua)
+#
+#      xrepo_fetch_package("zlib" DIRECTORY_SCOPE)
+#      xrepo_fetch_package("boost" ALIAS Boost DEPS)
+#      target_link_libraries(myapp PRIVATE ${zlib_LINK_LIBRARIES})
+
+function(xrepo_fetch_package package)
+    if (XREPO_PACKAGE_DISABLE)
+        return()
+    endif ()
+
+    set(options "DIRECTORY_SCOPE;DEPS;USE_ABSOLUTE_LIBS")
+    set(one_value_args ALIAS MODE)
+    cmake_parse_arguments(ARG "${options}" "${one_value_args}" "" ${ARGN})
+
+    if (DEFINED ARG_ALIAS)
+        _xrepo_package_name(${ARG_ALIAS})
+    else ()
+        _xrepo_package_name(${package})
+    endif ()
+    # package_name is now set by _xrepo_package_name via PARENT_SCOPE tricks;
+    # the helper sets it in its own scope so we re-derive it here directly.
+    if (DEFINED ARG_ALIAS)
+        string(REGEX REPLACE "([^ ]+).*" "\\1" package_name "${ARG_ALIAS}")
+    else ()
+        string(REGEX REPLACE "([^ ]+).*" "\\1" package_name "${package}")
+    endif ()
+
+    if (NOT "${XREPO_PLATFORM}" STREQUAL "")
+        set(_platform "--plat=${XREPO_PLATFORM}")
+    endif ()
+    if (NOT "${XREPO_ARCH}" STREQUAL "")
+        set(_arch "--arch=${XREPO_ARCH}")
+    endif ()
+    if (NOT "${XREPO_TOOLCHAIN}" STREQUAL "")
+        set(_toolchain "--toolchain=${XREPO_TOOLCHAIN}")
+    endif ()
+
+    # If xrepo_from_xmake() was called, point fetch at that xmake.lua so it
+    # can see the add_requires() declarations (and their configs).
+    if (DEFINED XREPO_ACTIVE_XMAKEFILE AND EXISTS "${XREPO_ACTIVE_XMAKEFILE}")
+        set(_includes "--includes=${XREPO_ACTIVE_XMAKEFILE}")
+    elseif (NOT "${XREPO_XMAKEFILE}" STREQUAL "")
+        set(_includes "--includes=${XREPO_XMAKEFILE}")
+    endif ()
+
+    if (DEFINED ARG_MODE)
+        set(_mode "--mode=${ARG_MODE}")
+    endif ()
+
+    if (ARG_DEPS)
+        set(_deps "--deps")
+    endif ()
+
+    set(_xrepo_cmdargs ${_platform} ${_arch} ${_toolchain} ${_includes} ${_mode} ${package})
+
+    string(REGEX REPLACE ";" " " _fetch_cmdstr "${XREPO_CMD} fetch ${_deps} ${_xrepo_cmdargs}")
+    if (ARG_USE_ABSOLUTE_LIBS)
+        string(APPEND _fetch_cmdstr " [absolute-libs]")
+    endif ()
+
+    if ("${_cache_xrepo_fetch_cmdargs_${package_name}}" STREQUAL "${_fetch_cmdstr}")
+        message(STATUS "xrepo_fetch_package: ${package_name} already fetched, using cached variables")
+        foreach (var ${_cache_xrepo_vars_${package_name}})
+            message(STATUS "xrepo: ${var} = ${${var}}")
+        endforeach ()
+        _xrepo_finish_package_setup(${package_name})
+        return()
+    endif ()
+
+    if (XREPO_FETCH_JSON)
+        # Reuse the existing _xrepo_fetch_json() macro which reads
+        # _xrepo_cmdargs, ARG_USE_ABSOLUTE_LIBS, ARG_DEPS, and package_name.
+        _xrepo_fetch_json()
+    else ()
+        _xrepo_fetch_cflags()
+    endif ()
+
+    _xrepo_finish_package_setup(${package_name})
+
+    set(_cache_xrepo_fetch_cmdargs_${package_name} "${_fetch_cmdstr}" CACHE INTERNAL "")
+endfunction()
