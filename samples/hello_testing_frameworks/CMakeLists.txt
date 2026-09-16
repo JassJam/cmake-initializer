@@ -13,7 +13,9 @@ register_library(
     NAMESPACE
     ${THIS_PROJECT_NAMESPACE}
     EXPORT_SET
-    "${THIS_PROJECT_NAMESPACE}Targets")
+    "${THIS_PROJECT_NAMESPACE}Targets"
+    ENABLE_SANITIZER_ADDRESS
+    OFF)
 
 # Add tests
 if(BUILD_TESTING)
