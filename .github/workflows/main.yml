@@ -21,37 +21,29 @@ jobs:
           # Linux / Clang
           - name: linux-x64-clang
             os: ubuntu-latest
-            preset: unixlike-x64-clang-debug
+            preset: unixlike-x86_64-clang-debug
             output: linux-x64-clang
-          - name: linux-x86-clang
-            os: ubuntu-latest
-            preset: unixlike-x86-clang-debug
-            output: linux-x86-clang
 
           # Linux / GCC
           - name: linux-x64-gcc
             os: ubuntu-latest
-            preset: unixlike-x64-gcc-debug
+            preset: unixlike-x86_64-gcc-debug
             output: linux-x64-gcc
-          - name: linux-x86-gcc
-            os: ubuntu-latest
-            preset: unixlike-x86-gcc-debug
-            output: linux-x86-gcc
 
           # macOS / Clang
           - name: macos-x64-clang
             os: macos-latest
-            preset: unixlike-x64-clang-debug
+            preset: unixlike-x86_64-clang-debug
             output: macos-x64-clang
           - name: macos-arm64-clang
             os: macos-latest
-            preset: unixlike-x64-clang-debug
+            preset: unixlike-x86_64-clang-debug
             output: macos-arm64-clang
 
           # macOS / GCC
           - name: macos-x64-gcc
             os: macos-latest
-            preset: unixlike-x64-gcc-debug
+            preset: unixlike-x86_64-gcc-debug
             output: macos-x64-gcc
 
           # Windows / MSVC
@@ -155,37 +147,29 @@ jobs:
           # Linux / Clang
           - name: linux-x64-clang
             os: ubuntu-latest
-            preset: unixlike-x64-clang-release
+            preset: unixlike-x86_64-clang-release
             output: linux-x64-clang
-          - name: linux-x86-clang
-            os: ubuntu-latest
-            preset: unixlike-x86-clang-release
-            output: linux-x86-clang
 
           # Linux / GCC
           - name: linux-x64-gcc
             os: ubuntu-latest
-            preset: unixlike-x64-gcc-release
+            preset: unixlike-x86_64-gcc-release
             output: linux-x64-gcc
-          - name: linux-x86-gcc
-            os: ubuntu-latest
-            preset: unixlike-x86-gcc-release
-            output: linux-x86-gcc
 
           # macOS / Clang
           - name: macos-x64-clang
             os: macos-latest
-            preset: unixlike-x64-clang-release
+            preset: unixlike-x86_64-clang-release
             output: macos-x64-clang
           - name: macos-arm64-clang
             os: macos-latest
-            preset: unixlike-x64-clang-release
+            preset: unixlike-x86_64-clang-release
             output: macos-arm64-clang
 
           # macOS / GCC
           - name: macos-x64-gcc
             os: macos-latest
-            preset: unixlike-x64-gcc-release
+            preset: unixlike-x86_64-gcc-release
             output: macos-x64-gcc
 
           # Windows / MSVC
