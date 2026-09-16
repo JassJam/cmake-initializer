@@ -20,11 +20,17 @@ set(SPM_IMPORT_NAME
 
 set(SPM_SKIP_TESTS
     OFF
-    CACHE BOOL "Skip recipe test phase even if RUN_TESTS was requested (warn instead of fail)")
+    CACHE
+        BOOL
+        "Skip recipe test phase even if RUN_TESTS was requested (warn instead of fail)"
+)
 
 set(SPM_FORCE_REBUILD
     OFF
-    CACHE BOOL "Ignore all cache hits and rebuild every requested package from scratch")
+    CACHE
+        BOOL
+        "Ignore all cache hits and rebuild every requested package from scratch"
+)
 
 set(SPM_BUILD_TYPE
     ""
@@ -157,31 +163,42 @@ function(spm_requires)
     endforeach()
 
     string(MAKE_C_IDENTIFIER "${R_NAME}_${R_VERSION}" _pkg_key)
-    get_property(_dep_install_dir GLOBAL PROPERTY SPM_DEP_INSTALL_DIR_${_pkg_key})
+    get_property(_dep_install_dir GLOBAL
+                 PROPERTY SPM_DEP_INSTALL_DIR_${_pkg_key})
 
     if(_dep_install_dir)
-        spm_log_debug("Dependency '${R_NAME}@${R_VERSION}' already built elsewhere, reusing")
+        spm_log_debug(
+            "Dependency '${R_NAME}@${R_VERSION}' already built elsewhere, reusing"
+        )
     else()
         include("${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake")
         spm_require_package(${ARGN} OUT_INSTALL_DIR _dep_install_dir)
         if(NOT _dep_install_dir)
-            spm_log_fatal("spm_requires(NAME ${R_NAME}) produced no install dir (unsupported on this platform?)")
+            spm_log_fatal(
+                "spm_requires(NAME ${R_NAME}) produced no install dir (unsupported on this platform?)"
+            )
         endif()
-        set_property(GLOBAL PROPERTY SPM_DEP_INSTALL_DIR_${_pkg_key} "${_dep_install_dir}")
-        set_property(GLOBAL APPEND PROPERTY SPM_REQUIRED_PACKAGES "${R_NAME}@${R_VERSION}")
+        set_property(GLOBAL PROPERTY SPM_DEP_INSTALL_DIR_${_pkg_key}
+                                     "${_dep_install_dir}")
+        set_property(GLOBAL APPEND PROPERTY SPM_REQUIRED_PACKAGES
+                                            "${R_NAME}@${R_VERSION}")
     endif()
 
     if(R_OUT_INSTALL_DIR)
-        set(${R_OUT_INSTALL_DIR} "${_dep_install_dir}" PARENT_SCOPE)
+        set(${R_OUT_INSTALL_DIR}
+            "${_dep_install_dir}"
+            PARENT_SCOPE)
     endif()
 
-    set_property(GLOBAL PROPERTY SPM_DEP_INSTALL_DIR_NAME_${_name} "${_dep_install_dir}")
+    set_property(GLOBAL PROPERTY SPM_DEP_INSTALL_DIR_NAME_${_name}
+                                 "${_dep_install_dir}")
     set_property(
         DIRECTORY
         APPEND
         PROPERTY SPM_RECIPE_DEPENDENCIES "${_name}")
 
-    spm_log_debug("Recipe now depends on '${_name}' (installed at ${_dep_install_dir})")
+    spm_log_debug(
+        "Recipe now depends on '${_name}' (installed at ${_dep_install_dir})")
 endfunction()
 
 function(_spm_resolve_dependency_targets deps out_var)
@@ -199,7 +216,9 @@ function(_spm_resolve_dependency_targets deps out_var)
             set(_dep_target "${_dep}::${_dep}")
         endif()
         if(NOT TARGET ${_dep_target})
-            spm_log_fatal("DEPENDENCIES entry '${_dep}' resolves to '${_dep_target}', which is not a target")
+            spm_log_fatal(
+                "DEPENDENCIES entry '${_dep}' resolves to '${_dep_target}', which is not a target"
+            )
         endif()
         list(APPEND _resolved "${_dep_target}")
     endforeach()
@@ -224,7 +243,8 @@ function(spm_git_clone)
         set(B_DESTINATION source)
     endif()
 
-    set(_stamp_file "${CMAKE_CURRENT_SOURCE_DIR}/.spm-gitclone-${B_DESTINATION}")
+    set(_stamp_file
+        "${CMAKE_CURRENT_SOURCE_DIR}/.spm-gitclone-${B_DESTINATION}")
     spm_check_stamp_file(FILE "${_stamp_file}" OUT_VAR exists)
     if(exists)
         return()
@@ -312,7 +332,8 @@ function(spm_git_clone)
 
             if(NOT _checkout_result EQUAL 0)
                 file(REMOVE_RECURSE "${_dest_file}")
-                spm_log_fatal("Failed to check out '${B_TAG}':\n${_checkout_output}")
+                spm_log_fatal(
+                    "Failed to check out '${B_TAG}':\n${_checkout_output}")
             endif()
         endif()
 
@@ -357,10 +378,13 @@ function(spm_download_file)
     set(options FORCE)
     set(oneValArgs URL DESTINATION EXPECTED_HASH TIMEOUT RETRIES)
     set(multiValArgs HEADERS)
-    cmake_parse_arguments(B "${options}" "${oneValArgs}" "${multiValArgs}" ${ARGN})
+    cmake_parse_arguments(B "${options}" "${oneValArgs}" "${multiValArgs}"
+                          ${ARGN})
 
     if(B_UNPARSED_ARGUMENTS)
-        spm_log_fatal("spm_download_file() got unrecognized arguments: ${B_UNPARSED_ARGUMENTS}")
+        spm_log_fatal(
+            "spm_download_file() got unrecognized arguments: ${B_UNPARSED_ARGUMENTS}"
+        )
     endif()
     if(NOT B_URL)
         spm_log_fatal("spm_download_file() requires a URL")
@@ -381,7 +405,9 @@ function(spm_download_file)
     set(_hash_value "")
     if(B_EXPECTED_HASH)
         if(NOT B_EXPECTED_HASH MATCHES "^([A-Za-z0-9]+)=([0-9A-Fa-f]+)$")
-            spm_log_fatal("spm_download_file(): EXPECTED_HASH must be of the form ALGO=value, got '${B_EXPECTED_HASH}'")
+            spm_log_fatal(
+                "spm_download_file(): EXPECTED_HASH must be of the form ALGO=value, got '${B_EXPECTED_HASH}'"
+            )
         endif()
         set(_hash_algo "${CMAKE_MATCH_1}")
         string(TOLOWER "${CMAKE_MATCH_2}" _hash_value)
@@ -391,7 +417,9 @@ function(spm_download_file)
     set(_stamp_file "${CMAKE_CURRENT_SOURCE_DIR}/.spm-download-${_stamp_key}")
 
     set(_cache_valid FALSE)
-    if(NOT B_FORCE AND NOT SPM_FORCE_REBUILD AND EXISTS "${B_DESTINATION}")
+    if(NOT B_FORCE
+       AND NOT SPM_FORCE_REBUILD
+       AND EXISTS "${B_DESTINATION}")
         spm_check_stamp_file(FILE "${_stamp_file}" OUT_VAR _stamp_exists)
         if(_stamp_exists)
             if(_hash_algo)
@@ -401,7 +429,7 @@ function(spm_download_file)
                     set(_cache_valid TRUE)
                 else()
                     spm_log_debug(
-                            "Cached '${B_DESTINATION}' no longer matches the excepted hash (found ${_hash_algo}=${_actual_hash}, expected ${_hash_algo}=${_hash_value}), re-downloading"
+                        "Cached '${B_DESTINATION}' no longer matches the excepted hash (found ${_hash_algo}=${_actual_hash}, expected ${_hash_algo}=${_hash_value}), re-downloading"
                     )
                 endif()
             else()
@@ -427,14 +455,14 @@ function(spm_download_file)
     endif()
 
     set(_download_args
-            "${B_URL}"
-            "${B_DESTINATION}"
-            STATUS
-            _status
-            LOG
-            _log
-            TLS_VERIFY
-            ON)
+        "${B_URL}"
+        "${B_DESTINATION}"
+        STATUS
+        _status
+        LOG
+        _log
+        TLS_VERIFY
+        ON)
     if(B_TIMEOUT)
         list(APPEND _download_args TIMEOUT "${B_TIMEOUT}")
     endif()
@@ -458,7 +486,9 @@ function(spm_download_file)
         if(_status_code EQUAL 0)
             set(_ok TRUE)
         else()
-            spm_log_debug("Download attempt ${_attempt}/${B_RETRIES} failed (${_status_code}: ${_status_msg})")
+            spm_log_debug(
+                "Download attempt ${_attempt}/${B_RETRIES} failed (${_status_code}: ${_status_msg})"
+            )
             if(EXISTS "${B_DESTINATION}")
                 file(REMOVE "${B_DESTINATION}")
             endif()
@@ -466,7 +496,9 @@ function(spm_download_file)
     endwhile()
 
     if(NOT _ok)
-        spm_log_fatal("Failed to download '${B_URL}' after ${B_RETRIES} attempt(s): ${_status_msg}\nLog:\n${_log}")
+        spm_log_fatal(
+            "Failed to download '${B_URL}' after ${B_RETRIES} attempt(s): ${_status_msg}\nLog:\n${_log}"
+        )
     endif()
 
     spm_write_stamp_file(FILE "${_stamp_file}")
@@ -487,7 +519,9 @@ function(spm_extract_archive)
     cmake_parse_arguments(B "${options}" "${oneValArgs}" "" ${ARGN})
 
     if(B_UNPARSED_ARGUMENTS)
-        spm_log_fatal("spm_extract_archive() got unrecognized arguments: ${B_UNPARSED_ARGUMENTS}")
+        spm_log_fatal(
+            "spm_extract_archive() got unrecognized arguments: ${B_UNPARSED_ARGUMENTS}"
+        )
     endif()
     if(NOT B_ARCHIVE)
         spm_log_fatal("spm_extract_archive() requires ARCHIVE")
@@ -507,10 +541,12 @@ function(spm_extract_archive)
     endif()
 
     if(NOT EXISTS "${B_ARCHIVE}")
-        spm_log_fatal("spm_extract_archive(): archive '${B_ARCHIVE}' does not exist")
+        spm_log_fatal(
+            "spm_extract_archive(): archive '${B_ARCHIVE}' does not exist")
     endif()
 
-    string(SHA256 _stamp_key "${B_ARCHIVE}|${B_DESTINATION}|${B_STRIP_COMPONENTS}")
+    string(SHA256 _stamp_key
+                  "${B_ARCHIVE}|${B_DESTINATION}|${B_STRIP_COMPONENTS}")
     set(_stamp_file "${CMAKE_CURRENT_SOURCE_DIR}/.spm-extract-${_stamp_key}")
 
     spm_check_stamp_file(FILE "${_stamp_file}" OUT_VAR exists)
@@ -530,7 +566,9 @@ function(spm_extract_archive)
         endif()
         file(MAKE_DIRECTORY "${_scratch_dir}")
 
-        spm_log_debug("Extracting '${B_ARCHIVE}' to '${_scratch_dir}' (will strip ${B_STRIP_COMPONENTS} component(s))")
+        spm_log_debug(
+            "Extracting '${B_ARCHIVE}' to '${_scratch_dir}' (will strip ${B_STRIP_COMPONENTS} component(s))"
+        )
         file(ARCHIVE_EXTRACT INPUT "${B_ARCHIVE}" DESTINATION "${_scratch_dir}")
 
         set(_src_dir "${_scratch_dir}")
@@ -539,8 +577,10 @@ function(spm_extract_archive)
             list(LENGTH _children _n_children)
             if(NOT _n_children EQUAL 1 OR NOT IS_DIRECTORY "${_children}")
                 file(REMOVE_RECURSE "${_scratch_dir}")
-                spm_log_fatal("spm_extract_archive(): cannot strip ${B_STRIP_COMPONENTS} component(s), "
-                              "'${_src_dir}' does not contain exactly one subdirectory at depth ${_i}")
+                spm_log_fatal(
+                    "spm_extract_archive(): cannot strip ${B_STRIP_COMPONENTS} component(s), "
+                    "'${_src_dir}' does not contain exactly one subdirectory at depth ${_i}"
+                )
             endif()
             set(_src_dir "${_children}")
         endforeach()
@@ -553,7 +593,8 @@ function(spm_extract_archive)
         file(REMOVE_RECURSE "${_scratch_dir}")
     else()
         spm_log_debug("Extracting '${B_ARCHIVE}' to '${B_DESTINATION}'")
-        file(ARCHIVE_EXTRACT INPUT "${B_ARCHIVE}" DESTINATION "${B_DESTINATION}")
+        file(ARCHIVE_EXTRACT INPUT "${B_ARCHIVE}" DESTINATION
+             "${B_DESTINATION}")
     endif()
 
     spm_write_stamp_file(FILE "${_stamp_file}")
@@ -612,7 +653,8 @@ function(spm_apply_patch)
             ERROR_VARIABLE
             _patch_output)
         if(NOT _patch_result EQUAL 0)
-            spm_log_fatal("Failed to apply patch '${_patch}':\n${_patch_output}")
+            spm_log_fatal(
+                "Failed to apply patch '${_patch}':\n${_patch_output}")
         endif()
 
         spm_write_stamp_file(FILE "${_stamp_file}")
@@ -654,11 +696,15 @@ function(spm_cmake_configure)
             PROPERTY SPM_RECIPE_DEPENDENCIES)
         foreach(_dep ${B_DEPENDENCIES})
             if(NOT _dep IN_LIST _declared)
-                spm_log_fatal("DEPENDENCIES entry '${_dep}' was not declared via spm_requires() in this recipe")
+                spm_log_fatal(
+                    "DEPENDENCIES entry '${_dep}' was not declared via spm_requires() in this recipe"
+                )
             endif()
-            get_property(_dep_dir GLOBAL PROPERTY SPM_DEP_INSTALL_DIR_NAME_${_dep})
+            get_property(_dep_dir GLOBAL
+                         PROPERTY SPM_DEP_INSTALL_DIR_NAME_${_dep})
             if(NOT _dep_dir)
-                spm_log_fatal("No install directory recorded for dependency '${_dep}'")
+                spm_log_fatal(
+                    "No install directory recorded for dependency '${_dep}'")
             endif()
             list(APPEND _dep_prefix_paths "${_dep_dir}")
         endforeach()
@@ -669,7 +715,8 @@ function(spm_cmake_configure)
 
     set(_prefix_path_arg "")
     if(_dep_prefix_paths)
-        set(_prefix_cache_file "${CMAKE_CURRENT_SOURCE_DIR}/spm-prefix-path.cmake")
+        set(_prefix_cache_file
+            "${CMAKE_CURRENT_SOURCE_DIR}/spm-prefix-path.cmake")
         file(WRITE "${_prefix_cache_file}" "set(CMAKE_PREFIX_PATH \"")
         set(_first TRUE)
         foreach(_p ${_dep_prefix_paths})
@@ -781,7 +828,9 @@ function(spm_create_target)
     cmake_parse_arguments(B "" "${oneValArgs}" "${multiValArgs}" ${ARGN})
 
     if(B_UNPARSED_ARGUMENTS)
-        spm_log_fatal("spm_create_target(NAME ${B_NAME}) got unrecognized arguments: ${B_UNPARSED_ARGUMENTS}")
+        spm_log_fatal(
+            "spm_create_target(NAME ${B_NAME}) got unrecognized arguments: ${B_UNPARSED_ARGUMENTS}"
+        )
     endif()
 
     if(NOT B_INSTALL_DIR)
@@ -791,7 +840,9 @@ function(spm_create_target)
         spm_log_fatal("spm_create_target requires a name")
     endif()
     if(NOT SPM_IMPORT_NAME)
-        spm_log_fatal("SPM_IMPORT_NAME is not set (spm_create_target must run inside an SPM recipe build)")
+        spm_log_fatal(
+            "SPM_IMPORT_NAME is not set (spm_create_target must run inside an SPM recipe build)"
+        )
     endif()
 
     if(IS_DIRECTORY "${B_INSTALL_DIR}/include")
@@ -834,13 +885,15 @@ function(spm_create_target)
     set(_link_libs "")
 
     if(_has_include)
-        set_target_properties(${_target_name} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${B_INSTALL_DIR}/include")
+        set_target_properties(
+            ${_target_name} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+                                       "${B_INSTALL_DIR}/include")
         install(DIRECTORY "${B_INSTALL_DIR}/include/" DESTINATION "include")
     endif()
 
     if(_has_lib)
-        file(GLOB_RECURSE _shared_libs "${B_INSTALL_DIR}/lib/*.so" "${B_INSTALL_DIR}/lib/*.so.*"
-             "${B_INSTALL_DIR}/lib/*.dylib")
+        file(GLOB_RECURSE _shared_libs "${B_INSTALL_DIR}/lib/*.so"
+             "${B_INSTALL_DIR}/lib/*.so.*" "${B_INSTALL_DIR}/lib/*.dylib")
 
         if(B_STATIC_LIBS)
             set(_static_libs "")
@@ -852,12 +905,14 @@ function(spm_create_target)
                 endif()
                 if(NOT EXISTS "${_lib_path}")
                     spm_log_fatal(
-                        "spm_create_target(NAME ${B_NAME}): static library entry '${_lib}' not found at '${_lib_path}'")
+                        "spm_create_target(NAME ${B_NAME}): static library entry '${_lib}' not found at '${_lib_path}'"
+                    )
                 endif()
                 list(APPEND _static_libs "${_lib_path}")
             endforeach()
         else()
-            file(GLOB_RECURSE _static_libs "${B_INSTALL_DIR}/lib/*.a" "${B_INSTALL_DIR}/lib/*.lib")
+            file(GLOB_RECURSE _static_libs "${B_INSTALL_DIR}/lib/*.a"
+                 "${B_INSTALL_DIR}/lib/*.lib")
         endif()
 
         list(APPEND _link_libs ${_static_libs} ${_shared_libs})
@@ -884,7 +939,8 @@ function(spm_create_target)
 
     if(_link_libs)
         install(DIRECTORY "${B_INSTALL_DIR}/lib/" DESTINATION "lib")
-        set_target_properties(${_target_name} PROPERTIES INTERFACE_LINK_LIBRARIES "${_link_libs}")
+        set_target_properties(
+            ${_target_name} PROPERTIES INTERFACE_LINK_LIBRARIES "${_link_libs}")
         target_link_libraries(${_target_name} INTERFACE ${_link_libs})
     endif()
 
@@ -901,7 +957,8 @@ function(spm_create_target)
             endif()
 
             if(_dest STREQUAL "")
-                spm_log_fatal("EXTRA_DIRS entry '${_pair}' has an empty destination")
+                spm_log_fatal(
+                    "EXTRA_DIRS entry '${_pair}' has an empty destination")
             endif()
 
             if(NOT IS_ABSOLUTE "${_src}")
@@ -915,7 +972,8 @@ function(spm_create_target)
             install(DIRECTORY "${_src}/" DESTINATION "${_dest}")
         endforeach()
     elseif(IS_DIRECTORY "${B_INSTALL_DIR}/extra")
-        install(DIRECTORY "${B_INSTALL_DIR}/extra/" DESTINATION "share/${B_NAME}")
+        install(DIRECTORY "${B_INSTALL_DIR}/extra/"
+                DESTINATION "share/${B_NAME}")
     endif()
 
     set(_config_dir "${B_INSTALL_DIR}/lib/cmake/${SPM_IMPORT_NAME}")
@@ -955,7 +1013,8 @@ if(NOT TARGET ${SPM_IMPORT_NAME}::${B_NAME})
         )
     endif()
     if(_config_link_libs)
-        string(REPLACE ";" ";" _config_link_libs_str "${_config_link_libs}") # keep as list literal
+        string(REPLACE ";" ";" _config_link_libs_str "${_config_link_libs}"
+        )# keep as list literal
         file(
             APPEND "${_config_file}"
             "    set_target_properties(${SPM_IMPORT_NAME}::${B_NAME} PROPERTIES INTERFACE_LINK_LIBRARIES \"${_config_link_libs_str}\")\n"
@@ -963,7 +1022,8 @@ if(NOT TARGET ${SPM_IMPORT_NAME}::${B_NAME})
     endif()
     file(APPEND "${_config_file}" "endif()\n")
 
-    install(DIRECTORY "${_config_dir}/" DESTINATION "lib/cmake/${SPM_IMPORT_NAME}")
+    install(DIRECTORY "${_config_dir}/"
+            DESTINATION "lib/cmake/${SPM_IMPORT_NAME}")
 
     spm_log_debug(
         "Target '${SPM_IMPORT_NAME}::${B_NAME}' registered from '${B_INSTALL_DIR}' (include=${_has_include}, lib=${_has_lib}, bin=${_has_bin})"
@@ -988,10 +1048,13 @@ function(spm_create_target_from_pkgconfig)
         spm_log_fatal("spm_create_target_from_pkgconfig requires a NAME")
     endif()
     if(NOT B_MODULE)
-        spm_log_fatal("spm_create_target_from_pkgconfig requires MODULE (the .pc file's module name)")
+        spm_log_fatal(
+            "spm_create_target_from_pkgconfig requires MODULE (the .pc file's module name)"
+        )
     endif()
     if(NOT SPM_IMPORT_NAME)
-        spm_log_fatal("SPM_IMPORT_NAME is not set (must run inside an SPM recipe build)")
+        spm_log_fatal(
+            "SPM_IMPORT_NAME is not set (must run inside an SPM recipe build)")
     endif()
     if(NOT B_INSTALL_DIR)
         set(B_INSTALL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/install")
@@ -1002,8 +1065,9 @@ function(spm_create_target_from_pkgconfig)
     if(B_PKGCONFIG_DIR)
         set(_pc_dirs "${B_PKGCONFIG_DIR}")
     else()
-        set(_pc_dirs "${B_INSTALL_DIR}/lib/pkgconfig" "${B_INSTALL_DIR}/lib64/pkgconfig"
-                     "${B_INSTALL_DIR}/share/pkgconfig")
+        set(_pc_dirs
+            "${B_INSTALL_DIR}/lib/pkgconfig" "${B_INSTALL_DIR}/lib64/pkgconfig"
+            "${B_INSTALL_DIR}/share/pkgconfig")
     endif()
 
     set(_found_pc_dir "")
@@ -1024,7 +1088,8 @@ function(spm_create_target_from_pkgconfig)
 
     string(MAKE_C_IDENTIFIER "_spmpc_${SPM_IMPORT_NAME}_${B_NAME}" _pc_prefix)
     if(TARGET PkgConfig::${_pc_prefix})
-        spm_log_fatal("pkg-config target 'PkgConfig::${_pc_prefix}' already exists")
+        spm_log_fatal(
+            "pkg-config target 'PkgConfig::${_pc_prefix}' already exists")
     endif()
 
     set(_saved_prefix_path "${CMAKE_PREFIX_PATH}")
@@ -1033,7 +1098,8 @@ function(spm_create_target_from_pkgconfig)
     set(_saved_pkg_config_path "$ENV{PKG_CONFIG_PATH}")
     set(ENV{PKG_CONFIG_PATH} "${_found_pc_dir}")
 
-    pkg_check_modules(${_pc_prefix} REQUIRED IMPORTED_TARGET GLOBAL "${B_MODULE}")
+    pkg_check_modules(${_pc_prefix} REQUIRED IMPORTED_TARGET GLOBAL
+                      "${B_MODULE}")
 
     set(ENV{PKG_CONFIG_PATH} "${_saved_pkg_config_path}")
     set(CMAKE_PREFIX_PATH "${_saved_prefix_path}")
@@ -1043,7 +1109,8 @@ function(spm_create_target_from_pkgconfig)
     if(B_DEPENDENCIES)
         _spm_resolve_dependency_targets("${B_DEPENDENCIES}" _dep_targets)
     endif()
-    target_link_libraries(${_target_name} INTERFACE PkgConfig::${_pc_prefix} ${_dep_targets})
+    target_link_libraries(${_target_name} INTERFACE PkgConfig::${_pc_prefix}
+                                                    ${_dep_targets})
     add_library(${SPM_IMPORT_NAME}::${B_NAME} ALIAS ${_target_name})
 
     if(B_OUT_TARGET_NAME)

@@ -4,12 +4,12 @@ include(GetCurrentCompiler)
 #
 # create an Emscripten web page template
 # usage:
-# create_emscripten_html_template(OUTPUT_FILE 
+# create_emscripten_html_template(OUTPUT_FILE
 #     [TITLE "Page Title"]              # HTML page title
 #     [CANVAS_ID "canvas"]              # Canvas element ID
 #     [TEMPLATE_FILE path/to/template]  # Custom template file to use instead of default
 # )
-# 
+#
 # Template file format:
 # - Use {{TITLE}} for page title substitution
 # - Use {{CANVAS_ID}} for canvas element ID substitution
@@ -18,38 +18,47 @@ include(GetCurrentCompiler)
 function(create_emscripten_html_template output_file)
     cmake_parse_arguments(ARG "" "TITLE;CANVAS_ID;TEMPLATE_FILE" "" ${ARGN})
 
-    if (NOT ARG_TITLE)
+    if(NOT ARG_TITLE)
         set(ARG_TITLE "WebAssembly Application")
-    endif ()
+    endif()
 
-    if (NOT ARG_CANVAS_ID)
+    if(NOT ARG_CANVAS_ID)
         set(ARG_CANVAS_ID "canvas")
-    endif ()
+    endif()
 
     # Check if custom template file is provided and exists
-    if (ARG_TEMPLATE_FILE AND EXISTS "${ARG_TEMPLATE_FILE}")
+    if(ARG_TEMPLATE_FILE AND EXISTS "${ARG_TEMPLATE_FILE}")
         message(STATUS "Using custom HTML template: ${ARG_TEMPLATE_FILE}")
 
         # Read the template file
         file(READ "${ARG_TEMPLATE_FILE}" HTML_CONTENT)
 
         # Perform variable substitutions
-        string(REPLACE "{{TITLE}}" "${ARG_TITLE}" HTML_CONTENT "${HTML_CONTENT}")
-        string(REPLACE "{{CANVAS_ID}}" "${ARG_CANVAS_ID}" HTML_CONTENT "${HTML_CONTENT}")
+        string(REPLACE "{{TITLE}}" "${ARG_TITLE}" HTML_CONTENT
+                       "${HTML_CONTENT}")
+        string(REPLACE "{{CANVAS_ID}}" "${ARG_CANVAS_ID}" HTML_CONTENT
+                       "${HTML_CONTENT}")
 
         # Validate that the template has the required {{{ SCRIPT }}} placeholder
-        if (NOT HTML_CONTENT MATCHES "\\{\\{\\{ SCRIPT \\}\\}\\}")
-            message(WARNING "Custom template file '${ARG_TEMPLATE_FILE}' does not contain '{{{ SCRIPT }}}' placeholder. Emscripten may not work properly.")
-        endif ()
+        if(NOT HTML_CONTENT MATCHES "\\{\\{\\{ SCRIPT \\}\\}\\}")
+            message(
+                WARNING
+                    "Custom template file '${ARG_TEMPLATE_FILE}' does not contain '{{{ SCRIPT }}}' placeholder. Emscripten may not work properly."
+            )
+        endif()
 
-    else ()
+    else()
         # Use default template if no custom template provided or file doesn't exist
-        if (ARG_TEMPLATE_FILE)
-            message(WARNING "Custom template file '${ARG_TEMPLATE_FILE}' not found. Using default template.")
-        endif ()
+        if(ARG_TEMPLATE_FILE)
+            message(
+                WARNING
+                    "Custom template file '${ARG_TEMPLATE_FILE}' not found. Using default template."
+            )
+        endif()
 
-        _create_default_emscripten_template(HTML_CONTENT "${ARG_TITLE}" "${ARG_CANVAS_ID}")
-    endif ()
+        _create_default_emscripten_template(HTML_CONTENT "${ARG_TITLE}"
+                                            "${ARG_CANVAS_ID}")
+    endif()
 
     # Write the final HTML content
     file(WRITE "${output_file}" "${HTML_CONTENT}")
@@ -58,7 +67,8 @@ endfunction()
 
 # Internal function to create the default HTML template
 function(_create_default_emscripten_template output_var title canvas_id)
-    set(HTML_CONTENT "<!DOCTYPE html>
+    set(HTML_CONTENT
+        "<!DOCTYPE html>
 <html lang=\"en\">
 <head>
     <meta charset=\"UTF-8\">
@@ -145,7 +155,7 @@ function(_create_default_emscripten_template output_var title canvas_id)
         </div>
         <div id=\"output\" class=\"output\"></div>
     </div>
-    
+
     <script>
         var Module = {
             canvas: document.getElementById('${canvas_id}'),
@@ -173,5 +183,7 @@ function(_create_default_emscripten_template output_var title canvas_id)
 </body>
 </html>")
 
-    set(${output_var} "${HTML_CONTENT}" PARENT_SCOPE)
+    set(${output_var}
+        "${HTML_CONTENT}"
+        PARENT_SCOPE)
 endfunction()

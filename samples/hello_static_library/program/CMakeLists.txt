@@ -1,8 +1,10 @@
-register_executable(HelloWorld_StaticLibrary_Program
+register_executable(
+    HelloWorld_StaticLibrary_Program
     SOURCES
-        src/main.cpp
+    src/main.cpp
     LINK_LIBS
-        HelloWorld_StaticLibrary_Library
-    NAMESPACE    ${THIS_PROJECT_NAMESPACE}
-    EXPORT_SET   "${THIS_PROJECT_NAMESPACE}Targets"
-)
+    HelloWorld_StaticLibrary_Library
+    NAMESPACE
+    ${THIS_PROJECT_NAMESPACE}
+    EXPORT_SET
+    "${THIS_PROJECT_NAMESPACE}Targets")

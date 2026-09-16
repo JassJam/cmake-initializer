@@ -12,19 +12,20 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 include(project/Policies)
 
-project(cmake_initializer
+project(
+    cmake_initializer
     VERSION "${THIS_PROJECT_VERSION}"
     DESCRIPTION ${THIS_PROJECT_DESCRIPTION}
     HOMEPAGE_URL ${THIS_PROJECT_HOMEPAGE_URL}
-    LANGUAGES CXX
-)
+    LANGUAGES CXX)
 
-message(STATUS "Configuring ${THIS_PROJECT_PRETTY_NAME} v${THIS_PROJECT_VERSION}")
+message(
+    STATUS "Configuring ${THIS_PROJECT_PRETTY_NAME} v${THIS_PROJECT_VERSION}")
 
-if (BUILD_TESTING)
+if(BUILD_TESTING)
     include(CTest)
     enable_testing()
-endif ()
+endif()
 
 include(PreventInSourceBuilds)
 
@@ -34,9 +35,11 @@ include(project/ProjectConfig)
 add_subdirectory(samples)
 
 register_package_config(
-    NAME    ${THIS_PROJECT_NAMESPACE}
-    NAMESPACE    ${THIS_PROJECT_NAMESPACE}
-    EXPORT_SET   "${THIS_PROJECT_NAMESPACE}Targets"
-    COMPATIBILITY SameMajorVersion
-)
-
+    NAME
+    ${THIS_PROJECT_NAMESPACE}
+    NAMESPACE
+    ${THIS_PROJECT_NAMESPACE}
+    EXPORT_SET
+    "${THIS_PROJECT_NAMESPACE}Targets"
+    COMPATIBILITY
+    SameMajorVersion)

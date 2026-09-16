@@ -28,7 +28,10 @@ set(SPM_VERBOSE_OUTPUT
 #   Detected automatically from the string's shape.
 set(SPM_REGISTRY
     "git+https://codeberg.org/JassJam/SPM-repo.git"
-    CACHE STRING "Default registry: local/mounted dir, git+https(s)/git+ssh repo, or http(s) tarball server")
+    CACHE
+        STRING
+        "Default registry: local/mounted dir, git+https(s)/git+ssh repo, or http(s) tarball server"
+)
 
 # Optional default HTTP headers for the registry (e.g. an auth token),
 if(NOT DEFINED SPM_REGISTRY_HEADERS AND DEFINED ENV{SPM_REGISTRY_HEADERS})
@@ -38,7 +41,10 @@ else()
 endif()
 set(SPM_REGISTRY_HEADERS
     "${_spm_default_headers}"
-    CACHE STRING "Default HTTP headers sent with registry downloads, semicolon-separated 'Key: Value' entries")
+    CACHE
+        STRING
+        "Default HTTP headers sent with registry downloads, semicolon-separated 'Key: Value' entries"
+)
 
 set(SPM_PACKAGES_DIR
     "${CMAKE_BINARY_DIR}/_spm/packages/repositories"
@@ -54,10 +60,16 @@ set(SPM_PARALLEL_JOBS
     CACHE STRING "Parallel build jobs used when building a recipe")
 set(SPM_FORCE_REBUILD
     OFF
-    CACHE BOOL "Ignore all cache hits and rebuild every requested package from scratch")
+    CACHE
+        BOOL
+        "Ignore all cache hits and rebuild every requested package from scratch"
+)
 set(SPM_REGISTRY_REF
     ""
-    CACHE STRING "Default branch/tag to check out for git+ registries (empty = repo's default branch)")
+    CACHE
+        STRING
+        "Default branch/tag to check out for git+ registries (empty = repo's default branch)"
+)
 
 #
 
@@ -161,7 +173,9 @@ function(_spm_write_werror_wrapper out_path)
         endforeach()
         string(REPLACE ";" "\n       OR " _match_block "${_match_exprs}")
 
-        file(WRITE "${_wrapper}" "\
+        file(
+            WRITE "${_wrapper}"
+            "\
 set(_spm_compiler \"\${CMAKE_ARGV4}\")
 set(_spm_filtered \"\")
 math(EXPR _spm_last \"\${CMAKE_ARGC} - 1\")
@@ -178,7 +192,9 @@ if(NOT _spm_rc EQUAL 0)
 endif()
 ")
     endif()
-    set(${out_path} "${_wrapper}" PARENT_SCOPE)
+    set(${out_path}
+        "${_wrapper}"
+        PARENT_SCOPE)
 endfunction()
 
 # _spm_write_input_script(
@@ -193,7 +209,8 @@ function(_spm_write_input_script)
     if(NOT B_PATH
        OR NOT B_BUILD_DIR
        OR NOT B_BUILD_TYPE)
-        spm_log_fatal("_spm_write_input_script() requires PATH, BUILD_DIR and BUILD_TYPE")
+        spm_log_fatal(
+            "_spm_write_input_script() requires PATH, BUILD_DIR and BUILD_TYPE")
     endif()
 
     _spm_write_werror_wrapper(_werror_wrapper)
@@ -231,7 +248,8 @@ function(_spm_build_and_import name version recipe_dir)
         OUT_INSTALL_DIR
         OUT_BUILD_DIR)
     set(multiValArgs OPTIONS IMPORT_DEFINITIONS IMPORT_EXCLUDE)
-    cmake_parse_arguments(B "${options}" "${oneValArgs}" "${multiValArgs}" ${ARGN})
+    cmake_parse_arguments(B "${options}" "${oneValArgs}" "${multiValArgs}"
+                          ${ARGN})
 
     _spm_lowercase_first_char("${name}" _letter)
 
@@ -265,7 +283,8 @@ function(_spm_build_and_import name version recipe_dir)
         string(SUBSTRING "${_hash}" 0 16 _build_hash_dir)
     endif()
 
-    set(_build_dir "${CMAKE_BINARY_DIR}/_spm/${name}/${version}/${_build_hash_dir}")
+    set(_build_dir
+        "${CMAKE_BINARY_DIR}/_spm/${name}/${version}/${_build_hash_dir}")
     set(_cache_dir "${SPM_CACHE_DIRECTORY}/${_letter}/${name}/${_hash}")
 
     if(B_OUT_BUILD_DIR)
@@ -282,7 +301,8 @@ function(_spm_build_and_import name version recipe_dir)
 
     set(_input_script_file_name "spm-input.cmake")
     set(_input_script "${_build_dir}/${_input_script_file_name}")
-    _spm_write_input_script(PATH "${_input_script}" BUILD_DIR "${_build_dir}" BUILD_TYPE "${_pkg_build_type}")
+    _spm_write_input_script(PATH "${_input_script}" BUILD_DIR "${_build_dir}"
+                            BUILD_TYPE "${_pkg_build_type}")
     block()
     set(SPM_IMPORT_NAME ${B_IMPORT_NAME})
     set(SPM_BUILD_TYPE ${_pkg_build_type})
@@ -291,18 +311,22 @@ function(_spm_build_and_import name version recipe_dir)
     foreach(_cfg ${B_OPTIONS})
         string(FIND "${_cfg}" "=" _eq_pos)
         if(_eq_pos EQUAL -1)
-            spm_log_fatal("Malformed OPTIONS entry '${_cfg}', expected NAME=VALUE")
+            spm_log_fatal(
+                "Malformed OPTIONS entry '${_cfg}', expected NAME=VALUE")
         endif()
         string(SUBSTRING "${_cfg}" 0 ${_eq_pos} _opt_name)
         math(EXPR _val_start "${_eq_pos} + 1")
         string(SUBSTRING "${_cfg}" ${_val_start} -1 _opt_val)
 
-        if(DEFINED _SPM_YAML_SUBLIST_SEP AND _opt_val MATCHES "${_SPM_YAML_SUBLIST_SEP}")
-            string(REPLACE "${_SPM_YAML_SUBLIST_SEP}" ";" _opt_val "${_opt_val}")
+        if(DEFINED _SPM_YAML_SUBLIST_SEP AND _opt_val MATCHES
+                                             "${_SPM_YAML_SUBLIST_SEP}")
+            string(REPLACE "${_SPM_YAML_SUBLIST_SEP}" ";" _opt_val
+                           "${_opt_val}")
         endif()
 
         set(${_opt_name} ${_opt_val})
-        file(APPEND "${_input_script}" "set(${_opt_name} \"${_opt_val}\" CACHE INTERNAL \"\" FORCE)\n")
+        file(APPEND "${_input_script}"
+             "set(${_opt_name} \"${_opt_val}\" CACHE INTERNAL \"\" FORCE)\n")
     endforeach()
 
     spm_log_debug("Configuring '${name}@${version}' (${_hash})")
@@ -321,23 +345,30 @@ function(_spm_build_and_import name version recipe_dir)
         if(DEFINED ${_var})
             set(_val "${${_var}}")
             if(_var STREQUAL "CMAKE_C_FLAGS" OR _var STREQUAL "CMAKE_CXX_FLAGS")
-                string(REGEX REPLACE "-fsanitize=[A-Za-z0-9,_-]+" "" _val "${_val}")
-                string(REGEX REPLACE "-fsanitize-[A-Za-z0-9=,_-]+" "" _val "${_val}")
-                string(REGEX REPLACE "-fno-omit-frame-pointer" "" _val "${_val}")
+                string(REGEX REPLACE "-fsanitize=[A-Za-z0-9,_-]+" "" _val
+                                     "${_val}")
+                string(REGEX REPLACE "-fsanitize-[A-Za-z0-9=,_-]+" "" _val
+                                     "${_val}")
+                string(REGEX REPLACE "-fno-omit-frame-pointer" "" _val
+                                     "${_val}")
 
-                string(REGEX REPLACE "/fsanitize=[A-Za-z0-9,_-]+" "" _val "${_val}")
-                string(REGEX REPLACE "/fsanitize-[A-Za-z0-9=,_-]+" "" _val "${_val}")
+                string(REGEX REPLACE "/fsanitize=[A-Za-z0-9,_-]+" "" _val
+                                     "${_val}")
+                string(REGEX REPLACE "/fsanitize-[A-Za-z0-9=,_-]+" "" _val
+                                     "${_val}")
 
                 string(REGEX REPLACE "  +" " " _val "${_val}")
                 string(STRIP "${_val}" _val)
             endif()
-            file(APPEND "${_input_script}" "set(${_var} \"${_val}\" CACHE INTERNAL \"\" FORCE)\n")
+            file(APPEND "${_input_script}"
+                 "set(${_var} \"${_val}\" CACHE INTERNAL \"\" FORCE)\n")
         endif()
     endforeach()
 
     file(GLOB _files_to_copy ${recipe_dir}/*)
     file(COPY ${_files_to_copy} DESTINATION ${_build_dir})
-    file(COPY "${SPM_ROOT}/spm.cmake" "${SPM_ROOT}/spm-recipe.cmake" DESTINATION "${_build_dir}")
+    file(COPY "${SPM_ROOT}/spm.cmake" "${SPM_ROOT}/spm-recipe.cmake"
+         DESTINATION "${_build_dir}")
 
     add_subdirectory(${_build_dir} ${_cache_dir} SYSTEM)
     endblock()
@@ -366,7 +397,8 @@ function(
     set(_path_in_repo "${_letter}/${name}/${version}")
 
     if(EXISTS "${_local_repo_dir}/CMakeLists.txt")
-        spm_log_debug("Using recipe for '${name}@${version}' at ${_local_repo_dir}")
+        spm_log_debug(
+            "Using recipe for '${name}@${version}' at ${_local_repo_dir}")
         set(${out_dir}
             "${_local_repo_dir}"
             PARENT_SCOPE)
@@ -377,9 +409,12 @@ function(
         set(_src "${registry}/${_path_in_repo}")
         if(NOT EXISTS "${_src}/CMakeLists.txt")
             spm_log_fatal(
-                "No recipe for '${name}@${version}' found under local registry '${registry}' (expected ${_src})")
+                "No recipe for '${name}@${version}' found under local registry '${registry}' (expected ${_src})"
+            )
         endif()
-        spm_log_debug("Using recipe for '${name}@${version}' directly from local registry ${_src}")
+        spm_log_debug(
+            "Using recipe for '${name}@${version}' directly from local registry ${_src}"
+        )
         set(${out_dir}
             "${_src}"
             PARENT_SCOPE)
@@ -387,7 +422,9 @@ function(
 
     elseif(registry MATCHES "^git\\+(.+)$")
         if(NOT GIT_EXECUTABLE)
-            spm_log_fatal("Registry '${registry}' needs git, but no git executable was found")
+            spm_log_fatal(
+                "Registry '${registry}' needs git, but no git executable was found"
+            )
         endif()
         set(_git_url "${CMAKE_MATCH_1}")
 
@@ -396,7 +433,8 @@ function(
             list(APPEND _git_config_args -c "http.extraHeader=${_h}")
         endforeach()
 
-        set(_scratch_dir "${CMAKE_BINARY_DIR}/_spm/_downloads/${name}-${version}-git")
+        set(_scratch_dir
+            "${CMAKE_BINARY_DIR}/_spm/_downloads/${name}-${version}-git")
         if(EXISTS "${_scratch_dir}")
             file(REMOVE_RECURSE "${_scratch_dir}")
         endif()
@@ -422,7 +460,8 @@ function(
             ERROR_VARIABLE
             _git_output)
         if(NOT _git_result EQUAL 0)
-            spm_log_fatal("git clone failed for registry '${registry}':\n${_git_output}")
+            spm_log_fatal(
+                "git clone failed for registry '${registry}':\n${_git_output}")
         endif()
 
         spm_execute_process(
@@ -441,17 +480,21 @@ function(
             _sparse_output)
         if(NOT _sparse_result EQUAL 0)
             file(REMOVE_RECURSE "${_scratch_dir}")
-            spm_log_fatal("git sparse-checkout failed for '${name}@${version}':\n${_sparse_output}")
+            spm_log_fatal(
+                "git sparse-checkout failed for '${name}@${version}':\n${_sparse_output}"
+            )
         endif()
 
         set(_fetched_dir "${_scratch_dir}/${_path_in_repo}")
         if(NOT EXISTS "${_fetched_dir}/CMakeLists.txt")
             file(REMOVE_RECURSE "${_scratch_dir}")
             spm_log_fatal(
-                "No recipe for '${name}@${version}' found in git registry '${registry}' (expected ${_path_in_repo})")
+                "No recipe for '${name}@${version}' found in git registry '${registry}' (expected ${_path_in_repo})"
+            )
         endif()
 
-        get_filename_component(_local_repo_parent "${_local_repo_dir}" DIRECTORY)
+        get_filename_component(_local_repo_parent "${_local_repo_dir}"
+                               DIRECTORY)
         file(MAKE_DIRECTORY "${_local_repo_parent}")
         file(RENAME "${_fetched_dir}" "${_local_repo_dir}")
         file(REMOVE_RECURSE "${_scratch_dir}")
@@ -480,21 +523,28 @@ function(
         if(NOT _dl_code EQUAL 0)
             list(GET _dl_status 1 _dl_message)
             file(REMOVE "${_tarball_dest}")
-            spm_log_fatal("Failed to fetch '${name}@${version}' from ${_tarball_url}: ${_dl_message}")
+            spm_log_fatal(
+                "Failed to fetch '${name}@${version}' from ${_tarball_url}: ${_dl_message}"
+            )
         endif()
 
         file(MAKE_DIRECTORY "${_local_repo_dir}")
-        file(ARCHIVE_EXTRACT INPUT "${_tarball_dest}" DESTINATION "${_local_repo_dir}")
+        file(ARCHIVE_EXTRACT INPUT "${_tarball_dest}" DESTINATION
+             "${_local_repo_dir}")
         file(REMOVE "${_tarball_dest}")
         if(NOT EXISTS "${_local_repo_dir}/CMakeLists.txt")
             file(REMOVE_RECURSE "${_local_repo_dir}")
-            spm_log_fatal("Archive for '${name}@${version}' had no CMakeLists.txt at its root")
+            spm_log_fatal(
+                "Archive for '${name}@${version}' had no CMakeLists.txt at its root"
+            )
         endif()
         set(${out_dir}
             "${_local_repo_dir}"
             PARENT_SCOPE)
     else()
-        spm_log_fatal("SPM_REGISTRY '${registry}' is not a local directory, a git+https(s)/ssh URL, or an http(s) URL")
+        spm_log_fatal(
+            "SPM_REGISTRY '${registry}' is not a local directory, a git+https(s)/ssh URL, or an http(s) URL"
+        )
     endif()
 endfunction()
 
@@ -511,24 +561,30 @@ function(_spm_require_package_enter)
         set(${B_ALREADY_ENTERED}
             TRUE
             PARENT_SCOPE)
-        spm_log_debug("Re-entering (depth ${_new_count}), loaded saved registry/registry_ref/headers")
+        spm_log_debug(
+            "Re-entering (depth ${_new_count}), loaded saved registry/registry_ref/headers"
+        )
     else()
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_COUNT "1")
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY "${B_REGISTRY}")
-        set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY_REF "${B_REGISTRY_REF}")
+        set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY_REF
+                                     "${B_REGISTRY_REF}")
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_HEADERS "${B_HEADERS}")
 
         set(${B_ALREADY_ENTERED}
             FALSE
             PARENT_SCOPE)
-        spm_log_debug("Entering (depth 1), saving directory/registry/registry_ref/headers")
+        spm_log_debug(
+            "Entering (depth 1), saving directory/registry/registry_ref/headers"
+        )
     endif()
 endfunction()
 
 function(_spm_require_package_exit)
     get_property(_count GLOBAL PROPERTY SPM_REQUIRE_STACK_COUNT)
     if(NOT _count)
-        spm_log_fatal("_spm_require_package_exit() called without a matching enter")
+        spm_log_fatal(
+            "_spm_require_package_exit() called without a matching enter")
     endif()
 
     math(EXPR _new_count "${_count} - 1")
@@ -538,7 +594,9 @@ function(_spm_require_package_exit)
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY)
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY_REF)
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_HEADERS)
-        spm_log_debug("Exiting (depth 0), cleared saved directory/registry/registry_ref/headers")
+        spm_log_debug(
+            "Exiting (depth 0), cleared saved directory/registry/registry_ref/headers"
+        )
     else()
         set_property(GLOBAL PROPERTY SPM_REQUIRE_STACK_COUNT "${_new_count}")
         spm_log_debug("Exiting (depth ${_new_count})")
@@ -575,7 +633,8 @@ function(spm_require_package)
         IMPORT_NAME
         OUT_INSTALL_DIR)
     set(multiValArgs OPTIONS HEADERS IMPORT_DEFINITIONS IMPORT_EXCLUDE)
-    cmake_parse_arguments(ARG "${options}" "${oneValArgs}" "${multiValArgs}" ${ARGN})
+    cmake_parse_arguments(ARG "${options}" "${oneValArgs}" "${multiValArgs}"
+                          ${ARGN})
 
     if(NOT ARG_NAME OR NOT ARG_VERSION)
         spm_log_fatal("NAME and VERSION argument is required")
@@ -592,7 +651,8 @@ function(spm_require_package)
         ${ARG_HEADERS})
     if(_already_entered)
         get_property(ARG_REGISTRY GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY)
-        get_property(ARG_REGISTRY_REF GLOBAL PROPERTY SPM_REQUIRE_STACK_REGISTRY_REF)
+        get_property(ARG_REGISTRY_REF GLOBAL
+                     PROPERTY SPM_REQUIRE_STACK_REGISTRY_REF)
         get_property(ARG_HEADERS GLOBAL PROPERTY SPM_REQUIRE_STACK_HEADERS)
     endif()
 
@@ -612,21 +672,25 @@ function(spm_require_package)
         set(_effective_headers "${SPM_REGISTRY_HEADERS}")
     endif()
 
-    _spm_resolve_recipe_dir("${ARG_NAME}" "${ARG_VERSION}" "${_effective_registry}" "${_effective_ref}"
-                            "${_effective_headers}" _recipe_dir)
+    _spm_resolve_recipe_dir(
+        "${ARG_NAME}" "${ARG_VERSION}" "${_effective_registry}"
+        "${_effective_ref}" "${_effective_headers}" _recipe_dir)
 
     set(_unsupported_script "${_recipe_dir}/Support.cmake")
     if(EXISTS "${_unsupported_script}")
         unset(SPM_UNSUPPORTED_REASON)
         include("${_unsupported_script}")
         if(SPM_UNSUPPORTED_REASON)
-            spm_log_debug("Recipe for '${ARG_NAME}@${ARG_VERSION}' is unsupported here: ${SPM_UNSUPPORTED_REASON}")
+            spm_log_debug(
+                "Recipe for '${ARG_NAME}@${ARG_VERSION}' is unsupported here: ${SPM_UNSUPPORTED_REASON}"
+            )
             _spm_require_package_exit()
             return()
         endif()
     endif()
 
-    spm_log_debug("Building & importing '${ARG_NAME}@${ARG_VERSION}' from ${_recipe_dir}")
+    spm_log_debug(
+        "Building & importing '${ARG_NAME}@${ARG_VERSION}' from ${_recipe_dir}")
 
     set(_force_flag "")
     if(ARG_FORCE)
@@ -670,7 +734,8 @@ function(spm_require_package)
     endif()
 
     set_property(GLOBAL APPEND PROPERTY SPM_REQUIRED_PACKAGES "${_pkg_key}")
-    set_property(GLOBAL PROPERTY "SPM_INSTALL_DIR_${_pkg_key}" "${_out_install_dir}")
+    set_property(GLOBAL PROPERTY "SPM_INSTALL_DIR_${_pkg_key}"
+                                 "${_out_install_dir}")
 
     _spm_require_package_exit()
 

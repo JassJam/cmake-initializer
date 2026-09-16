@@ -2,9 +2,15 @@ include_guard(GLOBAL)
 
 cmake_minimum_required(VERSION 3.21)
 
-set(XC_VERBOSE_OUTPUT ON CACHE BOOL "Enable verbose output for Xrepo Packages")
-set(XC_BOOTSTRAP_XMAKE ON CACHE BOOL "Bootstrap Xmake automatically")
-set(XC_XMAKE_VERSION "3.0.3" CACHE STRING "XMake version")
+set(XC_VERBOSE_OUTPUT
+    ON
+    CACHE BOOL "Enable verbose output for Xrepo Packages")
+set(XC_BOOTSTRAP_XMAKE
+    ON
+    CACHE BOOL "Bootstrap Xmake automatically")
+set(XC_XMAKE_VERSION
+    "3.0.3"
+    CACHE STRING "XMake version")
 
 #
 
@@ -52,18 +58,25 @@ function(_detect_toolchain)
         return()
     endif()
 
-    if(("${_compiler_name}" MATCHES "^gcc")
-            OR ("${_compiler_name}" MATCHES "^clang"))
-        message(STATUS "xrepo: set(XREPO_TOOLCHAIN ${_compiler_name}) because CMAKE_C_COMPILER or CMAKE_CXX_COMPILER is set")
+    if(("${_compiler_name}" MATCHES "^gcc") OR ("${_compiler_name}" MATCHES
+                                                "^clang"))
+        message(
+            STATUS
+                "xrepo: set(XREPO_TOOLCHAIN ${_compiler_name}) because CMAKE_C_COMPILER or CMAKE_CXX_COMPILER is set"
+        )
         set(XREPO_TOOLCHAIN "${_compiler_name}")
     else()
-        message(STATUS "xrepo: CMAKE_C_COMPILER=${CMAKE_C_COMPILER} CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} using system default toolchain.")
+        message(
+            STATUS
+                "xrepo: CMAKE_C_COMPILER=${CMAKE_C_COMPILER} CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} using system default toolchain."
+        )
     endif()
 endfunction()
 
 function(_install_xmake_program)
     set(_xmake_binary_dir ${CMAKE_BINARY_DIR}/xmake)
-    _xcmake_log("xmake not found, Install it to ${_xmake_binary_dir} automatically!")
+    _xcmake_log(
+        "xmake not found, Install it to ${_xmake_binary_dir} automatically!")
     if(EXISTS "${_xmake_binary_dir}")
         file(REMOVE_RECURSE ${_xmake_binary_dir})
     endif()
@@ -71,28 +84,33 @@ function(_install_xmake_program)
     # Download xmake archive file
     if(WIN32)
         set(_xmake_archive_file ${CMAKE_BINARY_DIR}/xmake-master.win32.zip)
-        set(_xmake_archive_link https://github.com/xmake-io/xmake/releases/download/v${XC_XMAKE_VERSION}/xmake-master.win32.zip)
+        set(_xmake_archive_link
+            https://github.com/xmake-io/xmake/releases/download/v${XC_XMAKE_VERSION}/xmake-master.win32.zip
+        )
     else()
         set(_xmake_archive_file ${CMAKE_BINARY_DIR}/xmake-master.tar.gz)
-        set(_xmake_archive_link https://github.com/xmake-io/xmake/releases/download/v${XC_XMAKE_VERSION}/xmake-master.tar.gz)
+        set(_xmake_archive_link
+            https://github.com/xmake-io/xmake/releases/download/v${XC_XMAKE_VERSION}/xmake-master.tar.gz
+        )
     endif()
 
     if(NOT EXISTS "${_xmake_archive_file}")
         _xcmake_log("Downloading xmake from ${_xmake_archive_link}")
-        file(DOWNLOAD "${_xmake_archive_link}"
-                      "${_xmake_archive_file}"
-                      TLS_VERIFY ON)
+        file(DOWNLOAD "${_xmake_archive_link}" "${_xmake_archive_file}"
+             TLS_VERIFY ON)
     endif()
 
     if(NOT EXISTS "${_xmake_binary_dir}")
         message(STATUS "Extracting ${_xmake_archive_file}")
         file(MAKE_DIRECTORY ${_xmake_binary_dir})
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${_xmake_archive_file}
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E tar xzf ${_xmake_archive_file}
             WORKING_DIRECTORY ${_xmake_binary_dir}
             RESULT_VARIABLE exit_code)
 
         if(NOT "${exit_code}" STREQUAL "0")
-            _xcmake_fatal("unzip ${_xmake_archive_file} failed, exit code: ${exit_code}")
+            _xcmake_fatal(
+                "unzip ${_xmake_archive_file} failed, exit code: ${exit_code}")
         endif()
     endif()
 
@@ -105,7 +123,9 @@ function(_install_xmake_program)
         set(XMAKE_SOURCE_DIR ${_xmake_binary_dir}/xmake-${XMAKE_RELEASE_LATEST})
         _xcmake_log("Configuring xmake")
 
-        execute_process(COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD ./configure
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD
+                    ./configure
             WORKING_DIRECTORY ${XMAKE_SOURCE_DIR}
             RESULT_VARIABLE exit_code)
         if(NOT "${exit_code}" STREQUAL "0")
@@ -113,7 +133,9 @@ function(_install_xmake_program)
         endif()
 
         _xcmake_log("Building xmake")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD make -j4
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=LD
+                    make -j4
             WORKING_DIRECTORY ${XMAKE_SOURCE_DIR}
             RESULT_VARIABLE exit_code)
         if(NOT "${exit_code}" STREQUAL "0")
@@ -121,7 +143,8 @@ function(_install_xmake_program)
         endif()
 
         _xcmake_log("Installing xmake")
-        execute_process(COMMAND make install PREFIX=${_xmake_binary_dir}/install
+        execute_process(
+            COMMAND make install PREFIX=${_xmake_binary_dir}/install
             WORKING_DIRECTORY ${XMAKE_SOURCE_DIR}
             RESULT_VARIABLE exit_code)
         if(NOT "${exit_code}" STREQUAL "0")
@@ -154,11 +177,14 @@ function(_detect_xmake_cmd)
     endif()
 
     if(NOT _xmake_cmd)
-        _xcmake_fatal("xmake not found, Please install it first from https://xmake.io")
+        _xcmake_fatal(
+            "xmake not found, Please install it first from https://xmake.io")
     endif()
 
     _xcmake_log("xmake command: ${_xmake_cmd}")
-    set(XC_XMAKE_CMD "${_xmake_cmd}" CACHE INTERNAL "XMake path")
+    set(XC_XMAKE_CMD
+        "${_xmake_cmd}"
+        CACHE INTERNAL "XMake path")
 endfunction()
 
 _detect_toolchain()
@@ -173,10 +199,12 @@ function(_xcmake_generate_toolchain out_var)
     set(_strip "${CMAKE_STRIP}")
 
     if(NOT _cc)
-        _xcmake_fatal("CMAKE_C_COMPILER not set, cannot generate xmake toolchain")
+        _xcmake_fatal(
+            "CMAKE_C_COMPILER not set, cannot generate xmake toolchain")
     endif()
     if(NOT _cxx)
-        _xcmake_fatal("CMAKE_CXX_COMPILER not set, cannot generate xmake toolchain")
+        _xcmake_fatal(
+            "CMAKE_CXX_COMPILER not set, cannot generate xmake toolchain")
     endif()
 
     if(NOT _ar)
@@ -191,7 +219,8 @@ function(_xcmake_generate_toolchain out_var)
     string(REPLACE "\\" "\\\\" _ar "${_ar}")
     string(REPLACE "\\" "\\\\" _strip "${_strip}")
 
-    set(_toolchain_lua "\
+    set(_toolchain_lua
+        "\
 toolchain(\"${XMAKE_TOOLCHAIN_NAME}\")
     set_kind(\"standalone\")
     set_toolset(\"cc\", \"${_cc}\")
@@ -201,9 +230,13 @@ toolchain(\"${XMAKE_TOOLCHAIN_NAME}\")
 toolchain_end()
 ")
 
-    _xcmake_log("Generated xmake toolchain using cc=${_cc} cxx=${_cxx} ar=${_ar} strip=${_strip}")
+    _xcmake_log(
+        "Generated xmake toolchain using cc=${_cc} cxx=${_cxx} ar=${_ar} strip=${_strip}"
+    )
 
-    set(${out_var} "${_toolchain_lua}" PARENT_SCOPE)
+    set(${out_var}
+        "${_toolchain_lua}"
+        PARENT_SCOPE)
 endfunction()
 
 function(_xcmake_generate_imports out_var)
@@ -215,7 +248,9 @@ function(_xcmake_generate_imports out_var)
         file(READ "${_file}" _file_content)
         string(APPEND _imports "${_file_content}" "\n")
     endforeach()
-    set(${out_var} "${_imports}" PARENT_SCOPE)
+    set(${out_var}
+        "${_imports}"
+        PARENT_SCOPE)
 endfunction()
 
 #
@@ -224,7 +259,8 @@ function(xcmake_require)
     set(optionArgs DEBUG)
     set(oneValArgs NAME ALIAS VERSION)
     set(multiValArgs CONFIGS IMPORTS)
-    cmake_parse_arguments(B "${optionArgs}" "${oneValArgs}" "${multiValArgs}" ${ARGN})
+    cmake_parse_arguments(B "${optionArgs}" "${oneValArgs}" "${multiValArgs}"
+                          ${ARGN})
 
     if(NOT B_NAME)
         _xcmake_fatal("xrepo_require: name required")
@@ -243,7 +279,7 @@ function(xcmake_require)
     if(B_CONFIGS)
         string(REPLACE ";" "," B_CONFIGS "${B_CONFIGS}")
     endif()
-    
+
     set(_build_dir "${CMAKE_BINARY_DIR}/_xcmake/${B_ALIAS}")
 
     set(_xmake_input "xmake.lua")
@@ -273,37 +309,40 @@ target(\"${B_ALIAS}\")
     set(_toolchain "")
     if(XREPO_TOOLCHAIN)
         set(_toolchain "--toolchain=${XREPO_TOOLCHAIN}")
-    endif ()
+    endif()
 
     _xcmake_execute_process(
-            COMMAND
-            ${XC_XMAKE_CMD}
-            f -y ${_toolchain}
-            WORKING_DIRECTORY
-            ${_build_dir}
-            RESULT_VARIABLE
-            _xmake_result
-            OUTPUT_VARIABLE
-            _xmake_output
-            ERROR_VARIABLE
-            _xmake_output
-    )
+        COMMAND
+        ${XC_XMAKE_CMD}
+        f
+        -y
+        ${_toolchain}
+        WORKING_DIRECTORY
+        ${_build_dir}
+        RESULT_VARIABLE
+        _xmake_result
+        OUTPUT_VARIABLE
+        _xmake_output
+        ERROR_VARIABLE
+        _xmake_output)
     if(NOT _xmake_result EQUAL 0)
         _xcmake_fatal("Failed to load configure xmake: ${_xmake_output}")
     endif()
     _xcmake_execute_process(
-            COMMAND
-            ${XC_XMAKE_CMD}
-            project -k cmake -y
-            WORKING_DIRECTORY
-            ${_build_dir}
-            RESULT_VARIABLE
-            _xmake_result
-            OUTPUT_VARIABLE
-            _xmake_output
-            ERROR_VARIABLE
-            _xmake_output
-    )
+        COMMAND
+        ${XC_XMAKE_CMD}
+        project
+        -k
+        cmake
+        -y
+        WORKING_DIRECTORY
+        ${_build_dir}
+        RESULT_VARIABLE
+        _xmake_result
+        OUTPUT_VARIABLE
+        _xmake_output
+        ERROR_VARIABLE
+        _xmake_output)
     if(NOT _xmake_result EQUAL 0)
         _xcmake_fatal("Failed to load configure xmake: ${_xmake_output}")
     endif()
