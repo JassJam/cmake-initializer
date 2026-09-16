@@ -26,4 +26,4 @@ set(CMAKE_CXX_HEADER_EXTENSION
     inc)
 
 # Valid package managers
-set(VALID_PACKAGE_MANAGERS CPM XMake)
+set(VALID_PACKAGE_MANAGERS CPM XMake SPM)

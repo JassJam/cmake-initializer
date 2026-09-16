@@ -29,8 +29,8 @@ endif()
 
 include(PreventInSourceBuilds)
 
-include(project/Initialization)
 include(project/ProjectConfig)
+include(project/Initialization)
 
 add_subdirectory(samples)
 

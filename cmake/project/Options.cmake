@@ -19,7 +19,7 @@ mark_as_advanced(ENABLE_CCACHE)
 set(PACKAGE_MANAGERS
     "CPM"
     CACHE STRING
-          "Package managers to enable (semicolon-separated list: CPM, XMake)")
+          "Package managers to enable (semicolon-separated list: SPM, CPM, XMake)")
 
 # === MAIN CONFIGURATION OPTIONS ===
 option(DEV_MODE "Enable development mode (all quality tools)" ON)
