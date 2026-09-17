@@ -88,10 +88,12 @@ function(enable_static_linking)
     )
 
     if(CURRENT_COMPILER STREQUAL "CLANG" OR CURRENT_COMPILER MATCHES "GCC")
-        append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS
-                                "-static-libstdc++ -static-libgcc")
-        append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS
-                                "-static-libstdc++ -static-libgcc")
+        append_flags_if_missing(
+            CMAKE_EXE_LINKER_FLAGS "-static-libstdc++ -static-libgcc"
+            "Global EXE linker with static linking")
+        append_flags_if_missing(
+            CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++ -static-libgcc"
+            "Global EXE linker with static linking")
         message(STATUS "Static linking flags applied for GCC/Clang")
     elseif(CURRENT_COMPILER STREQUAL "MSVC" OR CURRENT_COMPILER STREQUAL
                                                "CLANG-MSVC")
@@ -100,13 +102,16 @@ function(enable_static_linking)
             "MSVC runtime library")
         message(STATUS "Static runtime linking enabled for ${CURRENT_COMPILER}")
     elseif(CURRENT_COMPILER STREQUAL "INTEL")
-        append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS "-static-intel")
-        append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS "-static-intel")
+        append_flags_if_missing(CMAKE_EXE_LINKER_FLAGS "-static-intel"
+                                "Global EXE linker with static linking")
+        append_flags_if_missing(CMAKE_SHARED_LINKER_FLAGS "-static-intel"
+                                "Global EXE linker with static linking")
         message(STATUS "Static linking flags applied for Intel compiler")
     elseif(CURRENT_COMPILER STREQUAL "EMSCRIPTEN")
         append_flags_if_missing(
             CMAKE_EXE_LINKER_FLAGS
-            "-static-libstdc++ -s STANDALONE_WASM=1 -s WASM=1")
+            "-static-libstdc++ -s STANDALONE_WASM=1 -s WASM=1"
+            "Global EXE linker with static linking")
         message(STATUS "Static linking flags applied for Emscripten")
     else()
         message(
