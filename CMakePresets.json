@@ -52,6 +52,7 @@
       "description": "Windows settings for MSBuild toolchain that apply to msvc and clang",
       "hidden": true,
       "inherits": "conf-common",
+      "generator": "Ninja Multi-Config",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -93,7 +94,7 @@
       },
       "architecture": {
         "value": "x64",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
     {
@@ -110,7 +111,7 @@
       },
       "architecture": {
         "value": "Win32",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
     {
@@ -127,7 +128,7 @@
       },
       "architecture": {
         "value": "x64",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
     {
@@ -144,7 +145,7 @@
       },
       "architecture": {
         "value": "Win32",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
 
