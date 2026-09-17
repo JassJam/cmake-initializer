@@ -13,7 +13,6 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "23",
 
-        "THIS_PROJECT_NAME": "cmake_initializer",
         "THIS_PROJECT_PRETTY_NAME": "CMake Initializer Template",
         "THIS_PROJECT_VERSION": "1.0.0",
         "THIS_PROJECT_NAMESPACE": "cmake_initializer",
@@ -53,6 +52,7 @@
       "description": "Windows settings for MSBuild toolchain that apply to msvc and clang",
       "hidden": true,
       "inherits": "conf-common",
+      "generator": "Ninja Multi-Config",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
@@ -94,7 +94,7 @@
       },
       "architecture": {
         "value": "x64",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
     {
@@ -111,7 +111,7 @@
       },
       "architecture": {
         "value": "Win32",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
     {
@@ -128,7 +128,7 @@
       },
       "architecture": {
         "value": "x64",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
     {
@@ -145,10 +145,10 @@
       },
       "architecture": {
         "value": "Win32",
-        "strategy": "set"
+        "strategy": "external"
       }
     },
-    
+
     {
       "name": "windows-clang-debug",
       "displayName": "clang-cl Debug",
@@ -181,70 +181,36 @@
     },
 
     {
-      "name": "unixlike-x64-gcc-debug",
-      "displayName": "Unix-Like x64 GCC Debug",
-      "description": "Target Unix-like OS with the gcc compiler, debug build type (x64)",
+      "name": "unixlike-x86_64-gcc-debug",
+      "displayName": "Unix-Like x86_64 GCC Debug",
+      "description": "Target Unix-like OS with the gcc compiler, debug build type (x86_64)",
       "inherits": [
         "conf-unixlike-common",
         "conf-debug-common"
       ],
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_C_FLAGS": "-m64",
-        "CMAKE_CXX_FLAGS": "-m64"
+        "CMAKE_CXX_COMPILER": "g++"
       }
     },
     {
-      "name": "unixlike-x86-gcc-debug",
-      "displayName": "Unix-Like x86 GCC Debug",
-      "description": "Target Unix-like OS with the gcc compiler, debug build type (x86)",
-      "inherits": [
-        "conf-unixlike-common",
-        "conf-debug-common"
-      ],
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_C_FLAGS": "-m32",
-        "CMAKE_CXX_FLAGS": "-m32"
-      }
-    },
-    {
-      "name": "unixlike-x64-gcc-release",
-      "displayName": "Unix-Like x64 GCC Release",
-      "description": "Target Unix-like OS with the gcc compiler, release build type (x64)",
+      "name": "unixlike-x86_64-gcc-release",
+      "displayName": "Unix-Like x86_64 GCC Release",
+      "description": "Target Unix-like OS with the gcc compiler, release build type (x86_64)",
       "inherits": [
         "conf-unixlike-common",
         "conf-release-common"
       ],
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_C_FLAGS": "-m64",
-        "CMAKE_CXX_FLAGS": "-m64"
-      }
-    },
-    {
-      "name": "unixlike-x86-gcc-release",
-      "displayName": "Unix-Like x86 GCC Release",
-      "description": "Target Unix-like OS with the gcc compiler, release build type (x86)",
-      "inherits": [
-        "conf-unixlike-common",
-        "conf-release-common"
-      ],
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_C_FLAGS": "-m32",
-        "CMAKE_CXX_FLAGS": "-m32"
+        "CMAKE_CXX_COMPILER": "g++"
       }
     },
 
     {
-      "name": "unixlike-x64-clang-debug",
-      "displayName": "Unix-Like x64 Clang Debug",
-      "description": "Target Unix-like OS with the clang compiler, debug build type (x64)",
+      "name": "unixlike-x86_64-clang-debug",
+      "displayName": "Unix-Like x86_64 Clang Debug",
+      "description": "Target Unix-like OS with the clang compiler, debug build type (x86_64)",
       "inherits": [
         "conf-unixlike-common",
         "conf-debug-common"
@@ -253,14 +219,33 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS": "-m64",
-        "CMAKE_CXX_FLAGS": "-m64"
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++"
       }
     },
     {
-      "name": "unixlike-x86-clang-debug",
-      "displayName": "Unix-Like x86 Clang Debug",
-      "description": "Target Unix-like OS with the clang compiler, debug build type (x86)",
+      "name": "unixlike-x86_64-clang-release",
+      "displayName": "Unix-Like x86_64 Clang Release",
+      "description": "Target Unix-like OS with the clang compiler, release build type (x86_64)",
+      "inherits": [
+        "conf-unixlike-common",
+        "conf-release-common"
+      ],
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++"
+      }
+    },
+
+    {
+      "name": "unixlike-arm64-clang-debug",
+      "displayName": "Unix-Like arm64 Clang Debug",
+      "description": "Target Unix-like OS with the clang compiler, debug build type (arm64)",
       "inherits": [
         "conf-unixlike-common",
         "conf-debug-common"
@@ -269,14 +254,16 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS": "-m32",
-        "CMAKE_CXX_FLAGS": "-m32"
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_OSX_ARCHITECTURES": "arm64"
       }
     },
     {
-      "name": "unixlike-x64-clang-release",
-      "displayName": "Unix-Like x64 Clang Release",
-      "description": "Target Unix-like OS with the clang compiler, release build type (x64)",
+      "name": "unixlike-arm64-clang-release",
+      "displayName": "Unix-Like arm64 Clang Release",
+      "description": "Target Unix-like OS with the clang compiler, release build type (arm64)",
       "inherits": [
         "conf-unixlike-common",
         "conf-release-common"
@@ -285,24 +272,10 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS": "-m64",
-        "CMAKE_CXX_FLAGS": "-m64"
-      }
-    },
-    {
-      "name": "unixlike-x86-clang-release",
-      "displayName": "Unix-Like x86 Clang Release",
-      "description": "Target Unix-like OS with the clang compiler, release build type (x86)",
-      "inherits": [
-        "conf-unixlike-common",
-        "conf-release-common"
-      ],
-      "generator": "Ninja Multi-Config",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_C_FLAGS": "-m32",
-        "CMAKE_CXX_FLAGS": "-m32"
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_OSX_ARCHITECTURES": "arm64"
       }
     },
 

@@ -42,21 +42,31 @@ runs:
     - name: Install system dependencies
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential ninja-build
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y build-essential ninja-build && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Install 32-bit dependencies
       shell: bash
       if: contains(matrix.config.name, 'x86')
       run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-multilib g++-multilib
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Install Clang
       if: contains(inputs.config-preset, 'clang')
       shell: bash
       run: |
-        sudo apt-get install -y clang
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Run Tests
       id: test

@@ -5,4 +5,5 @@ include_guard(DIRECTORY)
 #
 
 include(${PROJECT_SOURCE_DIR}/cmake/toolchains/emscripten/EmsdkManager.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/toolchains/emscripten/EmscriptenTemplate.cmake)
+include(
+    ${PROJECT_SOURCE_DIR}/cmake/toolchains/emscripten/EmscriptenTemplate.cmake)

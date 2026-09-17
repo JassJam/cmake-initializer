@@ -20,22 +20,42 @@ runs:
     - name: Install dependencies (clang x64)
       if: contains(inputs.config-preset, 'clang') && !contains(inputs.config-preset, 'x86')
       shell: bash
-      run: sudo apt-get install -y clang-18
+      run: |
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Install dependencies (clang x86)
       if: contains(inputs.config-preset, 'clang') && contains(inputs.config-preset, 'x86')
       shell: bash
-      run: sudo apt-get install -y clang-18 gcc-multilib g++-multilib
+      run: |
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev gcc-multilib g++-multilib && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Install dependencies (gcc x64)
       if: contains(inputs.config-preset, 'gcc') && !contains(inputs.config-preset, 'x86')
       shell: bash
-      run: sudo apt-get install -y g++-14
+      run: |
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y g++-14 && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Install dependencies (gcc x86)
       if: contains(inputs.config-preset, 'gcc') && contains(inputs.config-preset, 'x86')
       shell: bash
-      run: sudo apt-get install -y g++-14 gcc-multilib g++-multilib
+      run: |
+        for i in 1 2 3 4 5; do
+          sudo apt-get update && sudo apt-get install -y g++-14 gcc-multilib g++-multilib && break
+          echo "Attempt $i failed, retrying in 30s..."
+          sleep 30
+        done
 
     - name: Build Artifacts
       id: build

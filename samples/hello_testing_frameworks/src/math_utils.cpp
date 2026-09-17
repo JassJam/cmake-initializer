@@ -1,5 +1,4 @@
 #include "math_utils.hpp"
-#include <stdexcept>
 
 namespace math_utils
 {
@@ -22,7 +21,7 @@ namespace math_utils
     {
         if (b == 0)
         {
-            throw std::invalid_argument("Division by zero is not allowed");
+            throw DivisionByZeroError();
         }
         return a / b;
     }
@@ -48,7 +47,7 @@ namespace math_utils
     {
         if (n < 0)
         {
-            throw std::invalid_argument("Factorial is not defined for negative numbers");
+            throw NegativeFactorialError();
         }
         if (n == 0 || n == 1)
             return 1;

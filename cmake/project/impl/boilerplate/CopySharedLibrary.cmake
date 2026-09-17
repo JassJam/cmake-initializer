@@ -1,84 +1,100 @@
 include_guard(DIRECTORY)
 include(CMakePackageConfigHelpers)
-    include(GetCurrentCompiler)
+include(GetCurrentCompiler)
 
 # Helper function to copy shared library dependencies to build directory for direct execution
 function(_copy_shared_library_dependencies_to_build_dir TARGET_NAME)
     # Get the target's link libraries
     get_target_property(TARGET_LINK_LIBS ${TARGET_NAME} LINK_LIBRARIES)
-    if (NOT TARGET_LINK_LIBS)
+    if(NOT TARGET_LINK_LIBS)
         return()
-    endif ()
+    endif()
 
     # Process each linked library
-    foreach (LIB ${TARGET_LINK_LIBS})
-        if (TARGET ${LIB})
+    foreach(LIB ${TARGET_LINK_LIBS})
+        if(TARGET ${LIB})
             get_target_property(LIB_TYPE ${LIB} TYPE)
 
             # Ensure build order dependency for all target types
             add_dependencies(${TARGET_NAME} ${LIB})
 
             # Copy shared libraries to target directory for direct execution
-            if (LIB_TYPE STREQUAL "SHARED_LIBRARY")
+            if(LIB_TYPE STREQUAL "SHARED_LIBRARY")
                 # Add a post-build step to copy the shared library to the target's directory
-                add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                add_custom_command(
+                    TARGET ${TARGET_NAME}
+                    POST_BUILD
+                    COMMAND
+                        ${CMAKE_COMMAND} -E copy_if_different
                         "$<TARGET_FILE:${LIB}>"
                         "$<TARGET_FILE_DIR:${TARGET_NAME}>/"
-                        COMMENT "Copying shared library ${LIB} for ${TARGET_NAME}"
-                        VERBATIM
-                )
+                    COMMENT "Copying shared library ${LIB} for ${TARGET_NAME}"
+                    VERBATIM)
 
-                message(STATUS "** Will copy shared library ${LIB} to build directory for ${TARGET_NAME}")
-            endif ()
+                message(
+                    STATUS
+                        "** Will copy shared library ${LIB} to build directory for ${TARGET_NAME}"
+                )
+            endif()
 
             # Recursively handle dependencies of this library
-            _copy_shared_library_dependencies_to_build_dir_recursive(${TARGET_NAME} ${LIB})
-        endif ()
-    endforeach ()
+            _copy_shared_library_dependencies_to_build_dir_recursive(
+                ${TARGET_NAME} ${LIB})
+        endif()
+    endforeach()
 endfunction()
 
 # Helper function to recursively handle dependencies
-function(_copy_shared_library_dependencies_to_build_dir_recursive MAIN_TARGET LIB_TARGET)
+function(_copy_shared_library_dependencies_to_build_dir_recursive MAIN_TARGET
+         LIB_TARGET)
     get_target_property(LIB_LINK_LIBS ${LIB_TARGET} LINK_LIBRARIES)
-    if (NOT LIB_LINK_LIBS)
+    if(NOT LIB_LINK_LIBS)
         return()
-    endif ()
+    endif()
 
-    foreach (NESTED_LIB ${LIB_LINK_LIBS})
-        if (TARGET ${NESTED_LIB})
+    foreach(NESTED_LIB ${LIB_LINK_LIBS})
+        if(TARGET ${NESTED_LIB})
             get_target_property(NESTED_LIB_TYPE ${NESTED_LIB} TYPE)
 
             # Ensure build order dependency
             add_dependencies(${MAIN_TARGET} ${NESTED_LIB})
 
             # Copy shared libraries
-            if (NESTED_LIB_TYPE STREQUAL "SHARED_LIBRARY")
-                add_custom_command(TARGET ${MAIN_TARGET} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            if(NESTED_LIB_TYPE STREQUAL "SHARED_LIBRARY")
+                add_custom_command(
+                    TARGET ${MAIN_TARGET}
+                    POST_BUILD
+                    COMMAND
+                        ${CMAKE_COMMAND} -E copy_if_different
                         "$<TARGET_FILE:${NESTED_LIB}>"
                         "$<TARGET_FILE_DIR:${MAIN_TARGET}>/"
-                        COMMENT "Copying transitive shared library ${NESTED_LIB} for ${MAIN_TARGET}"
-                        VERBATIM
-                )
+                    COMMENT
+                        "Copying transitive shared library ${NESTED_LIB} for ${MAIN_TARGET}"
+                    VERBATIM)
 
-                message(STATUS "** Will copy transitive shared library ${NESTED_LIB} to build directory for ${MAIN_TARGET}")
-            endif ()
+                message(
+                    STATUS
+                        "** Will copy transitive shared library ${NESTED_LIB} to build directory for ${MAIN_TARGET}"
+                )
+            endif()
 
             # Continue recursively (with depth limit to avoid infinite loops)
             get_target_property(PROCESSED ${MAIN_TARGET} _PROCESSED_DEPS)
-            if (NOT PROCESSED)
-                set_target_properties(${MAIN_TARGET} PROPERTIES _PROCESSED_DEPS "")
+            if(NOT PROCESSED)
+                set_target_properties(${MAIN_TARGET} PROPERTIES _PROCESSED_DEPS
+                                                                "")
                 set(PROCESSED "")
-            endif ()
+            endif()
 
-            if (NOT "${NESTED_LIB}" IN_LIST PROCESSED)
+            if(NOT "${NESTED_LIB}" IN_LIST PROCESSED)
                 list(APPEND PROCESSED ${NESTED_LIB})
-                set_target_properties(${MAIN_TARGET} PROPERTIES _PROCESSED_DEPS "${PROCESSED}")
-                _copy_shared_library_dependencies_to_build_dir_recursive(${MAIN_TARGET} ${NESTED_LIB})
-            endif ()
-        endif ()
-    endforeach ()
+                set_target_properties(${MAIN_TARGET} PROPERTIES _PROCESSED_DEPS
+                                                                "${PROCESSED}")
+                _copy_shared_library_dependencies_to_build_dir_recursive(
+                    ${MAIN_TARGET} ${NESTED_LIB})
+            endif()
+        endif()
+    endforeach()
 endfunction()
 
 # Helper function to copy AddressSanitizer runtime DLL to build directory for direct execution
@@ -86,141 +102,159 @@ function(_copy_asan_dll_to_build_dir TARGET_NAME)
     # Only handle this for MSVC with AddressSanitizer enabled
     get_current_compiler(CURRENT_COMPILER)
 
-    if (NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
+    if(NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
         return()
-    endif ()
+    endif()
 
     # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
     string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-    if (ASAN_FLAGS_INDEX EQUAL -1)
+    if(ASAN_FLAGS_INDEX EQUAL -1)
         return()
-    endif ()
+    endif()
 
     # Find the AddressSanitizer DLL using the same logic as _install_asan_runtime_dll
     _find_asan_dll_path(ASAN_DLL_PATH)
 
-    if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
+    if(ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
         # Get the target's output directory
-        get_target_property(TARGET_OUTPUT_DIR ${TARGET_NAME} RUNTIME_OUTPUT_DIRECTORY)
-        if (NOT TARGET_OUTPUT_DIR)
+        get_target_property(TARGET_OUTPUT_DIR ${TARGET_NAME}
+                            RUNTIME_OUTPUT_DIRECTORY)
+        if(NOT TARGET_OUTPUT_DIR)
             set(TARGET_OUTPUT_DIR $<TARGET_FILE_DIR:${TARGET_NAME}>)
-        endif ()
+        endif()
 
         # Normalize path for CMake (use forward slashes)
         file(TO_CMAKE_PATH "${ASAN_DLL_PATH}" ASAN_DLL_CMAKE_PATH)
         get_filename_component(ASAN_DLL_NAME "${ASAN_DLL_CMAKE_PATH}" NAME)
 
         # Add a post-build step to copy the DLL to the target's output directory
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${ASAN_DLL_CMAKE_PATH}"
+        add_custom_command(
+            TARGET ${TARGET_NAME}
+            POST_BUILD
+            COMMAND
+                ${CMAKE_COMMAND} -E copy_if_different "${ASAN_DLL_CMAKE_PATH}"
                 "$<TARGET_FILE_DIR:${TARGET_NAME}>/${ASAN_DLL_NAME}"
-                COMMENT "Copying AddressSanitizer runtime DLL for ${TARGET_NAME}"
-                VERBATIM
-        )
+            COMMENT "Copying AddressSanitizer runtime DLL for ${TARGET_NAME}"
+            VERBATIM)
 
-        message(STATUS "** Will copy AddressSanitizer runtime DLL to build directory for ${TARGET_NAME}")
-    else ()
-        message(WARNING "AddressSanitizer runtime DLL not found for build directory copying. ${TARGET_NAME} may not run directly from build directory.")
-    endif ()
+        message(
+            STATUS
+                "** Will copy AddressSanitizer runtime DLL to build directory for ${TARGET_NAME}"
+        )
+    else()
+        message(
+            WARNING
+                "AddressSanitizer runtime DLL not found for build directory copying. ${TARGET_NAME} may not run directly from build directory."
+        )
+    endif()
 endfunction()
 
 # Helper function to find AddressSanitizer DLL path (shared between install and build directory copying)
 function(_find_asan_dll_path OUTPUT_VAR)
     # Determine architecture-specific DLL name
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-x86_64.dll")
         set(ARCH_DIR "x64")
-    else ()
+    else()
         set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-i386.dll")
         set(ARCH_DIR "x86")
-    endif ()
+    endif()
 
     set(ASAN_DLL_PATH "")
 
     # First, try to use vswhere to find Visual Studio installations
-    find_program(VSWHERE_EXECUTABLE
-            NAMES vswhere.exe
-            PATHS
-            "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/Installer"
-            "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
-            DOC "Visual Studio locator tool"
-    )
+    find_program(
+        VSWHERE_EXECUTABLE
+        NAMES vswhere.exe
+        PATHS "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/Installer"
+              "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
+        DOC "Visual Studio locator tool")
 
-    if (VSWHERE_EXECUTABLE)
+    if(VSWHERE_EXECUTABLE)
         # Get Visual Studio installation path using vswhere
         execute_process(
-                COMMAND "${VSWHERE_EXECUTABLE}" -latest -property installationPath
-                OUTPUT_VARIABLE VS_INSTALL_PATH
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                ERROR_QUIET
-        )
+            COMMAND "${VSWHERE_EXECUTABLE}" -latest -property installationPath
+            OUTPUT_VARIABLE VS_INSTALL_PATH
+            OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
 
-        if (VS_INSTALL_PATH AND EXISTS "${VS_INSTALL_PATH}")
+        if(VS_INSTALL_PATH AND EXISTS "${VS_INSTALL_PATH}")
             # Search for AddressSanitizer runtime DLL in VC tools
-            file(GLOB_RECURSE ASAN_DLL_CANDIDATES
-                    "${VS_INSTALL_PATH}/VC/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
+            file(
+                GLOB_RECURSE
+                ASAN_DLL_CANDIDATES
+                "${VS_INSTALL_PATH}/VC/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}"
+            )
 
-            if (ASAN_DLL_CANDIDATES)
+            if(ASAN_DLL_CANDIDATES)
                 # Prefer the newest version (last in sorted list)
                 list(SORT ASAN_DLL_CANDIDATES)
                 list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
-            endif ()
-        endif ()
-    endif ()
+            endif()
+        endif()
+    endif()
 
     # Fallback: Search in environment variables
-    if (NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
+    if(NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
         # Try VCINSTALLDIR environment variable
-        if (DEFINED ENV{VCINSTALLDIR})
-            file(GLOB_RECURSE ASAN_DLL_CANDIDATES
-                    "$ENV{VCINSTALLDIR}/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-            if (ASAN_DLL_CANDIDATES)
+        if(DEFINED ENV{VCINSTALLDIR})
+            file(
+                GLOB_RECURSE
+                ASAN_DLL_CANDIDATES
+                "$ENV{VCINSTALLDIR}/Tools/MSVC/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}"
+            )
+            if(ASAN_DLL_CANDIDATES)
                 list(SORT ASAN_DLL_CANDIDATES)
                 list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
-            endif ()
-        endif ()
+            endif()
+        endif()
 
         # Try VCToolsInstallDir environment variable
-        if ((NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}") AND DEFINED ENV{VCToolsInstallDir})
-            file(GLOB_RECURSE ASAN_DLL_CANDIDATES
-                    "$ENV{VCToolsInstallDir}/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-            if (ASAN_DLL_CANDIDATES)
+        if((NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
+           AND DEFINED ENV{VCToolsInstallDir})
+            file(
+                GLOB_RECURSE
+                ASAN_DLL_CANDIDATES
+                "$ENV{VCToolsInstallDir}/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}"
+            )
+            if(ASAN_DLL_CANDIDATES)
                 list(SORT ASAN_DLL_CANDIDATES)
                 list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
-            endif ()
-        endif ()
-    endif ()
+            endif()
+        endif()
+    endif()
 
     # Final fallback: Search in common Visual Studio installation directories
-    if (NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
-        set(COMMON_VS_ROOTS
-                "$ENV{ProgramFiles}/Microsoft Visual Studio"
-                "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio"
-        )
+    if(NOT ASAN_DLL_PATH OR NOT EXISTS "${ASAN_DLL_PATH}")
+        set(COMMON_VS_ROOTS "$ENV{ProgramFiles}/Microsoft Visual Studio"
+                            "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio")
 
-        foreach (VS_ROOT ${COMMON_VS_ROOTS})
-            if (EXISTS "${VS_ROOT}")
+        foreach(VS_ROOT ${COMMON_VS_ROOTS})
+            if(EXISTS "${VS_ROOT}")
                 file(GLOB VS_VERSIONS "${VS_ROOT}/20*/*/VC/Tools/MSVC")
-                foreach (VS_VERSION_PATH ${VS_VERSIONS})
-                    if (EXISTS "${VS_VERSION_PATH}")
-                        file(GLOB_RECURSE ASAN_DLL_CANDIDATES
-                                "${VS_VERSION_PATH}/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}")
-                        if (ASAN_DLL_CANDIDATES)
+                foreach(VS_VERSION_PATH ${VS_VERSIONS})
+                    if(EXISTS "${VS_VERSION_PATH}")
+                        file(
+                            GLOB_RECURSE
+                            ASAN_DLL_CANDIDATES
+                            "${VS_VERSION_PATH}/*/bin/Host*/${ARCH_DIR}/${ASAN_DLL_PATTERN}"
+                        )
+                        if(ASAN_DLL_CANDIDATES)
                             list(SORT ASAN_DLL_CANDIDATES)
                             list(GET ASAN_DLL_CANDIDATES -1 ASAN_DLL_PATH)
                             break()
-                        endif ()
-                    endif ()
-                endforeach ()
-                if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
+                        endif()
+                    endif()
+                endforeach()
+                if(ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
                     break()
-                endif ()
-            endif ()
-        endforeach ()
-    endif ()
+                endif()
+            endif()
+        endforeach()
+    endif()
 
-    set(${OUTPUT_VAR} "${ASAN_DLL_PATH}" PARENT_SCOPE)
+    set(${OUTPUT_VAR}
+        "${ASAN_DLL_PATH}"
+        PARENT_SCOPE)
 endfunction()
 
 # Helper function to install AddressSanitizer runtime DLL alongside the executable
@@ -228,76 +262,89 @@ function(_install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
     # Only handle this for MSVC with AddressSanitizer enabled
     get_current_compiler(CURRENT_COMPILER)
 
-    if (NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
+    if(NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
         return()
-    endif ()
+    endif()
 
     # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
     string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-    if (ASAN_FLAGS_INDEX EQUAL -1)
+    if(ASAN_FLAGS_INDEX EQUAL -1)
         return()
-    endif ()
+    endif()
 
     # Use the shared helper function to find the DLL
     _find_asan_dll_path(ASAN_DLL_PATH)
 
-    if (ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
-        message(STATUS "** Found AddressSanitizer runtime DLL for installation: ${ASAN_DLL_PATH}")
+    if(ASAN_DLL_PATH AND EXISTS "${ASAN_DLL_PATH}")
+        message(
+            STATUS
+                "** Found AddressSanitizer runtime DLL for installation: ${ASAN_DLL_PATH}"
+        )
 
         # Normalize path for CMake (use forward slashes)
         file(TO_CMAKE_PATH "${ASAN_DLL_PATH}" ASAN_DLL_CMAKE_PATH)
 
         # Install the DLL alongside the executable
-        install(FILES "${ASAN_DLL_CMAKE_PATH}"
-                DESTINATION ${RUNTIME_DIR}
-                COMPONENT Runtime)
-        message(STATUS "** Will install AddressSanitizer runtime DLL for ${TARGET_NAME}")
-    else ()
+        install(
+            FILES "${ASAN_DLL_CMAKE_PATH}"
+            DESTINATION ${RUNTIME_DIR}
+            COMPONENT Runtime)
+        message(
+            STATUS
+                "** Will install AddressSanitizer runtime DLL for ${TARGET_NAME}"
+        )
+    else()
         # Determine architecture for error message
-        if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-x86_64.dll")
             set(ARCH_DIR "x64")
-        else ()
+        else()
             set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-i386.dll")
             set(ARCH_DIR "x86")
-        endif ()
+        endif()
 
-        find_program(VSWHERE_EXECUTABLE
-                NAMES vswhere.exe
-                PATHS
-                "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/Installer"
-                "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
-                DOC "Visual Studio locator tool"
+        find_program(
+            VSWHERE_EXECUTABLE
+            NAMES vswhere.exe
+            PATHS "$ENV{ProgramFiles\(x86\)}/Microsoft Visual Studio/Installer"
+                  "$ENV{ProgramFiles}/Microsoft Visual Studio/Installer"
+            DOC "Visual Studio locator tool")
+
+        message(
+            WARNING
+                "AddressSanitizer runtime DLL (${ASAN_DLL_PATTERN}) not found for installation. Installed executable may not run without setting PATH."
         )
-
-        message(WARNING "AddressSanitizer runtime DLL (${ASAN_DLL_PATTERN}) not found for installation. Installed executable may not run without setting PATH.")
         message(STATUS "** Searched architecture: ${ARCH_DIR}")
-        if (VSWHERE_EXECUTABLE)
+        if(VSWHERE_EXECUTABLE)
             message(STATUS "** Used vswhere: ${VSWHERE_EXECUTABLE}")
-        else ()
+        else()
             message(STATUS "** vswhere not found, used fallback search")
-        endif ()
-    endif ()
+        endif()
+    endif()
 endfunction()
 
 # Helper function to install shared library dependencies cross-platform
 function(_target_install_shared_library_dependencies TARGET_NAME RUNTIME_DIR)
     # Get TARGET_NAME type
     get_target_property(target_type ${TARGET_NAME} TYPE)
-    if (NOT target_type STREQUAL "EXECUTABLE" AND NOT target_type STREQUAL "SHARED_LIBRARY")
-        return()  # Only handle executables and shared libraries
-    endif ()
+    if(NOT target_type STREQUAL "EXECUTABLE" AND NOT target_type STREQUAL
+                                                 "SHARED_LIBRARY")
+        return() # Only handle executables and shared libraries
+    endif()
 
     # Get target output name
     get_target_property(target_output_name ${TARGET_NAME} OUTPUT_NAME)
-    if (NOT target_output_name)
+    if(NOT target_output_name)
         set(target_output_name ${TARGET_NAME})
-    endif ()
+    endif()
 
     # Create a post-install script to copy shared library dependencies
-    set(install_script_file "${CMAKE_CURRENT_BINARY_DIR}/install_${TARGET_NAME}_dependencies.cmake")
+    set(install_script_file
+        "${CMAKE_CURRENT_BINARY_DIR}/install_${TARGET_NAME}_dependencies.cmake")
 
-    file(WRITE ${install_script_file} "
+    file(
+        WRITE ${install_script_file}
+        "
 # Auto-generated script to install shared library dependencies for ${TARGET_NAME}
 cmake_minimum_required(VERSION 3.15)
 
@@ -332,12 +379,12 @@ endif()
 
 if(EXISTS \"\${TARGET_FILE}\")
     message(STATUS \"Installing shared library dependencies for: \${TARGET_FILE}\")
-    
+
     # Find all potential build directories where shared libraries might be located
     set(BUILD_DIR \"${CMAKE_BINARY_DIR}\")
     get_filename_component(TARGET_BUILD_BASE \"\${BUILD_DIR}\" ABSOLUTE)
     set(SEARCH_DIRECTORIES \"\")
-    
+
     # Add common build output directory patterns
     foreach(config \"Release\" \"Debug\" \"RelWithDebInfo\" \"MinSizeRel\" \"\")
         foreach(subpath \"${CMAKE_CURRENT_BINARY_DIR}\" \".\")
@@ -351,7 +398,7 @@ if(EXISTS \"\${TARGET_FILE}\")
             endif()
         endforeach()
     endforeach()
-    
+
     # Search in CMake targets' output directories for transitive dependencies
     get_cmake_property(_target_names CACHE_VARIABLES)
     foreach(_cache_var \${_target_names})
@@ -370,7 +417,7 @@ if(EXISTS \"\${TARGET_FILE}\")
             endif()
         endif()
     endforeach()
-    
+
     # Also search in CPM package directories and their subdirectories
     get_cmake_property(_variableNames VARIABLES)
     foreach(_varName \${_variableNames})
@@ -395,12 +442,12 @@ if(EXISTS \"\${TARGET_FILE}\")
             endif()
         endif()
     endforeach()
-    
+
     # Remove duplicates and non-existent directories
     if(SEARCH_DIRECTORIES)
         list(REMOVE_DUPLICATES SEARCH_DIRECTORIES)
     endif()
-    
+
     # Search for shared libraries in all directories
     set(COPIED_LIBRARIES \"\")
     foreach(search_dir \${SEARCH_DIRECTORIES})
@@ -410,7 +457,7 @@ if(EXISTS \"\${TARGET_FILE}\")
                 foreach(lib_file \${shared_libs})
                     get_filename_component(lib_name \"\${lib_file}\" NAME)
                     set(dest_file \"\${INSTALL_PREFIX_ABS}/${RUNTIME_DIR}/\${lib_name}\")
-                    
+
                     # Skip if it's the TARGET_NAME itself
                     get_filename_component(target_basename \"\${TARGET_FILE}\" NAME)
                     if(NOT \"\${lib_name}\" STREQUAL \"\${target_basename}\" AND NOT \"\${lib_name}\" IN_LIST COPIED_LIBRARIES)
@@ -435,7 +482,7 @@ if(EXISTS \"\${TARGET_FILE}\")
                                 set(skip_lib TRUE)
                             endif()
                         endif()
-                        
+
                         if(NOT skip_lib AND NOT EXISTS \"\${dest_file}\")
                             message(STATUS \"  Installing shared library dependency: \${lib_name}\")
                             execute_process(
@@ -470,67 +517,77 @@ endif()
 
     # Enhanced handling of TARGET_NAME dependencies to include transitive dependencies
     get_target_property(target_link_libs ${TARGET_NAME} LINK_LIBRARIES)
-    if (target_link_libs)
+    if(target_link_libs)
         # Function to collect all dependency targets recursively (including static libraries with shared deps)
-        function(collect_all_dependency_targets target_name visited_targets dependency_targets)
+        function(collect_all_dependency_targets target_name visited_targets
+                 dependency_targets)
             # Avoid infinite recursion
-            if (target_name IN_LIST visited_targets)
+            if(target_name IN_LIST visited_targets)
                 return()
-            endif ()
+            endif()
             list(APPEND visited_targets ${target_name})
 
-            if (TARGET ${target_name})
+            if(TARGET ${target_name})
                 get_target_property(target_type ${target_name} TYPE)
 
                 list(APPEND dependency_targets ${target_name})
 
                 # Recursively check this TARGET_NAME's dependencies
                 get_target_property(target_deps ${target_name} LINK_LIBRARIES)
-                if (target_deps)
-                    foreach (dep ${target_deps})
-                        collect_all_dependency_targets(${dep} \"${visited_targets}\" dependency_targets)
-                    endforeach ()
-                endif ()
+                if(target_deps)
+                    foreach(dep ${target_deps})
+                        collect_all_dependency_targets(
+                            ${dep} \"${visited_targets}\" dependency_targets)
+                    endforeach()
+                endif()
 
                 # Also check interface link libraries for transitive dependencies
-                get_target_property(interface_deps ${target_name} INTERFACE_LINK_LIBRARIES)
-                if (interface_deps)
-                    foreach (dep ${interface_deps})
-                        if (TARGET ${dep})
-                            collect_all_dependency_targets(${dep} \"${visited_targets}\" dependency_targets)
-                        endif ()
-                    endforeach ()
-                endif ()
-            endif ()
+                get_target_property(interface_deps ${target_name}
+                                    INTERFACE_LINK_LIBRARIES)
+                if(interface_deps)
+                    foreach(dep ${interface_deps})
+                        if(TARGET ${dep})
+                            collect_all_dependency_targets(
+                                ${dep} \"${visited_targets}\"
+                                dependency_targets)
+                        endif()
+                    endforeach()
+                endif()
+            endif()
 
             # Propagate results back to parent scope
-            set(dependency_targets ${dependency_targets} PARENT_SCOPE)
-            set(visited_targets ${visited_targets} PARENT_SCOPE)
+            set(dependency_targets
+                ${dependency_targets}
+                PARENT_SCOPE)
+            set(visited_targets
+                ${visited_targets}
+                PARENT_SCOPE)
         endfunction()
 
         # Collect all dependency targets
         set(all_dependency_targets \"\")
         set(visited_list \"\")
-        foreach (lib ${target_link_libs})
-            collect_all_dependency_targets(${lib} \"${visited_list}\" all_dependency_targets)
-        endforeach ()
+        foreach(lib ${target_link_libs})
+            collect_all_dependency_targets(${lib} \"${visited_list}\"
+                                           all_dependency_targets)
+        endforeach()
 
         # Remove duplicates
-        if (all_dependency_targets)
+        if(all_dependency_targets)
             list(REMOVE_DUPLICATES all_dependency_targets)
-        endif ()
+        endif()
 
         # Install shared libraries for all dependency targets
-        foreach (dep_target ${all_dependency_targets})
-            if (TARGET ${dep_target})
+        foreach(dep_target ${all_dependency_targets})
+            if(TARGET ${dep_target})
                 get_target_property(dep_type ${dep_target} TYPE)
-                if (dep_type STREQUAL "SHARED_LIBRARY")
-                    install(FILES $<TARGET_FILE:${dep_target}>
-                            DESTINATION ${RUNTIME_DIR}
-                            COMPONENT Runtime
-                    )
-                endif ()
-            endif ()
-        endforeach ()
-    endif ()
+                if(dep_type STREQUAL "SHARED_LIBRARY")
+                    install(
+                        FILES $<TARGET_FILE:${dep_target}>
+                        DESTINATION ${RUNTIME_DIR}
+                        COMPONENT Runtime)
+                endif()
+            endif()
+        endforeach()
+    endif()
 endfunction()
