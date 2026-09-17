@@ -4,12 +4,12 @@ when:
 
 steps:
 
-#################
+##################
 # BUILD PIPELINE #
-#################
+##################
 
-  # Linux / Clang - x86_x64
-  - name: build-linux-x86_x64-clang-debug
+  # Linux / Clang - x86_64
+  - name: build-unixlike-x64-clang-debug
     image: dockcross/linux-x64-clang
     commands:
       - cmake -S . -B build/unixlike-x64-clang-debug --preset unixlike-x64-clang-debug
@@ -31,8 +31,8 @@ steps:
 # TEST PIPELINE #
 #################
 
-  # Linux / Clang - x86_x64
-  - name: test-linux-x86_x64-clang-debug
+  # Linux / Clang - x86_64
+  - name: test-linux-x86_64-clang-debug
     image: dockcross/linux-x64-clang
     commands:
       - ctest --test-dir build/unixlike-x64-clang-debug --build-config Debug --output-on-failure

@@ -29,11 +29,13 @@ include(CMakePackageConfigHelpers)
 #   find_package(<NAME> REQUIRED)
 # ──────────────────────────────────────────────────────────────────────────────
 function(register_package_config)
-    cmake_parse_arguments(PARSE_ARGV 0 ARG
+    cmake_parse_arguments(
+        PARSE_ARGV
+        0
+        ARG
         ""
         "NAME;VERSION;NAMESPACE;EXPORT_SET;COMPATIBILITY;INSTALL_DESTINATION;EXTRA_CONFIG_CONTENT"
-        "DEPENDENCIES"
-    )
+        "DEPENDENCIES")
 
     # ── Validate required args ────────────────────────────────────────────────
     if(NOT DEFINED ARG_NAME)
@@ -79,7 +81,7 @@ function(register_package_config)
     set(_config_out "${CMAKE_CURRENT_BINARY_DIR}/${ARG_NAME}Config.cmake")
 
     set(_config_in_content
-"@PACKAGE_INIT@
+        "@PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
 ${_dep_block}
@@ -91,53 +93,47 @@ check_required_components(${ARG_NAME})
     file(WRITE "${_config_in}" "${_config_in_content}")
 
     configure_package_config_file(
-        "${_config_in}"
-        "${_config_out}"
-        INSTALL_DESTINATION "${ARG_INSTALL_DESTINATION}"
-    )
+        "${_config_in}" "${_config_out}"
+        INSTALL_DESTINATION "${ARG_INSTALL_DESTINATION}")
 
     # ── Version file ──────────────────────────────────────────────────────────
-    set(_version_out "${CMAKE_CURRENT_BINARY_DIR}/${ARG_NAME}ConfigVersion.cmake")
+    set(_version_out
+        "${CMAKE_CURRENT_BINARY_DIR}/${ARG_NAME}ConfigVersion.cmake")
 
     write_basic_package_version_file(
         "${_version_out}"
-        VERSION       "${ARG_VERSION}"
-        COMPATIBILITY "${ARG_COMPATIBILITY}"
-    )
+        VERSION "${ARG_VERSION}"
+        COMPATIBILITY "${ARG_COMPATIBILITY}")
 
     # ── Install export set ────────────────────────────────────────────────────
     # Only install the export if register_*() hasn't already done it.
     # (register_*() tracks emitted sets in _REGISTER_EXPORTED_SETS.)
     get_property(_already_exported GLOBAL PROPERTY _REGISTER_EXPORTED_SETS)
     if(NOT ARG_EXPORT_SET IN_LIST _already_exported)
-        install(EXPORT "${ARG_EXPORT_SET}"
-            FILE        "${ARG_EXPORT_SET}Targets.cmake"
+        install(
+            EXPORT "${ARG_EXPORT_SET}"
+            FILE "${ARG_EXPORT_SET}Targets.cmake"
             ${_ns}
-            DESTINATION "${ARG_INSTALL_DESTINATION}"
-        )
+            DESTINATION "${ARG_INSTALL_DESTINATION}")
         # Mark as done so register_*() won't duplicate it
         list(APPEND _already_exported "${ARG_EXPORT_SET}")
-        set_property(GLOBAL PROPERTY _REGISTER_EXPORTED_SETS "${_already_exported}")
+        set_property(GLOBAL PROPERTY _REGISTER_EXPORTED_SETS
+                                     "${_already_exported}")
     else()
         # Export was installed by register_*() without a destination matching
         # ARG_INSTALL_DESTINATION — reinstall with the correct path.
         # (Harmless duplicate on identical destination; CMake deduplicates.)
-        install(EXPORT "${ARG_EXPORT_SET}"
-            FILE        "${ARG_EXPORT_SET}Targets.cmake"
+        install(
+            EXPORT "${ARG_EXPORT_SET}"
+            FILE "${ARG_EXPORT_SET}Targets.cmake"
             ${_ns}
-            DESTINATION "${ARG_INSTALL_DESTINATION}"
-        )
+            DESTINATION "${ARG_INSTALL_DESTINATION}")
     endif()
 
     # ── Install config + version files ────────────────────────────────────────
-    install(FILES
-        "${_config_out}"
-        "${_version_out}"
-        DESTINATION "${ARG_INSTALL_DESTINATION}"
-    )
+    install(FILES "${_config_out}" "${_version_out}"
+            DESTINATION "${ARG_INSTALL_DESTINATION}")
 
-    message(STATUS
-        "[register_package_config] '${ARG_NAME}' v${ARG_VERSION} "
-        "(${ARG_COMPATIBILITY}) → ${ARG_INSTALL_DESTINATION}"
-    )
+    message(STATUS "[register_package_config] '${ARG_NAME}' v${ARG_VERSION} "
+                   "(${ARG_COMPATIBILITY}) → ${ARG_INSTALL_DESTINATION}")
 endfunction()

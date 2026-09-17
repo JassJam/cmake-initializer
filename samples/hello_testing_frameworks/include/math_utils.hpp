@@ -1,7 +1,26 @@
 #pragma once
+#include <exception>
 
 namespace math_utils
 {
+    class DivisionByZeroError : public std::exception
+    {
+    public:
+        const char* what() const noexcept override
+        {
+            return "Division by zero is not allowed";
+        }
+    };
+
+    class NegativeFactorialError : public std::exception
+    {
+    public:
+        const char* what() const noexcept override
+        {
+            return "Factorial is not defined for negative numbers";
+        }
+    };
+
     /**
      * @brief Add two integers
      * @param a First integer
@@ -31,7 +50,7 @@ namespace math_utils
      * @param a Dividend
      * @param b Divisor
      * @return Quotient of a and b
-     * @throws std::invalid_argument if b is zero
+     * @throws math_utils::DivisionByZeroError if b is zero
      */
     int Divide(int a, int b);
 
@@ -46,7 +65,7 @@ namespace math_utils
      * @brief Calculate factorial
      * @param n Non-negative integer
      * @return Factorial of n
-     * @throws std::invalid_argument if n is negative
+     * @throws math_utils::NegativeFactorialError if n is negative
      */
     long long Factorial(int n);
 }

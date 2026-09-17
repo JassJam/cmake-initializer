@@ -1,6 +1,5 @@
 #include <doctest/doctest.h>
 #include "math_utils.hpp"
-#include <stdexcept>
 
 TEST_CASE("Math Utils Add Function")
 {
@@ -35,7 +34,7 @@ TEST_CASE("Math Utils Divide Function")
 
     SUBCASE("Division by zero throws exception")
     {
-        CHECK_THROWS_AS(math_utils::Divide(5, 0), std::invalid_argument);
+        CHECK_THROWS_AS(math_utils::Divide(5, 0), math_utils::DivisionByZeroError);
     }
 }
 
@@ -80,8 +79,8 @@ TEST_CASE("Math Utils Factorial Function")
 
     SUBCASE("Negative numbers throw exception")
     {
-        CHECK_THROWS_AS(math_utils::Factorial(-1), std::invalid_argument);
-        CHECK_THROWS_AS(math_utils::Factorial(-5), std::invalid_argument);
+        CHECK_THROWS_AS(math_utils::Factorial(-1), math_utils::NegativeFactorialError);
+        CHECK_THROWS_AS(math_utils::Factorial(-5), math_utils::NegativeFactorialError);
     }
 }
 
