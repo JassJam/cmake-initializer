@@ -83,7 +83,7 @@ endif()
 
 # === LINKING OPTIONS ===
 option(ENABLE_STATIC_RUNTIME
-       "Statically link runtime libraries for better portability" ON)
+       "Statically link runtime libraries for better portability" OFF)
 option(ENABLE_GLOBAL_IPO "Enable global link-time optimization (LTO)"
        ${RELEASE_MODE})
 
