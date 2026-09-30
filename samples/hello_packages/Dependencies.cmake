@@ -10,9 +10,9 @@ function(HelloPackages_load_dependencies)
             NAME
             spdlog
             URL
-            https://github.com/gabime/spdlog/archive/refs/tags/v1.15.2.zip
+            https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.zip
             URL_HASH
-            SHA256=d91ab0e16964cedb826e65ba1bed5ed4851d15c7b9453609a52056a94068c020
+            SHA256=b11912a82d149792fef33fabd0503b13d54aeac25c1464755461d4108ea71fc2
             OPTIONS
             "SPDLOG_BUILD_SHARED OFF"
             "SPDLOG_FMT_EXTERNAL OFF"
