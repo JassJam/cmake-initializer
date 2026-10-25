@@ -73,6 +73,8 @@ function(_register_target_common target)
                 # The RPATH to be used when installing - executables and libraries in same directory
                 INSTALL_RPATH "$ORIGIN")
     endif()
+    _install_asan_runtime_dll(${target} ${CMAKE_INSTALL_BINDIR})
+    _copy_asan_dll_to_build_dir(${target} ${CMAKE_INSTALL_BINDIR})
     _copy_shared_library_dependencies_to_build_dir(${target})
 
     if(DEFINED ARG_EXPORT_SET)

@@ -17,7 +17,7 @@ mark_as_advanced(ENABLE_CCACHE)
 
 # === PACKAGE MANAGEMENT OPTIONS ===
 set(PACKAGE_MANAGERS
-    "CPM"
+    "SPM"
     CACHE
         STRING
         "Package managers to enable (semicolon-separated list: SPM, CPM, XMake)"

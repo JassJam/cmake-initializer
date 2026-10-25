@@ -132,10 +132,20 @@ function(_spm_get_build_hash OUT_HASH)
         CMAKE_SYSTEM_NAME
         CMAKE_SYSTEM_PROCESSOR
         CMAKE_BUILD_TYPE
+        CMAKE_MSVC_RUNTIME_LIBRARY
         CMAKE_C_FLAGS
         CMAKE_CXX_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS_MINSIZEREL
+        CMAKE_CXX_FLAGS_MINSIZEREL
         CMAKE_EXE_LINKER_FLAGS
-        CMAKE_SHARED_LINKER_FLAGS)
+        CMAKE_SHARED_LINKER_FLAGS
+        CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
         if(DEFINED ${_var})
             list(APPEND key ${_var}=${${_var}})
         endif()
@@ -181,6 +191,9 @@ set(_spm_filtered \"\")
 math(EXPR _spm_last \"\${CMAKE_ARGC} - 1\")
 foreach(_spm_i RANGE 5 \${_spm_last})
     set(_spm_arg \"\${CMAKE_ARGV\${_spm_i}}\")
+    if(_spm_arg MATCHES \"^/F\")
+        string(REPLACE \"\\\\\" \"/\" _spm_arg \"\${_spm_arg}\")
+    endif()
     if(${_match_block})
         continue()
     endif()
@@ -223,6 +236,7 @@ set(CMAKE_PROJECT_INCLUDE \"${B_BUILD_DIR}/spm-recipe.cmake\" CACHE INTERNAL \"\
 set(BUILD_TESTING OFF CACHE INTERNAL \"\")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE INTERNAL \"\")
 set(CMAKE_OBJECT_PATH_MAX 1024 CACHE INTERNAL \"\")
+set(CMAKE_POLICY_DEFAULT_CMP0091 NEW CACHE INTERNAL \"\")
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR OFF CACHE INTERNAL \"\" FORCE)
 set(CMAKE_C_COMPILER_LAUNCHER \"${CMAKE_COMMAND};-P;${_werror_wrapper};--\" CACHE INTERNAL \"\" FORCE)
@@ -235,6 +249,31 @@ set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE \"\" CACHE INTERNAL \"\" FORCE)
 set(CMAKE_LINK_WHAT_YOU_USE OFF CACHE INTERNAL \"\" FORCE)
 ")
     spm_log_debug("Wrote input script '${B_PATH}'")
+endfunction()
+
+function(_spm_msvc_runtime_is_debug out_var runtime cfg)
+    string(TOUPPER "${cfg}" _cfg_u)
+    set(_is_debug FALSE)
+
+    if(runtime STREQUAL "")
+        # CMake's default: MultiThreaded$<$<CONFIG:Debug>:Debug>DLL
+        if(_cfg_u STREQUAL "DEBUG")
+            set(_is_debug TRUE)
+        endif()
+    elseif(runtime MATCHES "^MultiThreaded(Debug)?(DLL)?$")
+        if(CMAKE_MATCH_1)
+            set(_is_debug TRUE)
+        endif()
+    elseif(runtime MATCHES "\\$<\\$<CONFIG:([^>]+)>:Debug>")
+        string(TOUPPER "${CMAKE_MATCH_1}" _expr_cfg)
+        if(_expr_cfg STREQUAL _cfg_u)
+            set(_is_debug TRUE)
+        endif()
+    endif()
+
+    set(${out_var}
+        ${_is_debug}
+        PARENT_SCOPE)
 endfunction()
 
 function(_spm_build_and_import name version recipe_dir)
@@ -330,6 +369,9 @@ function(_spm_build_and_import name version recipe_dir)
     endforeach()
 
     spm_log_debug("Configuring '${name}@${version}' (${_hash})")
+    string(TOUPPER "${_pkg_build_type}" _cfg_upper)
+    _spm_msvc_runtime_is_debug(_crt_is_debug "${CMAKE_MSVC_RUNTIME_LIBRARY}"
+                               "${_pkg_build_type}")
     foreach(
         _var
         CMAKE_GENERATOR_PLATFORM
@@ -341,25 +383,26 @@ function(_spm_build_and_import name version recipe_dir)
         CMAKE_C_STANDARD
         CMAKE_CXX_COMPILER
         CMAKE_CXX_FLAGS
-        CMAKE_CXX_STANDARD)
+        CMAKE_CXX_STANDARD
+        CMAKE_MSVC_RUNTIME_LIBRARY
+        CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
+        CMAKE_C_FLAGS_${_cfg_upper}
+        CMAKE_CXX_FLAGS_${_cfg_upper}
+        CMAKE_EXE_LINKER_FLAGS_${_cfg_upper}
+        CMAKE_SHARED_LINKER_FLAGS_${_cfg_upper}
+        CMAKE_STATIC_LINKER_FLAGS_${_cfg_upper})
         if(DEFINED ${_var})
             set(_val "${${_var}}")
-            if(_var STREQUAL "CMAKE_C_FLAGS" OR _var STREQUAL "CMAKE_CXX_FLAGS")
-                string(REGEX REPLACE "-fsanitize=[A-Za-z0-9,_-]+" "" _val
-                                     "${_val}")
-                string(REGEX REPLACE "-fsanitize-[A-Za-z0-9=,_-]+" "" _val
-                                     "${_val}")
-                string(REGEX REPLACE "-fno-omit-frame-pointer" "" _val
-                                     "${_val}")
-
-                string(REGEX REPLACE "/fsanitize=[A-Za-z0-9,_-]+" "" _val
-                                     "${_val}")
-                string(REGEX REPLACE "/fsanitize-[A-Za-z0-9=,_-]+" "" _val
-                                     "${_val}")
-
+            if(_var MATCHES "^CMAKE_(C|CXX)_FLAGS")
+                if(MSVC AND NOT _crt_is_debug)
+                    string(REGEX REPLACE "[-/]RTC[1csu]+" "" _val "${_val}")
+                endif()
+            
                 string(REGEX REPLACE "  +" " " _val "${_val}")
                 string(STRIP "${_val}" _val)
             endif()
+            string(REPLACE "\\" "\\\\" _val "${_val}")
+            string(REPLACE "\"" "\\\"" _val "${_val}")
             file(APPEND "${_input_script}"
                  "set(${_var} \"${_val}\" CACHE INTERNAL \"\" FORCE)\n")
         endif()
@@ -375,11 +418,6 @@ function(_spm_build_and_import name version recipe_dir)
 endfunction()
 
 # Locate the recipe directory for name@version.
-# packages/repositories/<l>/<n>/<version>/CMakeLists.txt If missing locally and
-# SPM_REMOTE is ON, resolve it from `registry`: - local directory      used IN
-# PLACE, never copied. - git+https(s)/ssh     sparse partial clone of just that
-# one subtree, moved into SPM_PACKAGES_DIR. - http(s) URL          tarball
-# downloaded + extracted into SPM_PACKAGES_DIR.
 function(
     _spm_resolve_recipe_dir
     name
@@ -640,6 +678,8 @@ function(spm_require_package)
         spm_log_fatal("NAME and VERSION argument is required")
     endif()
 
+    string(MAKE_C_IDENTIFIER "${ARG_NAME}_${ARG_VERSION}" _pkg_key)
+
     _spm_require_package_enter(
         ALREADY_ENTERED
         _already_entered
@@ -733,7 +773,8 @@ function(spm_require_package)
             PARENT_SCOPE)
     endif()
 
-    set_property(GLOBAL APPEND PROPERTY SPM_REQUIRED_PACKAGES "${_pkg_key}")
+    set_property(GLOBAL APPEND PROPERTY SPM_REQUIRED_PACKAGES
+                                        "${ARG_NAME}@${ARG_VERSION}")
     set_property(GLOBAL PROPERTY "SPM_INSTALL_DIR_${_pkg_key}"
                                  "${_out_install_dir}")
 

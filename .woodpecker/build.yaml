@@ -1,41 +1,93 @@
 when:
-  - event: [pull_request]
+  - event: pull_request
     branch: [main, dev]
 
 steps:
+  ###################
+  # BUILD PIPELINE  #
+  ###################
 
-##################
-# BUILD PIPELINE #
-##################
-
-  # Linux / Clang - x86_64
-  - name: build-unixlike-x64-clang-debug
-    image: dockcross/linux-x64-clang
+  - name: build-linux-x86_64-debug
+    image: multiarch/crossbuild
+    environment:
+      CROSS_TRIPLE: x86_64-linux-gnu
     commands:
-      - cmake -S . -B build/unixlike-x64-clang-debug --preset unixlike-x64-clang-debug
-      - cmake --build build/unixlike-x64-clang-debug
-    when:
-    - event: [pull_request]
-      branch: [main, dev]
+      - crossbuild cmake -S . -B build/linux-x86_64-debug --preset linux-x86_64-debug
+      - crossbuild cmake --build build/linux-x86_64-debug --parallel
 
-  # Emscripten
-  - name: build-emscripten-debug
+  - name: build-linux-arm64-debug
+    image: multiarch/crossbuild
+    environment:
+      CROSS_TRIPLE: aarch64-linux-gnu
+    commands:
+      - crossbuild cmake -S . -B build/linux-arm64-debug --preset linux-arm64-debug
+      - crossbuild cmake --build build/linux-arm64-debug --parallel
+
+  - name: build-linux-x86-debug
+    image: dockcross/linux-x86
+    commands:
+      - cmake -S . -B build/linux-x86-debug --preset linux-x86-debug
+      - cmake --build build/linux-x86-debug --parallel
+
+  - name: build-windows-x86_64-debug
+    image: mstorsjo/llvm-mingw
+    environment:
+      CC: x86_64-w64-mingw32-clang
+      CXX: x86_64-w64-mingw32-clang++
+    commands:
+      - cmake -S . -B build/windows-x86_64-debug --preset windows-x86_64-debug
+      - cmake --build build/windows-x86_64-debug --parallel
+
+  - name: build-windows-x86-debug
+    image: mstorsjo/llvm-mingw
+    environment:
+      CC: i686-w64-mingw32-clang
+      CXX: i686-w64-mingw32-clang++
+    commands:
+      - cmake -S . -B build/windows-x86-debug --preset windows-x86-debug
+      - cmake --build build/windows-x86-debug --parallel
+
+  - name: build-windows-arm64-debug
+    image: mstorsjo/llvm-mingw
+    environment:
+      CC: aarch64-w64-mingw32-clang
+      CXX: aarch64-w64-mingw32-clang++
+    commands:
+      - cmake -S . -B build/windows-arm64-debug --preset windows-arm64-debug
+      - cmake --build build/windows-arm64-debug --parallel
+
+  - name: build-macos-x86_64-debug
+    image: multiarch/crossbuild
+    environment:
+      CROSS_TRIPLE: x86_64-apple-darwin
+    commands:
+      - crossbuild cmake -S . -B build/macos-x86_64-debug --preset macos-x86_64-debug
+      - crossbuild cmake --build build/macos-x86_64-debug --parallel
+
+  - name: build-macos-arm64-debug
+    image: debian:trixie
+    environment:
+      MACOS_SDK_VERSION: "14.0"
+    commands:
+      - bash ./.woodpecker/scripts/setup-osxcross.sh
+      - . ./.osxcross-env
+      - cmake -S . -B build/macos-arm64-debug --preset macos-arm64-debug
+      - cmake --build build/macos-arm64-debug --parallel
+
+  - name: build-emscripten-wasm32-debug
     image: dockcross/web-wasm
     commands:
-      - cmake -S . -B build/emscripten-debug --preset emscripten-debug
-      - cmake --build build/emscripten-debug --config Debug
-    when:
-      - event: tag
+      - cmake -S . -B build/emscripten-wasm32-debug --preset emscripten-wasm32-debug
+      - cmake --build build/emscripten-wasm32-debug --config Debug --parallel
 
-#################
-# TEST PIPELINE #
-#################
+  ###################
+  # TEST PIPELINE   #
+  ###################
 
-  # Linux / Clang - x86_64
-  - name: test-linux-x86_64-clang-debug
-    image: dockcross/linux-x64-clang
+  - name: test-linux-x86_64-debug
+    image: multiarch/crossbuild
+    depends_on: [build-linux-x86_64-debug]
+    environment:
+      CROSS_TRIPLE: x86_64-linux-gnu
     commands:
-      - ctest --test-dir build/unixlike-x64-clang-debug --build-config Debug --output-on-failure
-    when:
-      - event: [pull_request]
-        branch: [main, dev]
+      - crossbuild ctest --test-dir build/linux-x86_64-debug --output-on-failure
