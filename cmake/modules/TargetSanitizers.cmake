@@ -79,7 +79,7 @@ function(enable_global_sanitizers)
     message(STATUS "** Enabling global sanitizers: ${LIST_OF_SANITIZERS}")
 
     # MSVC sanitizers (including clang-cl with MSVC target)
-    if(CURRENT_COMPILER MATCHES "MSVC")
+    if(CURRENT_COMPILER MATCHES ".*MSVC.*")
         # CLANG-MSVC sanitizers is broken, just disable it
         # https://github.com/google/sanitizers/issues/1006
         if(CURRENT_COMPILER MATCHES "CLANG")
@@ -253,6 +253,14 @@ function(enable_global_sanitizers)
         endif()
 
     elseif(CURRENT_COMPILER MATCHES "CLANG.*|GCC|EMSCRIPTEN")
+        if(WIN32 AND "address" IN_LIST LIST_OF_SANITIZERS)
+            message(STATUS "** AddressSanitizer on Windows clang - forcing MultiThreadedDLL runtime")
+            set(CMAKE_MSVC_RUNTIME_LIBRARY
+                "MultiThreadedDLL"
+                CACHE STRING "MSVC runtime library (overridden for AddressSanitizer compatibility)" FORCE)
+             return()
+        endif()
+
         # GCC/Clang sanitizers (excluding clang-cl which is handled above)
         string(REPLACE ";" "," SANITIZER_FLAGS "${LIST_OF_SANITIZERS}")
         set(SANITIZER_FLAGS "-fsanitize=${SANITIZER_FLAGS}")

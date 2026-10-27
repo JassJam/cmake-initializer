@@ -97,18 +97,28 @@ function(_copy_shared_library_dependencies_to_build_dir_recursive MAIN_TARGET
     endforeach()
 endfunction()
 
-# Helper function to copy AddressSanitizer runtime DLL to build directory for direct execution
-function(_copy_asan_dll_to_build_dir TARGET_NAME)
-    # Only handle this for MSVC with AddressSanitizer enabled
-    get_current_compiler(CURRENT_COMPILER)
-
-    if(NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
+function(_asan_runtime_wanted OUT)
+    set(${OUT} FALSE PARENT_SCOPE)
+    if(NOT WIN32)
         return()
     endif()
+    get_current_compiler(CURRENT_COMPILER)
+    
+    if(CURRENT_COMPILER MATCHES "CLANG.*")
+        if("${CMAKE_CXX_FLAGS}" MATCHES "-fsanitize=[a-z,]*address")
+            set(${OUT} TRUE PARENT_SCOPE)
+        endif()
+    elseif(CURRENT_COMPILER STREQUAL "MSVC")
+        if("${CMAKE_CXX_FLAGS}" MATCHES "/fsanitize=address")
+            set(${OUT} TRUE PARENT_SCOPE)
+        endif()
+    endif()
+endfunction()
 
-    # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
-    string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-    if(ASAN_FLAGS_INDEX EQUAL -1)
+# Helper function to copy AddressSanitizer runtime DLL to build directory for direct execution
+function(_copy_asan_dll_to_build_dir TARGET_NAME)
+    _asan_runtime_wanted(_asan_wanted)
+    if(NOT _asan_wanted)
         return()
     endif()
 
@@ -151,7 +161,35 @@ endfunction()
 
 # Helper function to find AddressSanitizer DLL path (shared between install and build directory copying)
 function(_find_asan_dll_path OUTPUT_VAR)
-    # Determine architecture-specific DLL name
+    get_current_compiler(_compiler)
+
+    if(WIN32 AND _compiler STREQUAL "CLANG")
+        if(CMAKE_CXX_COMPILER_TARGET MATCHES "^aarch64")
+            set(_asan_arch "aarch64")
+        elseif(CMAKE_CXX_COMPILER_TARGET MATCHES "^(i686|i386)"
+               OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(_asan_arch "i386")
+        else()
+            set(_asan_arch "x86_64")
+        endif()
+
+        execute_process(
+            COMMAND "${CMAKE_CXX_COMPILER}" --print-resource-dir
+            OUTPUT_VARIABLE _clang_resource_dir
+            OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+
+        set(_clang_asan
+            "${_clang_resource_dir}/lib/windows/clang_rt.asan_dynamic-${_asan_arch}.dll"
+        )
+        if(EXISTS "${_clang_asan}")
+            set(${OUTPUT_VAR} "${_clang_asan}" PARENT_SCOPE)
+        else()
+            set(${OUTPUT_VAR} "" PARENT_SCOPE)
+        endif()
+        return()
+    endif()
+
+    # MSVC: determine architecture-specific DLL name
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(ASAN_DLL_PATTERN "clang_rt.asan_dynamic-x86_64.dll")
         set(ARCH_DIR "x64")
@@ -259,16 +297,8 @@ endfunction()
 
 # Helper function to install AddressSanitizer runtime DLL alongside the executable
 function(_install_asan_runtime_dll TARGET_NAME RUNTIME_DIR)
-    # Only handle this for MSVC with AddressSanitizer enabled
-    get_current_compiler(CURRENT_COMPILER)
-
-    if(NOT "${CURRENT_COMPILER}" STREQUAL "MSVC")
-        return()
-    endif()
-
-    # Check if AddressSanitizer is enabled by looking for /fsanitize in flags
-    string(FIND "${CMAKE_CXX_FLAGS}" "/fsanitize" ASAN_FLAGS_INDEX)
-    if(ASAN_FLAGS_INDEX EQUAL -1)
+    _asan_runtime_wanted(_asan_wanted)
+    if(NOT _asan_wanted)
         return()
     endif()
 
